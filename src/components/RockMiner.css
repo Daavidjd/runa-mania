@@ -1,0 +1,201 @@
+/* ============================================
+   OVERLAY PRINCIPAL (FONDO BLOQUEADO)
+   ============================================ */
+.rock-miner-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.95);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  cursor: default;
+  
+  /* Bloquear comportamientos no deseados en móviles */
+  -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+  touch-action: manipulation;
+  overscroll-behavior: none;
+}
+
+/* Prevenir zoom y selección en todos los elementos internos */
+.rock-miner-overlay * {
+  -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+  touch-action: manipulation;
+  box-sizing: border-box;
+}
+
+/* ============================================
+   CONTENEDOR CENTRAL
+   ============================================ */
+.rock-miner-content {
+  text-align: center;
+  max-width: 500px;
+  width: 100%;
+  padding: 2rem;
+}
+
+/* ============================================
+   TEXTOS
+   ============================================ */
+.miner-title {
+  color: #00e5ff !important;
+  font-size: 4rem;
+  margin: 0 0 1rem 0;
+  text-shadow: 0 0 30px rgba(0, 229, 255, 0.8);
+  letter-spacing: 4px;
+  font-weight: bold;
+  pointer-events: none;
+}
+
+.miner-hits {
+  color: #b2ebf2 !important;
+  font-size: 1.2rem;
+  margin: 0 0 2rem 0;
+  pointer-events: none;
+}
+
+/* ============================================
+   ROCA INTERACTIVA
+   ============================================ */
+.rock-container {
+  cursor: pointer;
+  transition: transform 0.1s ease;
+  -webkit-tap-highlight-color: transparent;
+  display: inline-block;
+  margin: 0 auto;
+}
+
+.rock-container:active {
+  transform: scale(0.95);
+}
+
+.rock-container.shaking {
+  animation: shake 0.4s ease;
+}
+
+@keyframes shake {
+  0%, 100% { transform: translate(0, 0) rotate(0); }
+  20% { transform: translate(-10px, 5px) rotate(-3deg); }
+  40% { transform: translate(10px, -5px) rotate(3deg); }
+  60% { transform: translate(-8px, 3px) rotate(-2deg); }
+  80% { transform: translate(8px, -3px) rotate(2deg); }
+}
+
+.rock-image {
+  width: 100%;
+  max-width: 400px;
+  height: auto;
+  filter: drop-shadow(0 10px 40px rgba(0, 0, 0, 0.8));
+  -webkit-user-drag: none;
+  pointer-events: none;
+}
+
+/* ============================================
+   REVELACIÓN DE RUNA
+   ============================================ */
+.reveal-container {
+  animation: revealFade 0.6s ease;
+}
+
+@keyframes revealFade {
+  from { opacity: 0; transform: scale(0.8); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+.reveal-title {
+  color: #00e5ff !important;
+  font-size: 2.5rem;
+  margin: 0 0 2rem 0;
+  text-shadow: 0 0 20px rgba(0, 229, 255, 0.6);
+  pointer-events: none;
+}
+
+.revealed-rune {
+  display: flex;
+  justify-content: center;
+  margin: 2rem 0;
+}
+
+.revealed-rune .rune-card {
+  animation: float 3s ease-in-out infinite;
+  box-shadow: 0 0 50px rgba(0, 229, 255, 0.6);
+  pointer-events: none;
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-15px); }
+}
+
+/* ============================================
+   BOTÓN CONTINUAR
+   ============================================ */
+.collect-btn {
+  margin-top: 2rem;
+  padding: 1rem 3rem;
+  background: linear-gradient(135deg, #00e5ff, #00bcd4);
+  border: none;
+  border-radius: 12px;
+  font-size: 1.2rem;
+  font-weight: bold;
+  color: #0a1428 !important;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 20px rgba(0, 229, 255, 0.5);
+  -webkit-tap-highlight-color: transparent;
+}
+
+.collect-btn:hover:not(:disabled) {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 30px rgba(0, 229, 255, 0.7);
+}
+
+.collect-btn:active:not(:disabled) {
+  transform: scale(0.95);
+}
+
+.collect-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ============================================
+   RESPONSIVE (MÓVILES)
+   ============================================ */
+@media (max-width: 768px) {
+  .miner-title {
+    font-size: 3rem;
+  }
+
+  .rock-image {
+    max-width: 300px;
+  }
+
+  .reveal-title {
+    font-size: 2rem;
+  }
+
+  .collect-btn {
+    padding: 0.9rem 2rem;
+    font-size: 1.1rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .miner-title {
+    font-size: 2.5rem;
+  }
+
+  .rock-image {
+    max-width: 250px;
+  }
+}

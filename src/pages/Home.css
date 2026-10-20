@@ -1,0 +1,120 @@
+/* Runa Mania — Home (minimalista) */
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600&family=Manrope:wght@400;500;600&display=swap');
+
+.home-wrapper {
+  --bg: #0e0f12;
+  --surface: #16181d;
+  --surface-2: #1c1f25;
+  --line: #2a2d35;
+  --text: #ece9e2;
+  --muted: #8b8f99;
+  --gold: #c9a84c;
+  --gold-soft: rgba(201, 168, 76, 0.12);
+
+  min-height: 100vh;
+  background:
+    radial-gradient(60rem 30rem at 50% -10%, rgba(201, 168, 76, 0.08), transparent 70%),
+    var(--bg);
+  color: var(--text);
+  font-family: 'Manrope', system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+.home-wrapper *, .home-wrapper *::before, .home-wrapper *::after { box-sizing: border-box; }
+
+/* NAV */
+.game-navbar {
+  position: sticky; top: 0; z-index: 10;
+  display: flex; align-items: center; justify-content: space-between; gap: 1rem;
+  padding: 0.875rem clamp(1rem, 4vw, 2.5rem);
+  background: rgba(14, 15, 18, 0.8);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--line);
+}
+.nav-brand { display: flex; align-items: center; gap: 0.625rem; min-width: 0; }
+.brand-icon {
+  display: grid; place-items: center; flex-shrink: 0;
+  width: 2rem; height: 2rem; border-radius: 0.5rem;
+  border: 1px solid var(--gold); color: var(--gold);
+  font-size: 1.1rem; line-height: 1;
+}
+.brand-text {
+  font-family: 'Cormorant Garamond', serif; font-weight: 600;
+  font-size: 1.35rem; letter-spacing: 0.04em; white-space: nowrap;
+}
+.nav-user { display: flex; align-items: center; gap: 0.5rem; flex-shrink: 0; }
+.nav-btn {
+  display: inline-flex; align-items: center; gap: 0.5rem;
+  height: 2.375rem; padding: 0 0.95rem; border-radius: 0.5rem;
+  font: 500 0.875rem 'Manrope', sans-serif; cursor: pointer;
+  transition: background 0.2s, border-color 0.2s, color 0.2s;
+}
+.nav-btn.ghost { background: transparent; border: 1px solid transparent; color: var(--text); }
+.nav-btn.ghost:hover { background: var(--surface-2); }
+.nav-btn.outline { background: transparent; border: 1px solid var(--line); color: var(--muted); }
+.nav-btn.outline:hover { border-color: var(--muted); color: var(--text); }
+.nav-avatar {
+  display: grid; place-items: center; width: 1.6rem; height: 1.6rem;
+  border-radius: 50%; background: var(--gold-soft); color: var(--gold);
+  font-size: 0.75rem; font-weight: 600;
+}
+
+/* CONTENT */
+.home-container {
+  max-width: 72rem; margin: 0 auto;
+  padding: clamp(2.5rem, 8vw, 5.5rem) clamp(1rem, 4vw, 2.5rem) 4rem;
+}
+.home-header { text-align: center; margin-bottom: clamp(2.5rem, 6vw, 4rem); }
+.eyebrow {
+  margin: 0 0 1rem; color: var(--gold);
+  font-size: 0.75rem; font-weight: 600; letter-spacing: 0.2em; text-transform: uppercase;
+}
+.welcome-title {
+  margin: 0; font-family: 'Cormorant Garamond', serif; font-weight: 500;
+  font-size: clamp(2.25rem, 6vw, 4rem); line-height: 1.05; letter-spacing: -0.01em;
+}
+.subtitle { margin: 1rem auto 0; max-width: 32rem; color: var(--muted); font-size: clamp(0.95rem, 2vw, 1.05rem); }
+
+/* GRID */
+.game-grid {
+  display: grid; gap: 1rem;
+  grid-template-columns: 1fr;
+}
+@media (min-width: 640px) { .game-grid { grid-template-columns: repeat(2, 1fr); } }
+@media (min-width: 1024px) { .game-grid { grid-template-columns: repeat(4, 1fr); } }
+
+.game-card {
+  display: flex; flex-direction: column; align-items: flex-start; gap: 1.25rem;
+  width: 100%; min-height: 15rem; padding: 1.5rem; text-align: left;
+  background: var(--surface); border: 1px solid var(--line); border-radius: 0.875rem;
+  color: inherit; font: inherit; cursor: pointer;
+  transition: transform 0.25s ease, border-color 0.25s ease, background 0.25s ease;
+}
+.game-card:hover:not(:disabled) { transform: translateY(-3px); border-color: rgba(201, 168, 76, 0.5); background: var(--surface-2); }
+.game-card:focus-visible { outline: 2px solid var(--gold); outline-offset: 3px; }
+.game-card:disabled { cursor: not-allowed; opacity: 0.55; }
+.game-card.featured { border-color: rgba(201, 168, 76, 0.4); background: linear-gradient(180deg, var(--gold-soft), var(--surface) 60%); }
+
+.card-rune {
+  display: grid; place-items: center; width: 2.75rem; height: 2.75rem;
+  border-radius: 0.625rem; background: var(--gold-soft); color: var(--gold);
+  font-size: 1.4rem; line-height: 1;
+}
+.card-body { flex: 1; }
+.card-title { margin: 0 0 0.5rem; font-size: 1.05rem; font-weight: 600; }
+.card-description { margin: 0; color: var(--muted); font-size: 0.9rem; line-height: 1.55; }
+.card-cta {
+  display: inline-flex; align-items: center; gap: 0.4rem;
+  color: var(--gold); font-size: 0.875rem; font-weight: 600;
+}
+.card-cta.muted { color: var(--muted); font-weight: 500; }
+.card-cta .arrow { transition: transform 0.25s ease; }
+.game-card:hover .arrow { transform: translateX(4px); }
+
+/* MOBILE */
+@media (max-width: 480px) {
+  .nav-label { display: none; }
+  .nav-btn { padding: 0 0.7rem; }
+  .brand-text { font-size: 1.15rem; }
+  .game-card { min-height: auto; }
+}

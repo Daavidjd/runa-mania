@@ -1,0 +1,613 @@
+/* ============================================
+   FONDO ESPACIAL
+   ============================================ */
+html, body {
+  margin: 0;
+  padding: 0;
+  min-height: 100vh;
+  background: radial-gradient(ellipse at bottom, #1b2735 0%, #090a0f 100%);
+  overflow-x: hidden;
+}
+
+.collection-container {
+  width: 100%;
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 1.5rem;
+  padding-top: 5rem;
+  color: white;
+  position: relative;
+  min-height: 100vh;
+  box-sizing: border-box;
+}
+
+/* Capas de estrellas */
+.collection-container::before,
+.collection-container::after {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.collection-container::before {
+  background-image: 
+    radial-gradient(1px 1px at 20px 30px, #fff, transparent),
+    radial-gradient(1px 1px at 60px 80px, #fff, transparent),
+    radial-gradient(1px 1px at 110px 40px, #fff, transparent),
+    radial-gradient(1px 1px at 160px 120px, #fff, transparent),
+    radial-gradient(1px 1px at 210px 70px, #fff, transparent),
+    radial-gradient(1px 1px at 260px 150px, #fff, transparent),
+    radial-gradient(1px 1px at 310px 50px, #fff, transparent),
+    radial-gradient(1px 1px at 360px 180px, #fff, transparent),
+    radial-gradient(1px 1px at 410px 90px, #fff, transparent),
+    radial-gradient(1px 1px at 460px 140px, #fff, transparent);
+  background-size: 500px 200px;
+  animation: twinkle 4s ease-in-out infinite alternate;
+  opacity: 0.6;
+}
+
+.collection-container::after {
+  background-image: 
+    radial-gradient(2px 2px at 100px 100px, #fff, transparent),
+    radial-gradient(2px 2px at 300px 200px, #fff, transparent),
+    radial-gradient(2px 2px at 500px 150px, #fff, transparent),
+    radial-gradient(2px 2px at 700px 250px, #fff, transparent),
+    radial-gradient(2px 2px at 900px 180px, #fff, transparent);
+  background-size: 1000px 400px;
+  animation: twinkle 6s ease-in-out infinite alternate-reverse;
+  opacity: 0.4;
+}
+
+@keyframes twinkle {
+  0% { opacity: 0.3; }
+  100% { opacity: 0.8; }
+}
+
+.collection-container > *:not(.rune-detail-overlay) {
+  position: relative;
+  z-index: 1;
+}
+
+/* ============================================
+   BOTÓN HOME
+   ============================================ */
+.home-btn {
+  position: fixed !important;
+  top: 15px !important;
+  right: 15px !important;
+  background: rgba(10, 20, 40, 0.95);
+  border: 2px solid #00e5ff;
+  padding: 0.7rem 1.2rem;
+  border-radius: 12px;
+  font-size: 0.95rem;
+  font-weight: bold;
+  color: #00e5ff !important;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  backdrop-filter: blur(10px);
+  z-index: 99999 !important;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  text-decoration: none;
+  box-shadow: 0 4px 20px rgba(0, 229, 255, 0.4);
+}
+
+.home-btn:hover {
+  background: #00e5ff;
+  color: #0a1428 !important;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 25px rgba(0, 229, 255, 0.6);
+}
+
+/* ============================================
+   PANEL DEL MAZO
+   ============================================ */
+.deck-panel-visual {
+  background: rgba(10, 20, 40, 0.6);
+  border: 1px solid rgba(0, 229, 255, 0.3);
+  border-radius: 24px;
+  padding: 2rem;
+  margin: 0 auto 3rem;
+  max-width: 1000px;
+  backdrop-filter: blur(12px);
+  box-shadow: 
+    0 8px 32px rgba(0, 0, 0, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  position: relative;
+  box-sizing: border-box;
+}
+
+.deck-title {
+  color: #00e5ff !important;
+  font-size: 1.5rem;
+  margin: 0 0 1.5rem 0;
+  font-weight: 700;
+  text-align: center;
+  text-transform: uppercase;
+  letter-spacing: 3px;
+  text-shadow: 0 0 15px rgba(0, 229, 255, 0.5);
+}
+
+.deck-slots-visual {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: nowrap;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.deck-slot-visual {
+  flex: 1;
+  max-width: 160px;
+  min-width: 0;
+  aspect-ratio: 3/4;
+  position: relative;
+}
+
+.empty-deck-slot {
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.3);
+  border: 2px dashed rgba(0, 229, 255, 0.3);
+  border-radius: 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  transition: all 0.3s ease;
+  box-sizing: border-box;
+}
+
+.empty-deck-slot:hover {
+  border-color: rgba(0, 229, 255, 0.6);
+  background: rgba(0, 229, 255, 0.05);
+  box-shadow: 0 0 15px rgba(0, 229, 255, 0.1);
+}
+
+.plus-icon {
+  font-size: 2rem;
+  color: rgba(0, 229, 255, 0.4);
+  font-weight: 300;
+  line-height: 1;
+}
+
+.empty-text {
+  color: rgba(0, 229, 255, 0.6) !important;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.rune-in-deck {
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(145deg, #00b4d8, #0077b6);
+  border: 2px solid #00e5ff;
+  border-radius: 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 8px;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
+  position: relative;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+.rune-in-deck:hover {
+  transform: translateY(-8px) scale(1.05);
+  box-shadow: 0 12px 25px rgba(0, 229, 255, 0.4);
+  border-color: #ffffff;
+}
+
+.rune-in-deck.selected {
+  border-color: #e74c3c;
+  box-shadow: 0 0 25px rgba(231, 76, 60, 0.6);
+  animation: shake 0.4s ease;
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-4px); }
+  75% { transform: translateX(4px); }
+}
+
+.deck-rune-image {
+  width: 85%;
+  height: 75%;
+  object-fit: contain;
+  background: white;
+  border-radius: 10px;
+  padding: 4px;
+  margin-bottom: 4px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.deck-rune-name {
+  color: white !important;
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  text-align: center;
+  letter-spacing: 0.5px;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  width: 100%;
+}
+
+.remove-rune-hint {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: rgba(231, 76, 60, 0.95);
+  color: white !important;
+  padding: 6px;
+  font-size: 0.65rem;
+  font-weight: bold;
+  text-align: center;
+  opacity: 0;
+  transform: translateY(100%);
+  transition: all 0.3s ease;
+}
+
+.rune-in-deck:hover .remove-rune-hint,
+.rune-in-deck.selected .remove-rune-hint {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* ============================================
+   GRID DE RUNAS - 100% RESPONSIVE
+   ============================================ */
+.rune-card-wrapper {
+  position: relative;
+  aspect-ratio: 1;
+  width: 100%;
+  transition: transform 0.3s ease;
+}
+
+.rune-card-wrapper:hover {
+  transform: translateY(-5px);
+}
+
+.in-deck-badge {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  background: linear-gradient(135deg, rgba(46, 204, 113, 0.9), rgba(39, 174, 96, 0.9));
+  color: white !important;
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  box-shadow: 0 4px 12px rgba(46, 204, 113, 0.5);
+  z-index: 20;
+  backdrop-filter: blur(4px);
+  animation: pulse-badge 2s ease-in-out infinite;
+}
+
+@keyframes pulse-badge {
+  0%, 100% { transform: scale(1); box-shadow: 0 4px 12px rgba(46, 204, 113, 0.5); }
+  50% { transform: scale(1.05); box-shadow: 0 6px 16px rgba(46, 204, 113, 0.7); }
+}
+
+/* Grid fluido: se adapta al ancho disponible */
+.runes-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 1.5rem;
+  padding: 1rem 0;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.collection-loading {
+  text-align: center;
+  padding: 4rem;
+  color: #00e5ff !important;
+  font-size: 1.5rem;
+  position: relative;
+  z-index: 1;
+}
+
+/* ============================================
+   RESPONSIVE - PANTALLAS GRANDES (>1200px)
+   ============================================ */
+@media (min-width: 1200px) {
+  .runes-grid {
+    grid-template-columns: repeat(5, 1fr);
+    gap: 2rem;
+  }
+
+  .deck-slot-visual {
+    max-width: 180px;
+  }
+}
+
+/* ============================================
+   RESPONSIVE - TABLET (768px - 1199px)
+   ============================================ */
+@media (max-width: 1199px) and (min-width: 768px) {
+  .collection-container {
+    padding: 1.5rem;
+    padding-top: 5rem;
+  }
+
+  .deck-panel-visual {
+    padding: 1.8rem;
+  }
+
+  .runes-grid {
+    grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+    gap: 1.5rem;
+  }
+
+  .deck-slots-visual {
+    gap: 0.8rem;
+  }
+
+  .deck-slot-visual {
+    max-width: 150px;
+  }
+}
+
+/* ============================================
+   RESPONSIVE - MÓVIL GRANDE (600px - 767px)
+   ============================================ */
+@media (max-width: 767px) and (min-width: 600px) {
+  .collection-container {
+    padding: 1.2rem;
+    padding-top: 4.5rem;
+  }
+
+  .home-btn {
+    top: 12px !important;
+    right: 12px !important;
+    padding: 0.6rem 1rem;
+    font-size: 0.85rem;
+  }
+
+  .deck-panel-visual {
+    padding: 1.2rem;
+    border-radius: 18px;
+    margin-bottom: 2rem;
+  }
+
+  .deck-title {
+    font-size: 1.2rem;
+    letter-spacing: 2px;
+    margin-bottom: 1rem;
+  }
+
+  .deck-slots-visual {
+    gap: 0.6rem;
+  }
+
+  .deck-slot-visual {
+    max-width: none;
+  }
+
+  .plus-icon {
+    font-size: 1.6rem;
+  }
+
+  .empty-text {
+    font-size: 0.65rem;
+  }
+
+  .deck-rune-name {
+    font-size: 0.6rem;
+  }
+
+  .deck-rune-image {
+    height: 72%;
+  }
+
+  /* 3 columnas en móvil grande */
+  .runes-grid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1rem;
+  }
+
+  .rune-card-wrapper {
+    aspect-ratio: 1;
+  }
+}
+
+/* ============================================
+   RESPONSIVE - MÓVIL MEDIO (480px - 599px)
+   ============================================ */
+@media (max-width: 599px) and (min-width: 480px) {
+  .collection-container {
+    padding: 1rem;
+    padding-top: 4.5rem;
+  }
+
+  .home-btn {
+    top: 10px !important;
+    right: 10px !important;
+    padding: 0.5rem 0.9rem;
+    font-size: 0.8rem;
+  }
+
+  .deck-panel-visual {
+    padding: 1rem 0.8rem;
+    border-radius: 16px;
+    margin-bottom: 1.5rem;
+  }
+
+  .deck-title {
+    font-size: 1.1rem;
+    letter-spacing: 2px;
+    margin-bottom: 0.8rem;
+  }
+
+  .deck-slots-visual {
+    gap: 0.5rem;
+  }
+
+  .plus-icon {
+    font-size: 1.4rem;
+  }
+
+  .empty-text {
+    font-size: 0.6rem;
+  }
+
+  .deck-rune-name {
+    font-size: 0.55rem;
+  }
+
+  .deck-rune-image {
+    height: 70%;
+  }
+
+  /* 2 columnas en móvil medio */
+  .runes-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.8rem;
+  }
+
+  .rune-card-wrapper {
+    aspect-ratio: 1;
+  }
+
+  .in-deck-badge {
+    padding: 3px 8px;
+    font-size: 0.65rem;
+    top: -5px;
+    right: -5px;
+  }
+}
+
+/* ============================================
+   RESPONSIVE - MÓVIL PEQUEÑO (<480px)
+   ============================================ */
+@media (max-width: 479px) {
+  .collection-container {
+    padding: 0.8rem;
+    padding-top: 4rem;
+  }
+
+  .home-btn {
+    top: 8px !important;
+    right: 8px !important;
+    padding: 0.45rem 0.8rem;
+    font-size: 0.75rem;
+    border-radius: 10px;
+  }
+
+  .deck-panel-visual {
+    padding: 0.8rem 0.5rem;
+    border-radius: 14px;
+    margin-bottom: 1.2rem;
+  }
+
+  .deck-title {
+    font-size: 1rem;
+    letter-spacing: 1.5px;
+    margin-bottom: 0.6rem;
+  }
+
+  .deck-slots-visual {
+    gap: 0.4rem;
+  }
+
+  .deck-slot-visual {
+    aspect-ratio: 3/4;
+  }
+
+  .plus-icon {
+    font-size: 1.2rem;
+  }
+
+  .empty-text {
+    font-size: 0.55rem;
+  }
+
+  .deck-rune-name {
+    font-size: 0.5rem;
+  }
+
+  .deck-rune-image {
+    height: 68%;
+    border-radius: 8px;
+  }
+
+  .rune-in-deck {
+    border-radius: 12px;
+    padding: 6px;
+  }
+
+  .empty-deck-slot {
+    border-radius: 12px;
+  }
+
+  /* 2 columnas en móvil pequeño */
+  .runes-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.6rem;
+  }
+
+  .rune-card-wrapper {
+    aspect-ratio: 1;
+  }
+
+  .in-deck-badge {
+    padding: 2px 6px;
+    font-size: 0.6rem;
+    top: -4px;
+    right: -4px;
+  }
+}
+
+/* ============================================
+   MUY PEQUEÑO (<360px)
+   ============================================ */
+@media (max-width: 359px) {
+  .collection-container {
+    padding: 0.5rem;
+    padding-top: 3.5rem;
+  }
+
+  .deck-panel-visual {
+    padding: 0.6rem 0.4rem;
+  }
+
+  .deck-title {
+    font-size: 0.9rem;
+  }
+
+  .deck-slots-visual {
+    gap: 0.3rem;
+  }
+
+  .plus-icon {
+    font-size: 1rem;
+  }
+
+  .empty-text {
+    font-size: 0.5rem;
+  }
+
+  .runes-grid {
+    gap: 0.5rem;
+  }
+}
