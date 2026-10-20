@@ -1,89 +1,72 @@
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import './Home_v3.css';
+import './Home.css';
 
 const MODES = [
-  { key: 'collection', rune: 'ᚱ', tag: 'Modo principal', title: 'Colección', desc: 'Reúne runas legendarias y forja el mazo definitivo.', cta: 'Abrir colección', path: '/collection', color: 'gold' },
-  { key: 'shop', rune: 'ᚠ', tag: 'Recompensa diaria', title: 'Tienda', desc: 'Abre rocas rúnicas y reclama tu recompensa gratis.', cta: 'Entrar', path: '/shop', color: 'emerald' },
-  { key: 'battle', rune: 'ᛏ', tag: 'PvE', title: 'Batalla vs IA', desc: 'Combates por turnos contra guardianes ancestrales.', cta: 'Luchar', path: '/battle', color: 'crimson' },
-  { key: 'ranked', rune: 'ᛟ', tag: 'PvP', title: 'Clasificatoria', desc: 'Enfréntate a otros invocadores y escala de liga.', cta: 'Próximamente', disabled: true, color: 'violet' },
+  { rune: 'ᚱ', title: 'Colección de Runas', desc: 'Colecciona runas legendarias y crea tu mazo perfecto.', cta: 'Ver colección', path: '/collection', featured: true },
+  { rune: 'ᚠ', title: 'Tienda', desc: 'Compra rocas con monedas o reclama tu roca diaria gratis.', cta: 'Ir a la tienda', path: '/shop' },
+  { rune: 'ᛏ', title: 'Batalla vs IA', desc: 'Enfrenta tus runas contra la IA en combates por turnos.', cta: '¡A luchar!', path: '/battle' },
+  { rune: 'ᛟ', title: 'Matchmaking', desc: 'Desafía a otros invocadores en batallas épicas.', cta: 'Próximamente', disabled: true },
 ];
 
 const Home = () => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
-  const name = user?.displayName || user?.email?.split('@')[0] || 'Invocador';
 
   const handleLogout = async () => {
-    try { await logout(); navigate('/'); }
-    catch (e) { console.error('Error al cerrar sesión:', e); }
+    try {
+      await logout();
+      navigate('/');
+    } catch (error) {
+      console.error('Error al cerrar sesión:', error);
+    }
   };
 
   return (
-    <div className="rm">
-      <div className="rm-bg" aria-hidden="true" />
-
-      <nav className="rm-nav">
-        <div className="rm-brand">
-          <span className="rm-brand-sigil">ᚱ</span>
-          <span className="rm-brand-name">RUNA<b>MANIA</b></span>
+    <div className="home-wrapper">
+      <nav className="game-navbar">
+        <div className="nav-brand">
+          <span className="brand-icon" aria-hidden="true">ᚱ</span>
+          <span className="brand-text">Runa Mania</span>
         </div>
-
-        <div className="rm-resources">
-          <span className="rm-res"><i className="coin" />1.250</span>
-          <span className="rm-res"><i className="gem" />40</span>
-        </div>
-
-        <div className="rm-user">
-          <button className="rm-profile" onClick={() => navigate('/profile')}>
-            <span className="rm-avatar">{name.charAt(0).toUpperCase()}</span>
-            <span className="rm-profile-info">
-              <strong>{name}</strong>
-              <small>Nivel 12</small>
+        <div className="nav-user">
+          <button onClick={() => navigate('/profile')} className="nav-btn ghost">
+            <span className="nav-avatar" aria-hidden="true">
+              {(user?.displayName || user?.email || 'I').charAt(0).toUpperCase()}
             </span>
+            <span className="nav-label">Perfil</span>
           </button>
-          <button className="rm-icon-btn" onClick={handleLogout} title="Cerrar sesión" aria-label="Cerrar sesión">⏻</button>
+          <button onClick={handleLogout} className="nav-btn outline">
+            Cerrar sesión
+          </button>
         </div>
       </nav>
 
-      <main className="rm-main">
-        <section className="rm-hero">
-          <div className="rm-hero-text">
-            <span className="rm-badge">Temporada I · Runas del Cielo</span>
-            <h1>Despierta el poder<br /><span>de las runas</span></h1>
-            <p>Bienvenido de nuevo, {name}. Tu próxima batalla te espera.</p>
-            <div className="rm-hero-actions">
-              <button className="rm-btn primary" onClick={() => navigate('/battle')}>▶ Jugar ahora</button>
-              <button className="rm-btn secondary" onClick={() => navigate('/collection')}>Ver mazo</button>
-            </div>
-          </div>
-          <div className="rm-hero-art" aria-hidden="true">
-            <div className="rm-orb"><span>ᛟ</span></div>
-            <div className="rm-ring r1" /><div className="rm-ring r2" />
-          </div>
-          <div className="rm-season">
-            <div className="rm-season-head"><span>Pase de temporada</span><b>Nv. 7 / 30</b></div>
-            <div className="rm-bar"><div style={{ width: '23%' }} /></div>
-          </div>
-        </section>
+      <main className="home-container">
+        <header className="home-header">
+          <p className="eyebrow">Temporada I · Runas del cielo</p>
+          <h1 className="welcome-title">Bienvenido, Invocador</h1>
+          <p className="subtitle">Domina las runas del cielo. Elige tu camino.</p>
+        </header>
 
-        <h2 className="rm-section-title">Modos de juego</h2>
-        <div className="rm-grid">
+        <div className="game-grid">
           {MODES.map((m) => (
             <button
-              key={m.key}
+              key={m.title}
               type="button"
-              className={`rm-card c-${m.color}${m.disabled ? ' locked' : ''}`}
+              className={`game-card${m.featured ? ' featured' : ''}`}
               onClick={() => !m.disabled && navigate(m.path)}
               disabled={m.disabled}
             >
-              <div className="rm-card-art"><span>{m.rune}</span></div>
-              <div className="rm-card-body">
-                <span className="rm-card-tag">{m.tag}</span>
-                <h3>{m.title}</h3>
-                <p>{m.desc}</p>
-                <span className="rm-card-cta">{m.disabled ? '🔒 ' : ''}{m.cta}{!m.disabled && ' →'}</span>
+              <span className="card-rune" aria-hidden="true">{m.rune}</span>
+              <div className="card-body">
+                <h2 className="card-title">{m.title}</h2>
+                <p className="card-description">{m.desc}</p>
               </div>
+              <span className={`card-cta${m.disabled ? ' muted' : ''}`}>
+                {m.cta}
+                {!m.disabled && <span className="arrow" aria-hidden="true">→</span>}
+              </span>
             </button>
           ))}
         </div>
