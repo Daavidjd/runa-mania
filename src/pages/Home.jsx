@@ -44,7 +44,7 @@ const Home = () => {
 
       <main className="home-container">
         <header className="home-header">
-          <p className="eyebrow">Temporada I · Runas del cielo</p>
+          <p className="eyebrow">Runas del cielo</p>
           <h1 className="welcome-title">Bienvenido, Invocador</h1>
           <p className="subtitle">Domina las runas del cielo. Elige tu camino.</p>
         </header>
