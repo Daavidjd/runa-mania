@@ -1,201 +1,135 @@
-/* ============================================
-   OVERLAY PRINCIPAL (FONDO BLOQUEADO)
-   ============================================ */
+/* ==========================================================
+   ROCK MINER: PANTALLA COMPLETA OSCURA & MINIMALISTA
+   ========================================================== */
+
+/* Capa negra transparente ocupando toda la pantalla */
 .rock-miner-overlay {
   position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.95);
+  inset: 0;
+  width: 100vw;
+  height: 100dvh;
+  background-color: rgba(0, 0, 0, 0.88);
+  backdrop-filter: blur(8px);
+  z-index: 99999;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
-  z-index: 1000;
-  cursor: default;
-  
-  /* Bloquear comportamientos no deseados en móviles */
-  -webkit-tap-highlight-color: transparent;
-  -webkit-touch-callout: none;
-  -webkit-user-select: none;
   user-select: none;
-  touch-action: manipulation;
-  overscroll-behavior: none;
-}
-
-/* Prevenir zoom y selección en todos los elementos internos */
-.rock-miner-overlay * {
-  -webkit-tap-highlight-color: transparent;
-  -webkit-touch-callout: none;
-  -webkit-user-select: none;
-  user-select: none;
-  touch-action: manipulation;
+  cursor: pointer;
+  padding: 20px;
   box-sizing: border-box;
 }
 
-/* ============================================
-   CONTENEDOR CENTRAL
-   ============================================ */
-.rock-miner-content {
-  text-align: center;
-  max-width: 500px;
-  width: 100%;
-  padding: 2rem;
-}
-
-/* ============================================
-   TEXTOS
-   ============================================ */
-.miner-title {
-  color: #00e5ff !important;
-  font-size: 4rem;
-  margin: 0 0 1rem 0;
-  text-shadow: 0 0 30px rgba(0, 229, 255, 0.8);
-  letter-spacing: 4px;
-  font-weight: bold;
-  pointer-events: none;
-}
-
-.miner-hits {
-  color: #b2ebf2 !important;
-  font-size: 1.2rem;
-  margin: 0 0 2rem 0;
-  pointer-events: none;
-}
-
-/* ============================================
-   ROCA INTERACTIVA
-   ============================================ */
-.rock-container {
-  cursor: pointer;
-  transition: transform 0.1s ease;
-  -webkit-tap-highlight-color: transparent;
-  display: inline-block;
-  margin: 0 auto;
-}
-
-.rock-container:active {
-  transform: scale(0.95);
-}
-
-.rock-container.shaking {
-  animation: shake 0.4s ease;
-}
-
-@keyframes shake {
-  0%, 100% { transform: translate(0, 0) rotate(0); }
-  20% { transform: translate(-10px, 5px) rotate(-3deg); }
-  40% { transform: translate(10px, -5px) rotate(3deg); }
-  60% { transform: translate(-8px, 3px) rotate(-2deg); }
-  80% { transform: translate(8px, -3px) rotate(2deg); }
-}
-
-.rock-image {
-  width: 100%;
-  max-width: 400px;
-  height: auto;
-  filter: drop-shadow(0 10px 40px rgba(0, 0, 0, 0.8));
-  -webkit-user-drag: none;
-  pointer-events: none;
-}
-
-/* ============================================
-   REVELACIÓN DE RUNA
-   ============================================ */
-.reveal-container {
-  animation: revealFade 0.6s ease;
-}
-
-@keyframes revealFade {
-  from { opacity: 0; transform: scale(0.8); }
-  to { opacity: 1; transform: scale(1); }
-}
-
-.reveal-title {
-  color: #00e5ff !important;
-  font-size: 2.5rem;
-  margin: 0 0 2rem 0;
-  text-shadow: 0 0 20px rgba(0, 229, 255, 0.6);
-  pointer-events: none;
-}
-
-.revealed-rune {
+/* ----------------------------------------------------------
+   VISTA DE PICAR (Solo texto PICA + Roca en el centro)
+   ---------------------------------------------------------- */
+.miner-minimal-view {
   display: flex;
+  flex-direction: column;
+  align-items: center;
   justify-content: center;
-  margin: 2rem 0;
+  gap: 30px;
+  pointer-events: none; /* Toda la pantalla registra el click */
 }
 
-.revealed-rune .rune-card {
-  animation: float 3s ease-in-out infinite;
-  box-shadow: 0 0 50px rgba(0, 229, 255, 0.6);
-  pointer-events: none;
+.miner-huge-title {
+  margin: 0;
+  font-size: clamp(3rem, 12vw, 4.5rem);
+  font-weight: 900;
+  color: #ffffff;
+  letter-spacing: 6px;
+  text-shadow: 0 4px 16px rgba(0, 0, 0, 0.8), 0 0 20px rgba(56, 189, 248, 0.4);
+  animation: miner-pulse-txt 1.2s infinite ease-in-out;
 }
 
-@keyframes float {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-15px); }
+@keyframes miner-pulse-txt {
+  0%, 100% { transform: scale(1); opacity: 0.9; }
+  50% { transform: scale(1.05); opacity: 1; }
 }
 
-/* ============================================
-   BOTÓN CONTINUAR
-   ============================================ */
-.collect-btn {
-  margin-top: 2rem;
-  padding: 1rem 3rem;
-  background: linear-gradient(135deg, #00e5ff, #00bcd4);
-  border: none;
-  border-radius: 12px;
-  font-size: 1.2rem;
-  font-weight: bold;
-  color: #0a1428 !important;
+.rock-center {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.rock-standalone-img {
+  width: clamp(220px, 60vw, 320px);
+  height: clamp(220px, 60vw, 320px);
+  object-fit: contain;
+  filter: drop-shadow(0 12px 24px rgba(0, 0, 0, 0.9));
+  transition: transform 0.08s ease;
+}
+
+/* Vibración al golpear */
+.shaking .rock-standalone-img {
+  animation: rock-hit-shake 0.3s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+}
+
+@keyframes rock-hit-shake {
+  10%, 90% { transform: translate3d(-4px, -2px, 0) scale(0.95); }
+  20%, 80% { transform: translate3d(5px, 3px, 0) scale(1.02); }
+  30%, 50%, 70% { transform: translate3d(-6px, -4px, 0) scale(0.97); }
+  40%, 60% { transform: translate3d(6px, 2px, 0) scale(1.01); }
+}
+
+/* ----------------------------------------------------------
+   VISTA DE REVELACIÓN (Runa + Botón Continuar)
+   ---------------------------------------------------------- */
+.reveal-minimal-view {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 24px;
+  animation: reveal-zoom 0.35s cubic-bezier(0.18, 0.89, 0.32, 1.28);
+}
+
+@keyframes reveal-zoom {
+  0% { transform: scale(0.6); opacity: 0; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+.reveal-minimal-title {
+  margin: 0;
+  font-size: 2rem;
+  font-weight: 900;
+  color: #fde047;
+  letter-spacing: 2px;
+  text-shadow: 0 4px 12px rgba(0, 0, 0, 0.8), 0 0 24px rgba(245, 158, 11, 0.5);
+}
+
+.reveal-rune-box {
+  width: 140px;
+  height: 140px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  filter: drop-shadow(0 0 28px rgba(56, 189, 248, 0.6));
+}
+
+.collect-minimal-btn {
+  padding: 14px 40px;
+  border-radius: 14px;
+  background: #0284c7;
+  border: 2px solid #38bdf8;
+  color: #ffffff;
+  font-size: 1.1rem;
+  font-weight: 900;
+  letter-spacing: 0.5px;
   cursor: pointer;
-  transition: all 0.3s ease;
-  box-shadow: 0 4px 20px rgba(0, 229, 255, 0.5);
-  -webkit-tap-highlight-color: transparent;
+  box-shadow: 0 5px 0 #0369a1, 0 8px 20px rgba(0, 0, 0, 0.6);
+  transition: transform 0.1s ease;
 }
 
-.collect-btn:hover:not(:disabled) {
-  transform: translateY(-3px);
-  box-shadow: 0 8px 30px rgba(0, 229, 255, 0.7);
+.collect-minimal-btn:active:not(:disabled) {
+  transform: translateY(3px);
+  box-shadow: 0 2px 0 #0369a1;
 }
 
-.collect-btn:active:not(:disabled) {
-  transform: scale(0.95);
-}
-
-.collect-btn:disabled {
-  opacity: 0.5;
+.collect-minimal-btn:disabled {
+  opacity: 0.6;
   cursor: not-allowed;
-}
-
-/* ============================================
-   RESPONSIVE (MÓVILES)
-   ============================================ */
-@media (max-width: 768px) {
-  .miner-title {
-    font-size: 3rem;
-  }
-
-  .rock-image {
-    max-width: 300px;
-  }
-
-  .reveal-title {
-    font-size: 2rem;
-  }
-
-  .collect-btn {
-    padding: 0.9rem 2rem;
-    font-size: 1.1rem;
-  }
-}
-
-@media (max-width: 480px) {
-  .miner-title {
-    font-size: 2.5rem;
-  }
-
-  .rock-image {
-    max-width: 250px;
-  }
 }
