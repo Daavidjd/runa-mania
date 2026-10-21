@@ -1,17 +1,32 @@
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { getUserProfile, getDailyRockStatus } from '../services/firestore';
 import './Home.css';
-
-const MODES = [
-  { rune: 'ᚱ', title: 'Colección de Runas', desc: 'Colecciona runas legendarias y crea tu mazo perfecto.', cta: 'Ver colección', path: '/collection', featured: true },
-  { rune: 'ᚠ', title: 'Tienda', desc: 'Compra rocas con monedas o reclama tu roca diaria gratis.', cta: 'Ir a la tienda', path: '/shop' },
-  { rune: 'ᛏ', title: 'Batalla vs IA', desc: 'Enfrenta tus runas contra la IA en combates por turnos.', cta: '¡A luchar!', path: '/battle' },
-  { rune: 'ᛟ', title: 'Matchmaking', desc: 'Desafía a otros invocadores en batallas épicas.', cta: 'Próximamente', disabled: true },
-];
 
 const Home = () => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const [profile, setProfile] = useState(null);
+  const [dailyReady, setDailyReady] = useState(false);
+
+  useEffect(() => {
+    if (!user) return;
+
+    const loadHomeData = async () => {
+      try {
+        const userProfile = await getUserProfile(user.uid);
+        if (userProfile) setProfile(userProfile);
+
+        const dailyStatus = await getDailyRockStatus(user.uid);
+        if (dailyStatus?.available) setDailyReady(true);
+      } catch (err) {
+        console.error('Error cargando datos del home:', err);
+      }
+    };
+
+    loadHomeData();
+  }, [user]);
 
   const handleLogout = async () => {
     try {
@@ -23,52 +38,118 @@ const Home = () => {
   };
 
   return (
-    <div className="home-wrapper">
-      <nav className="game-navbar">
-        <div className="nav-brand">
-          <span className="brand-icon" aria-hidden="true">ᚱ</span>
-          <span className="brand-text">Runa Mania</span>
-        </div>
-        <div className="nav-user">
-          <button onClick={() => navigate('/profile')} className="nav-btn ghost">
-            <span className="nav-avatar" aria-hidden="true">
-              {(user?.displayName || user?.email || 'I').charAt(0).toUpperCase()}
+    <div className="home-screen">
+      {/* 1. HUD SUPERIOR: Perfil, Nivel, Monedas y Salir */}
+      <header className="home-hud">
+        <button 
+          className="hud-profile-pill" 
+          onClick={() => navigate('/profile')}
+          title="Ver perfil"
+        >
+          <div className="hud-level-circle">
+            <span>{profile?.level || 1}</span>
+          </div>
+          <div className="hud-player-meta">
+            <span className="hud-name">
+              {profile?.username || user?.displayName || user?.email?.split('@')[0] || 'Invocador'}
             </span>
-            <span className="nav-label">Perfil</span>
-          </button>
-          <button onClick={handleLogout} className="nav-btn outline">
-            Cerrar sesión
+            <span className="hud-id">ID: {profile?.userId || '----'}</span>
+          </div>
+        </button>
+
+        <div className="hud-right-actions">
+          <div className="hud-coins-pill" onClick={() => navigate('/shop')}>
+            <span className="coin-icon">🪙</span>
+            <span className="coin-amount">{profile?.coins ?? 100}</span>
+            <span className="coin-add-badge">+</span>
+          </div>
+
+          <button 
+            className="hud-logout-btn" 
+            onClick={handleLogout} 
+            title="Cerrar sesión"
+          >
+            ✕
           </button>
         </div>
-      </nav>
+      </header>
 
-      <main className="home-container">
-        <header className="home-header">
-          <p className="eyebrow">Runas del  cielo</p>
-          <h1 className="welcome-title">Bienvenido, Invocador</h1>
-          <p className="subtitle">Domina las runas del cielo. Elige tu camino.</p>
-        </header>
+      {/* 2. BANNER DE LA MINA / ROCA DIARIA */}
+      <section className="home-banner-section">
+        <button 
+          className={`daily-portal-strip ${dailyReady ? 'active-ready' : ''}`}
+          onClick={() => navigate('/shop')}
+        >
+          <div className="portal-icon-box">
+            <span className="portal-emoji">🪨</span>
+            {dailyReady && <span className="portal-ping"></span>}
+          </div>
+          <div className="portal-text">
+            <span className="portal-title">Yacimiento Diario</span>
+            <span className="portal-desc">
+              {dailyReady ? '¡Roca lista para picar!' : 'Visita la tienda para extraer runas'}
+            </span>
+          </div>
+          <span className="portal-arrow">IR →</span>
+        </button>
+      </section>
 
-        <div className="game-grid">
-          {MODES.map((m) => (
-            <button
-              key={m.title}
-              type="button"
-              className={`game-card${m.featured ? ' featured' : ''}`}
-              onClick={() => !m.disabled && navigate(m.path)}
-              disabled={m.disabled}
-            >
-              <span className="card-rune" aria-hidden="true">{m.rune}</span>
-              <div className="card-body">
-                <h2 className="card-title">{m.title}</h2>
-                <p className="card-description">{m.desc}</p>
-              </div>
-              <span className={`card-cta${m.disabled ? ' muted' : ''}`}>
-                {m.cta}
-                {!m.disabled && <span className="arrow" aria-hidden="true">→</span>}
-              </span>
-            </button>
-          ))}
+      {/* 3. ARENA CENTRAL: ALTAR DE COMBATE Y LANZADOR PRINCIPAL */}
+      <main className="home-arena-stage">
+        <div className="runic-arena-altar">
+          {/* Runa y rango de la arena */}
+          <div className="arena-rank-badge">
+            <span className="rank-rune">ᛏ</span>
+            <span className="rank-title">ARENA RUNA 1</span>
+          </div>
+
+          {/* Diorama del Monolito Mágico */}
+          <div className="arena-monolith-view">
+            <div className="monolith-pillar">
+              <span className="monolith-glyph">ᚱ</span>
+              <div className="monolith-aura"></div>
+            </div>
+            <p className="arena-mantra">«Despliega tus 5 runas en el tablero cósmico»</p>
+          </div>
+
+          {/* BOTÓN PROTAGONISTA DE BATALLA */}
+          <button 
+            className="huge-battle-cta" 
+            onClick={() => navigate('/battle')}
+          >
+            <div className="cta-glare"></div>
+            <div className="cta-main-content">
+              <span className="cta-swords">⚔️</span>
+              <span className="cta-txt">¡A LUCHAR!</span>
+            </div>
+            <span className="cta-sub">DUELO TÁCTICO CONTRA IA</span>
+          </button>
+        </div>
+
+        {/* 4. ACCESOS RÁPIDOS SECUNDARIOS */}
+        <div className="home-quick-actions">
+          <button 
+            className="quick-card deck-quick-card" 
+            onClick={() => navigate('/collection')}
+          >
+            <div className="quick-icon-wrap">🎴</div>
+            <div className="quick-info">
+              <span className="quick-title">Mi Mazo</span>
+              <span className="quick-sub">Organizar 5 runas</span>
+            </div>
+          </button>
+
+          <button 
+            className="quick-card pvp-quick-card disabled" 
+            disabled 
+            title="Próximamente"
+          >
+            <div className="quick-icon-wrap">ᛟ</div>
+            <div className="quick-info">
+              <span className="quick-title">PvP Online</span>
+              <span className="quick-sub">Próximamente</span>
+            </div>
+          </button>
         </div>
       </main>
     </div>

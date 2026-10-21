@@ -28,11 +28,11 @@ const Shop = () => {
     if (dailyStatus.available === false && dailyStatus.remaining) {
       const startTime = Date.now();
       const initialRemaining = dailyStatus.remaining;
-      
+
       const interval = setInterval(() => {
         const elapsed = Date.now() - startTime;
         const remaining = initialRemaining - elapsed;
-        
+
         if (remaining <= 0) {
           setDailyStatus({ available: true });
           setCountdown('');
@@ -44,7 +44,7 @@ const Shop = () => {
           setCountdown(`${hours}h ${minutes}m ${seconds}s`);
         }
       }, 1000);
-      
+
       return () => clearInterval(interval);
     }
   }, [dailyStatus]);
@@ -57,7 +57,6 @@ const Shop = () => {
       if (userProfile) {
         setProfile(userProfile);
       } else {
-        // Crear perfil inicial si no existe
         const initialProfile = {
           email: user.email,
           username: user.email.split('@')[0],
@@ -74,7 +73,7 @@ const Shop = () => {
       }
     } catch (error) {
       console.error('Error cargando perfil:', error);
-      showMessage('Error al cargar el perfil', 'error');
+      showMessage('Error al cargar perfil', 'error');
     } finally {
       setLoading(false);
     }
@@ -140,108 +139,136 @@ const Shop = () => {
 
   if (loading) {
     return (
-      <div className="shop-container">
-        <div className="shop-loading">
-          <div className="loading-spinner"></div>
-          <p>Cargando tienda...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (!profile) {
-    return (
-      <div className="shop-container">
-        <div className="shop-error">
-          <p>No se pudo cargar el perfil</p>
-          <button onClick={() => navigate('/home')} className="back-btn">
-            Volver al inicio
-          </button>
+      <div className="shop-screen">
+        <div className="shop-loading-card">
+          <span className="shop-spinner">⛏️</span>
+          <p>Abriendo la mina...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="shop-container">
-      <button className="back-btn" onClick={() => navigate('/home')}>
-        ← Volver
-      </button>
-
-      <div className="shop-header">
-        <h1>Tienda de Runas</h1>
-        <div className="coins-display">
-          <span className="coin-icon">🪙</span>
-          <span className="coin-amount">{profile.coins || 0}</span>
+    <div className="shop-screen">
+      {/* 1. HUD SUPERIOR DE LA TIENDA */}
+      <header className="shop-header">
+        <div className="shop-header-title">
+          <span className="shop-header-icon">⛏️</span>
+          <div>
+            <h1 className="shop-title">LA MINA</h1>
+            <span className="shop-subtitle">Pica rocas y extrae runas</span>
+          </div>
         </div>
-      </div>
 
+        <div className="shop-coins-pill">
+          <span className="coins-icon">🪙</span>
+          <span className="coins-value">{profile?.coins ?? 0}</span>
+        </div>
+      </header>
+
+      {/* MENSAJE DE ESTADO / ERROR */}
       {message && (
-        <div className={`message ${messageType}`}>
+        <div className={`shop-banner ${messageType}`}>
           {message}
         </div>
       )}
 
-      {/* Roca Diaria */}
-      <div className="daily-section">
-        <h2> Roca Diaria Gratis</h2>
-        <div className={`daily-card ${dailyStatus.available ? 'available' : 'locked'}`}>
-          <div className="daily-icon">🪨</div>
-          <div className="daily-info">
-            <h3>Roca Normal Gratis</h3>
-            <p>
-              {dailyStatus.available 
-                ? '¡Disponible ahora!' 
-                : `Disponible en ${countdown}`}
-            </p>
+      <main className="shop-content-scroll">
+        {/* 2. RECOMPENSA DIARIA (ESTILO COFRE DIARIO) */}
+        <section className="shop-section">
+          <div className="section-title-bar">
+            <span className="section-title-txt">RECOMPENSA GRATIS</span>
+            <span className="section-tag">DIARIA</span>
           </div>
-          <button 
-            className={`daily-btn ${dailyStatus.available ? 'claimable' : 'disabled'}`}
-            onClick={handleClaimDaily}
-            disabled={!dailyStatus.available}
-          >
-            {dailyStatus.available ? 'Reclamar' : 'Esperar'}
-          </button>
-        </div>
-      </div>
 
-      {/* Tienda de Rocas */}
-      <div className="shop-section">
-        <h2>🛒 Comprar Rocas</h2>
-        <div className="rocks-grid">
-          {Object.values(ROCK_TYPES).map(rock => (
-            <div 
-              key={rock.id} 
-              className={`rock-card rock-${rock.id}`}
-              style={{ borderColor: rock.color }}
-            >
-              <div className="rock-rarity-badge" style={{ background: rock.color }}>
-                {rock.rarity}
-              </div>
-              <div className="rock-icon" style={{ color: rock.color }}>
-                {rock.icon}
-              </div>
-              <h3 className="rock-name">{rock.name}</h3>
-              <p className="rock-description">{rock.description}</p>
-              <div className="rock-price">
-                <span className="coin-icon">🪙</span>
-                <span>{rock.price}</span>
-              </div>
-              <button 
-                className="buy-btn"
-                onClick={() => handleBuyRock(rock.id)}
-                disabled={profile.coins < rock.price}
-                style={{ 
-                  background: profile.coins >= rock.price ? rock.color : '#555'
-                }}
-              >
-                {profile.coins >= rock.price ? 'Comprar' : 'Sin monedas'}
-              </button>
+          <div className={`daily-reward-card ${dailyStatus.available ? 'ready' : 'waiting'}`}>
+            <div className="daily-reward-icon-box">
+              <span className="daily-rock-emoji">🪨</span>
+              {dailyStatus.available && <div className="daily-glow-ring"></div>}
             </div>
-          ))}
-        </div>
-      </div>
 
+            <div className="daily-reward-details">
+              <h3 className="daily-reward-name">Roca Normal Gratuita</h3>
+              <p className="daily-reward-desc">
+                {dailyStatus.available
+                  ? '¡Lista para extraer! Golpea 3 veces.'
+                  : `Disponible en ${countdown || 'espera...'}`}
+              </p>
+            </div>
+
+            <button
+              className={`daily-claim-btn ${dailyStatus.available ? 'claimable' : 'disabled'}`}
+              onClick={handleClaimDaily}
+              disabled={!dailyStatus.available}
+            >
+              {dailyStatus.available ? '¡Picar!' : 'Espera'}
+            </button>
+          </div>
+        </section>
+
+        {/* 3. CATÁLOGO DE ROCAS DE MINERÍA */}
+        <section className="shop-section">
+          <div className="section-title-bar">
+            <span className="section-title-txt">YACIMIENTO DE ROCAS</span>
+            <span className="section-tag">MINERALES</span>
+          </div>
+
+          <div className="rocks-grid-container">
+            {Object.values(ROCK_TYPES).map(rock => {
+              const canAfford = (profile?.coins || 0) >= rock.price;
+
+              return (
+                <div key={rock.id} className="rock-item-card">
+                  <div className="rock-rarity-ribbon" style={{ background: rock.color }}>
+                    {rock.rarity}
+                  </div>
+
+                  <div className="rock-visual-box">
+                    <span className="rock-emoji-art">{rock.icon}</span>
+                  </div>
+
+                  <h3 className="rock-item-name">{rock.name}</h3>
+                  <p className="rock-item-desc">{rock.description}</p>
+
+                  <button
+                    className={`rock-buy-btn ${canAfford ? 'affordable' : 'unaffordable'}`}
+                    onClick={() => handleBuyRock(rock.id)}
+                    disabled={!canAfford}
+                  >
+                    <span className="buy-coin-icon">🪙</span>
+                    <span className="buy-price">{rock.price}</span>
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+        </section>
+      </main>
+
+      {/* 4. NAVEGACIÓN INFERIOR COMPARTIDA */}
+      <nav className="shop-bottom-bar">
+        <button className="bottom-nav-btn active">
+          <span className="bottom-nav-icon">⛏️</span>
+          <span className="bottom-nav-text">Tienda</span>
+        </button>
+
+        <button className="bottom-nav-btn" onClick={() => navigate('/collection')}>
+          <span className="bottom-nav-icon">🎴</span>
+          <span className="bottom-nav-text">Mazo</span>
+        </button>
+
+        <button className="bottom-nav-btn battle-highlight" onClick={() => navigate('/battle')}>
+          <span className="bottom-nav-icon">⚔️</span>
+          <span className="bottom-nav-text">Batalla</span>
+        </button>
+
+        <button className="bottom-nav-btn" onClick={() => navigate('/home')}>
+          <span className="bottom-nav-icon">🏠</span>
+          <span className="bottom-nav-text">Inicio</span>
+        </button>
+      </nav>
+
+      {/* MINIJUEGO DE PICAR ROCAS */}
       {activeRock && (
         <RockMiner
           onClose={handleRockMinerClose}

@@ -22,7 +22,7 @@ const AVATAR_OPTIONS = [
 ];
 
 const Profile = () => {
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
   const navigate = useNavigate();
   const [profile, setProfile] = useState(null);
   const [editing, setEditing] = useState(false);
@@ -103,13 +103,9 @@ const Profile = () => {
     setLinkLoading(true);
 
     try {
-      // Crear credencial con email y contraseña
       const credential = EmailAuthProvider.credential(linkEmail, linkPassword);
-      
-      // Vincular credencial al usuario anónimo actual
       await linkWithCredential(user, credential);
 
-      // Actualizar perfil en Firestore
       const updatedProfile = {
         ...profile,
         email: linkEmail,
@@ -128,185 +124,211 @@ const Profile = () => {
     } catch (err) {
       console.error('Error vinculando cuenta:', err);
       if (err.code === 'auth/email-already-in-use') {
-        setLinkError('Este email ya está en uso por otra cuenta');
+        setLinkError('Este email ya está en uso');
       } else if (err.code === 'auth/invalid-email') {
-        setLinkError('El email no es válido');
+        setLinkError('Email inválido');
       } else if (err.code === 'auth/weak-password') {
-        setLinkError('La contraseña es demasiado débil');
-      } else if (err.code === 'auth/provider-already-linked') {
-        setLinkError('Esta cuenta ya está vinculada');
+        setLinkError('Contraseña muy débil');
       } else {
-        setLinkError('Error al vincular la cuenta. Intenta de nuevo.');
+        setLinkError('Error al vincular cuenta');
       }
     } finally {
       setLinkLoading(false);
     }
   };
 
+  const handleLogout = async () => {
+    try {
+      if (logout) await logout();
+      navigate('/');
+    } catch (err) {
+      console.error('Error cerrando sesión:', err);
+    }
+  };
+
   const getSelectedAvatarSrc = () => {
-    const avatar = AVATAR_OPTIONS.find(a => a.id === selectedAvatarId);
+    const avatar = AVATAR_OPTIONS.find(a => a.id === (editing ? selectedAvatarId : profile?.avatarId));
     return avatar ? avatar.src : Arquero;
   };
 
   if (loading) {
-    return <div className="profile-loading">Cargando perfil...</div>;
+    return (
+      <div className="profile-screen">
+        <div className="profile-loading-box">
+          <span className="profile-spin-glyph">ᛟ</span>
+          <p>Consultando anales del invocador...</p>
+        </div>
+      </div>
+    );
   }
 
   return (
-    <div className="profile-container">
-      <button className="back-btn" onClick={() => navigate('/home')}>
-        ← Volver
-      </button>
-
-      <div className="profile-card">
-        <div className="profile-header">
-          <img 
-            src={getSelectedAvatarSrc()} 
-            alt="Avatar" 
-            className="profile-avatar"
-          />
-          <div className="profile-info">
-            <div className="profile-name-row">
-              <h1 className="profile-username">{profile.username}</h1>
-              {profile.isGuest && (
-                <span className="guest-badge">Invitado</span>
-              )}
-            </div>
-            <p className="profile-id">ID: {profile.userId}</p>
-            <div className="profile-stats">
-              <div className="stat">
-                <span className="stat-label">Nivel</span>
-                <span className="stat-value">{profile.level}</span>
-              </div>
-              <div className="stat">
-                <span className="stat-label">XP</span>
-                <span className="stat-value">{profile.xp}</span>
-              </div>
-              <div className="stat coins">
-                <span className="stat-label">🪙 Monedas</span>
-                <span className="stat-value">{profile.coins}</span>
-              </div>
-            </div>
+    <div className="profile-screen">
+      {/* 1. HUD SUPERIOR COHERENTE CON HOME */}
+      <header className="profile-hud-header">
+        <div className="profile-title-block">
+          <span className="profile-title-rune">ᛟ</span>
+          <div>
+            <h1 className="profile-title-txt">PERFIL DE INVOCADOR</h1>
+            <span className="profile-id-txt">ID: {profile?.userId || '----'}</span>
           </div>
         </div>
 
-        {/* Botón para vincular cuenta (solo invitados) */}
-        {profile.isGuest && (
-          <button className="link-account-btn" onClick={() => setShowLinkModal(true)}>
-             Actualizar Cuenta
-          </button>
-        )}
+        <div className="profile-hud-coins" onClick={() => navigate('/shop')}>
+          <span className="coins-glyph">🪙</span>
+          <span className="coins-val">{profile?.coins ?? 0}</span>
+        </div>
+      </header>
 
+      <main className="profile-scroll-area">
+        {/* 2. TARJETA CREDENCIAL ESTILO CLASH ROYALE */}
+        <section className="profile-badge-slab">
+          <div className="profile-avatar-anchor">
+            <img
+              src={getSelectedAvatarSrc()}
+              alt="Avatar"
+              className="profile-avatar-frame"
+            />
+            <div className="profile-level-gem">
+              <span>{profile?.level || 1}</span>
+            </div>
+          </div>
+
+          <div className="profile-badge-details">
+            <div className="profile-name-line">
+              <h2 className="profile-display-name">{profile?.username}</h2>
+              {profile?.isGuest && <span className="guest-pill">Invitado</span>}
+            </div>
+            <span className="profile-rank-subtitle">Invocador de Runa Mania</span>
+          </div>
+
+          {/* Estadísticas de combate y recursos */}
+          <div className="profile-stats-row">
+            <div className="profile-stat-slot">
+              <span className="stat-slot-label">Nivel</span>
+              <span className="stat-slot-value lv-val">{profile?.level || 1}</span>
+            </div>
+            <div className="profile-stat-slot">
+              <span className="stat-slot-label">XP</span>
+              <span className="stat-slot-value xp-val">{profile?.xp || 0}</span>
+            </div>
+            <div className="profile-stat-slot">
+              <span className="stat-slot-label">Monedas</span>
+              <span className="stat-slot-value coin-val">🪙 {profile?.coins || 0}</span>
+            </div>
+          </div>
+
+          {/* Actualizar cuenta si es invitado */}
+          {profile?.isGuest && (
+            <button
+              className="guest-upgrade-btn"
+              onClick={() => setShowLinkModal(true)}
+            >
+              <span>🔒</span> Vincular correo y contraseña
+            </button>
+          )}
+        </section>
+
+        {/* 3. MODO EDICIÓN O BOTÓN DE EDITAR */}
         {editing ? (
-          <div className="profile-edit">
-            <div className="edit-section">
-              <label>Nombre de usuario</label>
+          <section className="profile-edit-slab">
+            <h3 className="edit-slab-title">Editar Invocador</h3>
+
+            <div className="edit-field-group">
+              <label className="edit-field-label">Nombre de Invocador</label>
               <input
                 type="text"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
                 maxLength={20}
-                className="username-input"
-                placeholder="Tu nombre de invocador"
+                className="edit-field-input"
+                placeholder="Nombre de invocador"
               />
             </div>
 
-            <div className="edit-section">
-              <label>Elige tu avatar</label>
-              <div className="avatar-selector">
-                {AVATAR_OPTIONS.map(avatar => (
-                  <div
-                    key={avatar.id}
-                    className={`avatar-option-wrapper ${selectedAvatarId === avatar.id ? 'selected' : ''}`}
-                    onClick={() => setSelectedAvatarId(avatar.id)}
-                  >
-                    <img
-                      src={avatar.src}
-                      alt={avatar.name}
-                      className="avatar-option"
-                    />
-                    <span className="avatar-name">{avatar.name}</span>
-                  </div>
-                ))}
+            <div className="edit-field-group">
+              <label className="edit-field-label">Selecciona tu Avatar</label>
+              <div className="avatar-options-grid">
+                {AVATAR_OPTIONS.map((avatar) => {
+                  const isChosen = selectedAvatarId === avatar.id;
+                  return (
+                    <div
+                      key={avatar.id}
+                      className={`avatar-choice-card ${isChosen ? 'chosen' : ''}`}
+                      onClick={() => setSelectedAvatarId(avatar.id)}
+                    >
+                      <img src={avatar.src} alt={avatar.name} className="choice-img" />
+                      <span className="choice-txt">{avatar.name}</span>
+                    </div>
+                  );
+                })}
               </div>
             </div>
 
-            <div className="edit-actions">
-              <button className="save-btn" onClick={handleSave}>
+            <div className="edit-buttons-row">
+              <button className="edit-save-btn" onClick={handleSave}>
                 💾 Guardar
               </button>
-              <button className="cancel-btn" onClick={() => setEditing(false)}>
+              <button className="edit-cancel-btn" onClick={() => setEditing(false)}>
                 ✕ Cancelar
               </button>
             </div>
-          </div>
+          </section>
         ) : (
-          <button className="edit-profile-btn" onClick={() => setEditing(true)}>
-            ✏️ Editar Perfil
-          </button>
-        )}
-      </div>
+          <div className="profile-actions-column">
+            <button className="profile-edit-trigger-btn" onClick={() => setEditing(true)}>
+              ✏️ Modificar Avatar y Nombre
+            </button>
 
-      {/* Modal de vinculación de cuenta */}
+            <button className="profile-logout-trigger-btn" onClick={handleLogout}>
+              🚪 Cerrar Sesión
+            </button>
+          </div>
+        )}
+      </main>
+
+      {/* 4. MODAL VINCULACIÓN DE CUENTA */}
       {showLinkModal && (
-        <div className="modal-overlay" onClick={() => setShowLinkModal(false)}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-            <button className="modal-close" onClick={() => setShowLinkModal(false)}>✕</button>
-            
-            <h2 className="modal-title">Vincular Cuenta</h2>
-            <p className="modal-subtitle">
-              Convierte tu cuenta de invitado en una cuenta permanente. Tu progreso se conservará.
+        <div className="profile-modal-backdrop" onClick={() => setShowLinkModal(false)}>
+          <div className="profile-modal-box" onClick={(e) => e.stopPropagation()}>
+            <button className="modal-close-icon" onClick={() => setShowLinkModal(false)}>
+              ✕
+            </button>
+
+            <h3 className="modal-heading">Vincular Cuenta</h3>
+            <p className="modal-sub">
+              Asegura tu colección y mazo para no perder tu progreso.
             </p>
 
-            {linkError && (
-              <div className="modal-error">
-                <span>⚠️</span>
-                <span>{linkError}</span>
-              </div>
-            )}
+            {linkError && <div className="modal-alert error">⚠️ {linkError}</div>}
+            {linkSuccess && <div className="modal-alert success">✅ {linkSuccess}</div>}
 
-            {linkSuccess && (
-              <div className="modal-success">
-                <span>✅</span>
-                <span>{linkSuccess}</span>
-              </div>
-            )}
-
-            <form onSubmit={handleLinkAccount} className="modal-form">
-              <div className="modal-form-group">
-                <label>Email</label>
+            <form onSubmit={handleLinkAccount} className="modal-inputs-form">
+              <div className="modal-input-wrap">
+                <label>Correo Electrónico</label>
                 <input
                   type="email"
                   value={linkEmail}
                   onChange={(e) => setLinkEmail(e.target.value)}
-                  placeholder="tu@email.com"
+                  placeholder="invocador@ejemplo.com"
                   required
-                  className="modal-input"
                 />
               </div>
 
-              <div className="modal-form-group">
+              <div className="modal-input-wrap">
                 <label>Contraseña</label>
                 <input
                   type="password"
                   value={linkPassword}
                   onChange={(e) => setLinkPassword(e.target.value)}
                   placeholder="Mínimo 6 caracteres"
-                  required
                   minLength="6"
-                  className="modal-input"
+                  required
                 />
               </div>
 
-              <button type="submit" className="modal-submit-btn" disabled={linkLoading}>
-                {linkLoading ? (
-                  <>
-                    <span className="spinner"></span>
-                    Vinculando...
-                  </>
-                ) : (
-                  'Vincular Cuenta'
-                )}
+              <button type="submit" className="modal-action-btn" disabled={linkLoading}>
+                {linkLoading ? 'Vinculando...' : 'Guardar y Vincular'}
               </button>
             </form>
           </div>

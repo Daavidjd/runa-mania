@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../context/useAuth';
+import { useAuth } from '../context/AuthContext';
 import { RUNES_DB } from '../data/runes';
 import { getUserCollection, getUserDecks, saveDeck, deleteDeck } from '../services/firestore';
 import RuneCard from './RuneCard';
@@ -9,7 +8,7 @@ import './Collection.css';
 
 const Collection = () => {
   const { user } = useAuth();
-  const navigate = useNavigate();
+
   const [ownedRunes, setOwnedRunes] = useState({});
   const [selectedRune, setSelectedRune] = useState(null);
   const [myDeck, setMyDeck] = useState([]);
@@ -22,31 +21,31 @@ const Collection = () => {
     try {
       const collection = await getUserCollection(user.uid);
       const ownedMap = {};
-      
+
       collection.forEach(rune => {
-        const runeData = RUNES_DB.find(r => r.id === rune.id);
+        const runeData = RUNES_DB.find(r => r.id === (rune.runeId || rune.id));
         if (runeData) {
-          ownedMap[rune.id] = {
+          ownedMap[runeData.id] = {
             ...runeData,
-            quantity: rune.quantity
+            quantity: rune.quantity || 1
           };
         }
       });
-      
+
       setOwnedRunes(ownedMap);
 
       const userDecks = await getUserDecks(user.uid);
       if (userDecks.length > 0) {
         const deck = userDecks[0];
         setDeckId(deck.id);
-        const deckRunes = deck.runes.map(id => ownedMap[id]).filter(Boolean);
+        const deckRunes = (deck.runes || []).map(id => ownedMap[id]).filter(Boolean);
         setMyDeck(deckRunes);
       } else {
         setMyDeck([]);
         setDeckId(null);
       }
     } catch (error) {
-      console.error('Error cargando datos:', error);
+      console.error('Error cargando colección:', error);
     } finally {
       setLoading(false);
     }
@@ -59,120 +58,142 @@ const Collection = () => {
   const handleAddToDeck = async (rune) => {
     if (myDeck.find(r => r.id === rune.id)) return;
     if (myDeck.length >= 5) {
-      alert('El mazo ya está lleno (5 runas máx)');
+      alert('El mazo ya está lleno (5 runas máximo)');
       return;
     }
 
     try {
       const newRunes = [...myDeck, rune];
-      
-      if (deckId) {
-        await deleteDeck(user.uid, deckId);
-      }
-      
+      if (deckId) await deleteDeck(user.uid, deckId);
+
       await saveDeck(user.uid, {
         name: 'Mi Mazo',
         runes: newRunes.map(r => r.id)
       });
-      
+
       setMyDeck(newRunes);
       const decks = await getUserDecks(user.uid);
-      setDeckId(decks[0].id);
+      if (decks.length > 0) setDeckId(decks[0].id);
     } catch (error) {
       console.error('Error añadiendo al mazo:', error);
     }
   };
 
-  const handleDeckRuneClick = async (rune) => {
-    if (selectedDeckRune?.id === rune.id) {
-      try {
-        const newRunes = myDeck.filter(r => r.id !== rune.id);
-        
-        if (deckId) {
-          await deleteDeck(user.uid, deckId);
-        }
-        
-        if (newRunes.length > 0) {
-          await saveDeck(user.uid, {
-            name: 'Mi Mazo',
-            runes: newRunes.map(r => r.id)
-          });
-        }
-        
-        setMyDeck(newRunes);
-        setSelectedDeckRune(null);
-        
-        if (newRunes.length === 0) {
-          setDeckId(null);
-        } else {
-          const decks = await getUserDecks(user.uid);
-          setDeckId(decks[0].id);
-        }
-      } catch (error) {
-        console.error('Error eliminando del mazo:', error);
+  const handleRemoveFromDeck = async (rune, e) => {
+    if (e) e.stopPropagation();
+    try {
+      const newRunes = myDeck.filter(r => r.id !== rune.id);
+      if (deckId) await deleteDeck(user.uid, deckId);
+
+      if (newRunes.length > 0) {
+        await saveDeck(user.uid, {
+          name: 'Mi Mazo',
+          runes: newRunes.map(r => r.id)
+        });
       }
-    } else {
-      setSelectedDeckRune(rune);
+
+      setMyDeck(newRunes);
+      setSelectedDeckRune(null);
+
+      if (newRunes.length === 0) {
+        setDeckId(null);
+      } else {
+        const decks = await getUserDecks(user.uid);
+        if (decks.length > 0) setDeckId(decks[0].id);
+      }
+    } catch (error) {
+      console.error('Error quitando del mazo:', error);
     }
   };
 
-  const isInDeck = (rune) => myDeck.find(r => r.id === rune.id);
+  const isInDeck = (rune) => myDeck.some(r => r.id === rune.id);
+  const unlockedCount = Object.keys(ownedRunes).length;
 
   if (loading) {
-    return <div className="collection-loading">Cargando colección...</div>;
+    return <div className="collection-loading">Cargando mazo y runas...</div>;
   }
 
   return (
-    <div className="collection-container">
-      <button className="home-btn" onClick={() => navigate('/home')}>
-        🏠 Home
-      </button>
+    <div className="collection-screen">
+      {/* 1. EL MAZO PROTAGONISTA (3 arriba + 2 abajo) */}
+      <section className="deck-hero-section">
+        <div className="deck-hero-header">
+          <div className="deck-title-group">
+            <span className="deck-icon">⚡</span>
+            <h2 className="deck-hero-title">MAZO DE BATALLA</h2>
+          </div>
+          <div className="deck-pill-badge">
+            <span className="badge-count">{myDeck.length}/5</span>
+          </div>
+        </div>
 
-      <div className="deck-panel-visual">
-        <h2 className="deck-title">MI MAZO</h2>
-        <div className="deck-slots-visual">
+        <div className="deck-hero-grid">
           {Array.from({ length: 5 }).map((_, index) => {
             const rune = myDeck[index];
+            const isSelected = selectedDeckRune?.id === rune?.id;
+
             return (
-              <div key={index} className="deck-slot-visual">
+              <div
+                key={index}
+                className={`deck-hero-slot ${index >= 3 ? 'bottom-row' : ''}`}
+              >
                 {rune ? (
-                  <div 
-                    className={`rune-in-deck ${selectedDeckRune?.id === rune.id ? 'selected' : ''}`}
-                    onClick={() => handleDeckRuneClick(rune)}
+                  <div
+                    className={`deck-card-wrapper ${isSelected ? 'selected' : ''}`}
+                    onClick={() => setSelectedDeckRune(isSelected ? null : rune)}
                   >
-                    <img src={rune.image} alt={rune.name} className="deck-rune-image" />
-                    <span className="deck-rune-name">{rune.name}</span>
-                    <div className="remove-rune-hint">
-                      {selectedDeckRune?.id === rune.id ? 'Clic otra vez para quitar' : 'Clic para seleccionar'}
-                    </div>
+                    <RuneCard rune={rune} owned={true} />
+                    {isSelected && (
+                      <button
+                        className="deck-remove-pill"
+                        onClick={(e) => handleRemoveFromDeck(rune, e)}
+                      >
+                        ✕ Quitar
+                      </button>
+                    )}
                   </div>
                 ) : (
-                  <div className="empty-deck-slot">
-                    <span className="plus-icon">+</span>
-                    <span className="empty-text">Vacío</span>
+                  <div className="deck-hero-empty">
+                    <span className="empty-plus">+</span>
+                    <span className="empty-txt">Ranura {index + 1}</span>
                   </div>
                 )}
               </div>
             );
           })}
         </div>
+      </section>
+
+      {/* 2. BARRA DIVISORIA LIMPIA */}
+      <div className="collection-divider-clean">
+        <h3 className="divider-label">COLECCIÓN Y RESERVA</h3>
+        <span className="divider-stats-pill">
+          {unlockedCount} / {RUNES_DB.length}
+        </span>
       </div>
 
-      <div className="runes-grid">
-        {RUNES_DB.map(rune => (
-          <div key={rune.id} className="rune-card-wrapper">
-            <RuneCard
-              rune={rune}
-              owned={!!ownedRunes[rune.id]}
-              onClick={() => setSelectedRune(rune)}
-            />
-            {isInDeck(rune) && (
-              <div className="in-deck-badge">✓ En mazo</div>
-            )}
-          </div>
-        ))}
-      </div>
+      {/* 3. GRILLA COMPACTA DE 4 COLUMNAS */}
+      <main className="collection-compact-area">
+        <div className="runes-compact-grid">
+          {RUNES_DB.map(rune => {
+            const owned = !!ownedRunes[rune.id];
+            const inDeck = isInDeck(rune);
 
+            return (
+              <div key={rune.id} className="compact-item-wrapper">
+                <RuneCard
+                  rune={rune}
+                  owned={owned}
+                  onClick={() => setSelectedRune(rune)}
+                />
+                {inDeck && <div className="compact-deck-badge">✓ EN MAZO</div>}
+              </div>
+            );
+          })}
+        </div>
+      </main>
+
+      {/* MODAL DETALLE DE RUNA */}
       {selectedRune && (
         <RuneDetail
           rune={selectedRune}
