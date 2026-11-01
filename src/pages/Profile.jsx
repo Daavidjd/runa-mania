@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { getUserProfile, createUserProfile } from '../services/firestore';
+import FriendsPanel from '../components/FriendsPanel';
 import { EmailAuthProvider, linkWithCredential } from 'firebase/auth';
 import { auth } from '../services/firebase';
 import { AVATAR_OPTIONS } from '../data/avatars'; // ✅ IMPORTACIÓN CENTRALIZADA
@@ -36,6 +37,7 @@ const Profile = () => {
         setSelectedAvatarId(userProfile.avatarId || 'arquero');
       } else {
         const initialProfile = {
+          uid: user.uid,
           email: user.email,
           username: user.email ? user.email.split('@')[0] : 'Invitado',
           avatarId: 'arquero',
@@ -66,6 +68,7 @@ const Profile = () => {
     try {
       const updatedProfile = {
         ...profile,
+        uid: user.uid,
         username: username.trim(),
         avatarId: selectedAvatarId
       };
@@ -94,6 +97,7 @@ const Profile = () => {
 
       const updatedProfile = {
         ...profile,
+        uid: user.uid,
         email: linkEmail,
         isGuest: false
       };
@@ -271,9 +275,12 @@ const Profile = () => {
             </button>
           </div>
         )}
+
+        {/* 4. 🌐 SISTEMA DE AMIGOS: agregar, eliminar y retar (batalla online) */}
+        <FriendsPanel profile={profile} />
       </main>
 
-      {/* 4. MODAL VINCULACIÓN DE CUENTA */}
+      {/* 5. MODAL VINCULACIÓN DE CUENTA */}
       {showLinkModal && (
         <div className="profile-modal-backdrop" onClick={() => setShowLinkModal(false)}>
           <div className="profile-modal-box" onClick={(e) => e.stopPropagation()}>
