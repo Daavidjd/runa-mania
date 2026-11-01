@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { getUserProfile, createUserProfile } from '../services/firestore';
+import { getUserProfile, createUserProfile, getIncomingRequests, getPendingChallengesFor } from '../services/firestore';
 import FriendsPanel from '../components/FriendsPanel';
 import { EmailAuthProvider, linkWithCredential } from 'firebase/auth';
 import { auth } from '../services/firebase';
@@ -16,16 +16,14 @@ const Profile = () => {
   const [username, setUsername] = useState('');
   const [selectedAvatarId, setSelectedAvatarId] = useState('arquero');
   const [loading, setLoading] = useState(true);
+  const [showFriends, setShowFriends] = useState(false);
+  const [pendingSocialCount, setPendingSocialCount] = useState(0);
   const [showLinkModal, setShowLinkModal] = useState(false);
   const [linkEmail, setLinkEmail] = useState('');
   const [linkPassword, setLinkPassword] = useState('');
   const [linkLoading, setLinkLoading] = useState(false);
   const [linkError, setLinkError] = useState('');
   const [linkSuccess, setLinkSuccess] = useState('');
-
-  useEffect(() => {
-    loadProfile();
-  }, [user]);
 
   const loadProfile = async () => {
     if (!user) return;
@@ -135,6 +133,36 @@ const Profile = () => {
       console.error('Error cerrando sesión:', err);
     }
   };
+
+  // Contador de solicitudes + retos pendientes para el badge del botón "Amigos"
+  const refreshSocialBadge = async () => {
+    if (!user) return;
+    try {
+      const [inc, ch] = await Promise.all([
+        getIncomingRequests(user.uid),
+        getPendingChallengesFor(user.uid)
+      ]);
+      setPendingSocialCount(inc.length + ch.length);
+    } catch (err) {
+      console.error('Error cargando contador social:', err);
+    }
+  };
+
+  const handleOpenFriends = () => {
+    setShowFriends(true);
+    refreshSocialBadge();
+  };
+
+  const handleCloseFriends = () => {
+    setShowFriends(false);
+    refreshSocialBadge();
+  };
+
+  useEffect(() => {
+    loadProfile();
+    refreshSocialBadge();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user]);
 
   const getSelectedAvatarSrc = () => {
     const avatar = AVATAR_OPTIONS.find(a => a.id === (editing ? selectedAvatarId : profile?.avatarId));
@@ -270,14 +298,18 @@ const Profile = () => {
               ✏️ Modificar Avatar y Nombre
             </button>
 
+            <button className="profile-friends-trigger-btn" onClick={handleOpenFriends}>
+              👥 Amigos {pendingSocialCount > 0 && <span className="profile-friends-badge">{pendingSocialCount}</span>}
+            </button>
+
             <button className="profile-logout-trigger-btn" onClick={handleLogout}>
                Cerrar Sesión
             </button>
           </div>
         )}
 
-        {/* 4. 🌐 SISTEMA DE AMIGOS: agregar, eliminar y retar (batalla online) */}
-        <FriendsPanel profile={profile} />
+        {/* 4. 🌐 SISTEMA DE AMIGOS: agregar, eliminar y retar (batalla online) — solo como popup */}
+        <FriendsPanel profile={profile} open={showFriends} onClose={() => setShowFriends(false)} />
       </main>
 
       {/* 5. MODAL VINCULACIÓN DE CUENTA */}
