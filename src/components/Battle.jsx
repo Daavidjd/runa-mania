@@ -32,26 +32,26 @@ const generateAIDeck = (difficulty) => {
   let deck = [];
 
   if (difficulty === 'Fácil') {
-    // Sky: 100% comunes (runas débiles, 2-4 flechas)
+    // Sky: 100% comunes (runas débiles, 2-4 flechas) — mazo de 8
     const shuffled = [...comunRunes].sort(() => 0.5 - Math.random());
-    deck = shuffled.slice(0, 5).map(r => r.id);
+    deck = shuffled.slice(0, 8).map(r => r.id);
   } else if (difficulty === 'Medio') {
-    // elJonny: 60% comunes, 40% raras
+    // elJonny: 60% comunes, 40% raras — mazo de 8
     const shuffledComun = [...comunRunes].sort(() => 0.5 - Math.random());
     const shuffledRara = [...raraRunes].sort(() => 0.5 - Math.random());
     deck = [
-      ...shuffledComun.slice(0, 3).map(r => r.id),
-      ...shuffledRara.slice(0, 2).map(r => r.id)
+      ...shuffledComun.slice(0, 5).map(r => r.id),
+      ...shuffledRara.slice(0, 3).map(r => r.id)
     ];
   } else if (difficulty === 'Difícil') {
-    // Eustakio: 20% comunes, 40% raras, 40% épicas
+    // Eustakio: 20% comunes, 40% raras, 40% épicas — mazo de 8
     const shuffledComun = [...comunRunes].sort(() => 0.5 - Math.random());
     const shuffledRara = [...raraRunes].sort(() => 0.5 - Math.random());
     const shuffledEpica = [...epicaRunes].sort(() => 0.5 - Math.random());
     deck = [
-      ...shuffledComun.slice(0, 1).map(r => r.id),
-      ...shuffledRara.slice(0, 2).map(r => r.id),
-      ...shuffledEpica.slice(0, 2).map(r => r.id)
+      ...shuffledComun.slice(0, 2).map(r => r.id),
+      ...shuffledRara.slice(0, 3).map(r => r.id),
+      ...shuffledEpica.slice(0, 3).map(r => r.id)
     ];
   }
 
@@ -160,7 +160,7 @@ const Battle = () => {
       }
       if (playerRunes.length === 0) {
         const shuffled = [...RUNES_DB].sort(() => 0.5 - Math.random());
-        playerRunes = shuffled.slice(0, 5).map(r => ({ ...r, owner: 'player' }));
+        playerRunes = shuffled.slice(0, 8).map(r => ({ ...r, owner: 'player' }));
       }
 
       // ✅ Usamos el mazo generado dinámicamente según la dificultad
