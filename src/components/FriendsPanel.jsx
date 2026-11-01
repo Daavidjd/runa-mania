@@ -30,7 +30,7 @@ const TABS = [
   { id: 'challenges', label: '⚔️ Retos' }
 ];
 
-const FriendsPanel = ({ profile }) => {
+const FriendsPanel = ({ profile, open = true, onClose }) => {
   const navigate = useNavigate();
   const { user } = useAuth();
 
@@ -74,7 +74,20 @@ const FriendsPanel = ({ profile }) => {
     }
   }, [user]);
 
-  useEffect(() => { refreshAll(); }, [refreshAll]);
+  // Cargar datos sociales al abrir el popup (o si se usa embebido sin prop open)
+  useEffect(() => {
+    if (open !== false) refreshAll();
+  }, [open, refreshAll]);
+
+  // Cerrar con la tecla Escape
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e) => { if (e.key === 'Escape' && onClose) onClose(); };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [open, onClose]);
+
+  if (!open) return null;
 
   // ---------- AGREGAR AMIGOS ----------
   const handleSearch = async (e) => {
@@ -165,11 +178,15 @@ const FriendsPanel = ({ profile }) => {
   const totalBadges = incoming.length + challenges.length;
 
   return (
-    <section className="fp-panel">
-      <header className="fp-header">
-        <h3 className="fp-title">🌐 Zona Social</h3>
-        <button className="fp-refresh" onClick={refreshAll} title="Actualizar">⟳</button>
-      </header>
+    <div className="fp-backdrop" onClick={onClose}>
+      <section className="fp-panel" onClick={(e) => e.stopPropagation()}>
+        <header className="fp-header">
+          <h3 className="fp-title">🌐 Zona Social</h3>
+          <div className="fp-header-actions">
+            <button className="fp-refresh" onClick={refreshAll} title="Actualizar">⟳</button>
+            <button className="fp-close" onClick={onClose} title="Cerrar">✕</button>
+          </div>
+        </header>
 
       {/* Mi código de amigo */}
       <div className="fp-my-code" title="Copia este ID para que te agreguen">
@@ -334,7 +351,8 @@ const FriendsPanel = ({ profile }) => {
       {toast && (
         <div className={`fp-toast ${toast.ok ? 'ok' : 'err'}`}>{toast.msg}</div>
       )}
-    </section>
+      </section>
+    </div>
   );
 };
 
