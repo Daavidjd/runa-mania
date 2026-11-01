@@ -1,5 +1,5 @@
 /* ==========================================================================
-   SHOP.CSS - LA MINA SUBTERRÁNEA (ESTILO CLASH ROYALE)
+   SHOP.CSS - LA MINA (OPTIMIZADO)
    ========================================================================== */
 
 .shop-screen {
@@ -7,7 +7,7 @@
   background: #0b0f19;
   display: flex;
   flex-direction: column;
-  padding-bottom: 76px; /* Espacio para la barra de navegación fija */
+  padding-bottom: 96px;
   box-sizing: border-box;
   user-select: none;
   max-width: 480px;
@@ -37,12 +37,12 @@
 }
 
 /* --------------------------------------------------------------------------
-   1. CABECERA Y HUD DE MONEDAS
+   1. CABECERA & HUD DE MONEDAS
    -------------------------------------------------------------------------- */
 .shop-header {
   background: #141a29;
   border-bottom: 4px solid #070a12;
-  padding: 14px 16px;
+  padding: 12px 14px;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -56,12 +56,12 @@
 }
 
 .shop-header-icon {
-  font-size: 26px;
+  font-size: 24px;
 }
 
 .shop-title {
   color: #ffffff;
-  font-size: 16px;
+  font-size: 15px;
   font-weight: 900;
   margin: 0;
   letter-spacing: 0.8px;
@@ -76,30 +76,28 @@
   letter-spacing: 0.3px;
 }
 
-/* Píldora de monedas estilo Clash Royale */
 .shop-coins-pill {
   background: #090d18;
   border: 3px solid #ffd000;
   box-shadow: 0 4px 0 #8c5e00, inset 0 2px 4px rgba(0, 0, 0, 0.6);
   border-radius: 16px;
-  padding: 5px 14px;
+  padding: 4px 12px;
   display: flex;
   align-items: center;
   gap: 6px;
 }
 
 .coins-icon {
-  font-size: 18px;
+  font-size: 16px;
 }
 
 .coins-value {
   color: #ffffff;
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 900;
   text-shadow: 0 1px 2px #000;
 }
 
-/* Notificación / Toast */
 .shop-banner {
   margin: 10px 14px 0 14px;
   padding: 8px 12px;
@@ -117,12 +115,17 @@
   box-shadow: 0 3px 0 #99001b;
 }
 
+@keyframes popIn {
+  from { transform: scale(0.9); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+
 /* --------------------------------------------------------------------------
-   2. SECCIONES Y CONTENIDOS
+   2. CONTENIDO PRINCIPAL
    -------------------------------------------------------------------------- */
 .shop-content-scroll {
   flex: 1;
-  padding: 14px;
+  padding: 12px;
   display: flex;
   flex-direction: column;
   gap: 16px;
@@ -155,7 +158,7 @@
 }
 
 /* --------------------------------------------------------------------------
-   3. RECOMPENSA DIARIA (ESTILO COFRE GRATUITO)
+   3. RECOMPENSA DIARIA
    -------------------------------------------------------------------------- */
 .daily-reward-card {
   background: #141c2c;
@@ -177,8 +180,8 @@
 
 .daily-reward-icon-box {
   position: relative;
-  width: 54px;
-  height: 54px;
+  width: 50px;
+  height: 50px;
   background: #090d18;
   border-radius: 14px;
   border: 2px solid #23314d;
@@ -188,8 +191,12 @@
   flex-shrink: 0;
 }
 
-.daily-rock-emoji {
-  font-size: 28px;
+/* ✅ Estilo para la imagen de la roca diaria (marrón) */
+.daily-rock-img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  filter: drop-shadow(0 3px 6px rgba(0, 0, 0, 0.6));
 }
 
 .daily-glow-ring {
@@ -218,7 +225,7 @@
 
 .daily-reward-desc {
   color: #00e5ff;
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 800;
   margin: 0;
 }
@@ -227,7 +234,6 @@
   color: #8fa0be;
 }
 
-/* Botón reclamar */
 .daily-claim-btn {
   border: 2px solid #090d18;
   border-radius: 12px;
@@ -270,97 +276,93 @@
 }
 
 /* --------------------------------------------------------------------------
-   4. GRILLA DE ROCAS (COMPRAR MINERALES)
+   4. YACIMIENTO DE ROCAS
    -------------------------------------------------------------------------- */
-.rocks-grid-container {
+.rocks-row-container {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 12px;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  width: 100%;
 }
 
 .rock-item-card {
   background: #141c2c;
-  border: 4px solid #090d18;
-  border-radius: 20px;
-  padding: 12px 10px 14px 10px;
+  border: 3px solid #090d18;
+  border-radius: 16px;
+  padding: 10px 4px 12px 4px;
   display: flex;
   flex-direction: column;
   align-items: center;
   position: relative;
-  box-shadow: 0 6px 0 #0b0f19, 0 8px 14px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 5px 0 #0b0f19, 0 6px 12px rgba(0, 0, 0, 0.4);
   box-sizing: border-box;
   transition: transform 0.15s ease;
 }
 
 .rock-item-card:hover {
-  transform: translateY(-3px);
+  transform: translateY(-2px);
 }
 
-/* Chapa de rareza */
 .rock-rarity-ribbon {
   position: absolute;
   top: -8px;
   background: #00d4ff;
   color: #071a2c;
-  font-size: 8px;
+  font-size: 7px;
   font-weight: 900;
-  padding: 2px 8px;
-  border-radius: 8px;
+  padding: 2px 6px;
+  border-radius: 6px;
   border: 2px solid #090d18;
   box-shadow: 0 2px 0 rgba(0, 0, 0, 0.5);
   text-transform: uppercase;
   letter-spacing: 0.3px;
   z-index: 5;
+  white-space: nowrap;
 }
 
 .rock-visual-box {
-  width: 72px;
-  height: 72px;
+  width: 58px;
+  height: 58px;
   background: #090d18;
-  border-radius: 16px;
-  border: 3px solid #1c273e;
+  border-radius: 14px;
+  border: 2px solid #1c273e;
   box-shadow: inset 0 3px 6px rgba(0, 0, 0, 0.8);
   display: flex;
   align-items: center;
   justify-content: center;
-  margin: 6px 0 8px 0;
+  margin: 6px 0 6px 0;
 }
 
-.rock-emoji-art {
-  font-size: 38px;
-  filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.6));
+/* ✅ Estilo para las imágenes de rocas de la tienda */
+.rock-item-img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  filter: drop-shadow(0 3px 6px rgba(0, 0, 0, 0.6));
 }
 
 .rock-item-name {
   color: #ffffff;
-  font-size: 13px;
+  font-size: 11px;
   font-weight: 900;
-  margin: 0 0 4px 0;
+  margin: 0 0 8px 0;
   text-align: center;
   text-shadow: 0 1px 2px #000;
-}
-
-.rock-item-desc {
-  color: #8fa0be;
-  font-size: 10px;
-  font-weight: 700;
-  text-align: center;
-  margin: 0 0 10px 0;
-  line-height: 1.25;
-  height: 25px;
+  white-space: nowrap;
   overflow: hidden;
+  text-overflow: ellipsis;
+  width: 95%;
 }
 
-/* Botón de compra táctil */
 .rock-buy-btn {
-  width: 100%;
+  width: 90%;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
+  gap: 4px;
   border: 2px solid #090d18;
-  border-radius: 12px;
-  padding: 8px 10px;
+  border-radius: 10px;
+  padding: 6px 4px;
   cursor: pointer;
   font-weight: 900;
   transition: transform 0.12s ease;
@@ -369,7 +371,7 @@
 .rock-buy-btn.affordable {
   background: #ffd000;
   color: #3b2000;
-  box-shadow: 0 4px 0 #b37400;
+  box-shadow: 0 3px 0 #b37400;
 }
 
 .rock-buy-btn.affordable:hover {
@@ -384,83 +386,15 @@
 .rock-buy-btn.unaffordable {
   background: #242c3f;
   color: #6a7c9d;
-  box-shadow: 0 3px 0 #131926;
+  box-shadow: 0 2px 0 #131926;
   cursor: not-allowed;
 }
 
 .buy-coin-icon {
-  font-size: 15px;
+  font-size: 13px;
 }
 
 .buy-price {
-  font-size: 14px;
-  font-weight: 900;
-}
-
-/* --------------------------------------------------------------------------
-   5. NAVEGACIÓN INFERIOR CLASH ROYALE
-   -------------------------------------------------------------------------- */
-.shop-bottom-bar {
-  position: fixed;
-  bottom: 0;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 100%;
-  max-width: 480px;
-  background: #101624;
-  border-top: 3px solid #090d18;
-  display: flex;
-  justify-content: space-around;
-  padding: 6px 4px 8px 4px;
-  box-sizing: border-box;
-  z-index: 100;
-  box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.5);
-}
-
-.bottom-nav-btn {
-  background: none;
-  border: none;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 2px;
-  color: #7284a3;
-  cursor: pointer;
-  padding: 4px 10px;
-  border-radius: 10px;
-  transition: all 0.15s ease;
-}
-
-.bottom-nav-icon {
-  font-size: 18px;
-}
-
-.bottom-nav-text {
-  font-size: 10px;
-  font-weight: 800;
-  text-transform: uppercase;
-}
-
-.bottom-nav-btn:hover,
-.bottom-nav-btn.active {
-  color: #ffffff;
-  transform: translateY(-2px);
-}
-
-.bottom-nav-btn.active .bottom-nav-text {
-  color: #ffd000;
-}
-
-.bottom-nav-btn.battle-highlight {
-  background: #ffd000;
-  color: #2b1800;
-  border: 2px solid #4a2800;
-  box-shadow: 0 3px 0 #9e6400;
-  transform: translateY(-4px);
-  padding: 4px 14px;
-}
-
-.bottom-nav-btn.battle-highlight .bottom-nav-text {
-  color: #2b1800;
+  font-size: 12px;
   font-weight: 900;
 }

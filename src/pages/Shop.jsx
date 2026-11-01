@@ -1,14 +1,34 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../context/useAuth';
+import { useAuth } from '../context/AuthContext';
 import { getUserProfile, buyRock, claimDailyRock, getDailyRockStatus } from '../services/firestore';
 import { ROCK_TYPES } from '../data/runes';
-import RockMiner from './RockMiner';
+import RockMiner from '../components/RockMiner';
 import './Shop.css';
+
+// Importar las 12 imágenes de rocas
+import Roca1 from '../assets/rocks/Roca1.png';
+import Roca2 from '../assets/rocks/Roca2.png';
+import Roca3 from '../assets/rocks/Roca3.png';
+import RocaAzul1 from '../assets/rocks/RocaAzul1.png';
+import RocaAzul2 from '../assets/rocks/RocaAzul2.png';
+import RocaAzul3 from '../assets/rocks/RocaAzul3.png';
+import RocaLila1 from '../assets/rocks/RocaLila1.png';
+import RocaLila2 from '../assets/rocks/RocaLila2.png';
+import RocaLila3 from '../assets/rocks/RocaLila3.png';
+import RocaBlanca1 from '../assets/rocks/RocaBlanca1.png';
+import RocaBlanca2 from '../assets/rocks/RocaBlanca2.png';
+import RocaBlanca3 from '../assets/rocks/RocaBlanca3.png';
+
+// ✅ Mapeo actualizado: 'daily' usa las marrones, 'normal' usa las blancas
+const ROCK_IMAGES = {
+  daily: [Roca1, Roca2, Roca3], 
+  normal: [RocaBlanca1, RocaBlanca2, RocaBlanca3], 
+  rare: [RocaAzul1, RocaAzul2, RocaAzul3],
+  epic: [RocaLila1, RocaLila2, RocaLila3]
+};
 
 const Shop = () => {
   const { user } = useAuth();
-  const navigate = useNavigate();
   const [profile, setProfile] = useState(null);
   const [activeRock, setActiveRock] = useState(null);
   const [dailyStatus, setDailyStatus] = useState({ available: true });
@@ -59,7 +79,7 @@ const Shop = () => {
       } else {
         const initialProfile = {
           email: user.email,
-          username: user.email.split('@')[0],
+          username: user.email ? user.email.split('@')[0] : 'Invocador',
           avatarId: 'arquero',
           userId: user.uid.substring(0, 8).toUpperCase(),
           coins: 100,
@@ -117,7 +137,8 @@ const Shop = () => {
       const result = await claimDailyRock(user.uid);
       if (result.success) {
         await checkDailyStatus();
-        setActiveRock({ type: 'normal', label: 'Roca Diaria' });
+        // ✅ Usamos el tipo 'daily' para que el minero use las rocas marrones
+        setActiveRock({ type: 'daily', label: 'Roca Diaria' });
       } else {
         showMessage(result.message, 'error');
       }
@@ -141,7 +162,7 @@ const Shop = () => {
     return (
       <div className="shop-screen">
         <div className="shop-loading-card">
-          <span className="shop-spinner">⛏️</span>
+          <span className="shop-spinner">️</span>
           <p>Abriendo la mina...</p>
         </div>
       </div>
@@ -150,13 +171,12 @@ const Shop = () => {
 
   return (
     <div className="shop-screen">
-      {/* 1. HUD SUPERIOR DE LA TIENDA */}
       <header className="shop-header">
         <div className="shop-header-title">
           <span className="shop-header-icon">⛏️</span>
           <div>
             <h1 className="shop-title">LA MINA</h1>
-            <span className="shop-subtitle">Pica rocas y extrae runas</span>
+            <span className="shop-subtitle">Extrae runas de las rocas</span>
           </div>
         </div>
 
@@ -166,7 +186,6 @@ const Shop = () => {
         </div>
       </header>
 
-      {/* MENSAJE DE ESTADO / ERROR */}
       {message && (
         <div className={`shop-banner ${messageType}`}>
           {message}
@@ -174,7 +193,6 @@ const Shop = () => {
       )}
 
       <main className="shop-content-scroll">
-        {/* 2. RECOMPENSA DIARIA (ESTILO COFRE DIARIO) */}
         <section className="shop-section">
           <div className="section-title-bar">
             <span className="section-title-txt">RECOMPENSA GRATIS</span>
@@ -183,12 +201,12 @@ const Shop = () => {
 
           <div className={`daily-reward-card ${dailyStatus.available ? 'ready' : 'waiting'}`}>
             <div className="daily-reward-icon-box">
-              <span className="daily-rock-emoji">🪨</span>
+              <img src={Roca1} alt="Roca Diaria" className="daily-rock-img" />
               {dailyStatus.available && <div className="daily-glow-ring"></div>}
             </div>
 
             <div className="daily-reward-details">
-              <h3 className="daily-reward-name">Roca Normal Gratuita</h3>
+              <h3 className="daily-reward-name">Roca Normal Diaria</h3>
               <p className="daily-reward-desc">
                 {dailyStatus.available
                   ? '¡Lista para extraer! Golpea 3 veces.'
@@ -206,29 +224,31 @@ const Shop = () => {
           </div>
         </section>
 
-        {/* 3. CATÁLOGO DE ROCAS DE MINERÍA */}
         <section className="shop-section">
           <div className="section-title-bar">
             <span className="section-title-txt">YACIMIENTO DE ROCAS</span>
-            <span className="section-tag">MINERALES</span>
+            <span className="section-tag">COMPRA</span>
           </div>
 
-          <div className="rocks-grid-container">
-            {Object.values(ROCK_TYPES).map(rock => {
+          <div className="rocks-row-container">
+            {Object.values(ROCK_TYPES).map((rock) => {
               const canAfford = (profile?.coins || 0) >= rock.price;
+              const rockImg = ROCK_IMAGES[rock.id]?.[0] || RocaBlanca1;
 
               return (
                 <div key={rock.id} className="rock-item-card">
-                  <div className="rock-rarity-ribbon" style={{ background: rock.color }}>
+                  <div
+                    className="rock-rarity-ribbon"
+                    style={{ background: rock.color || '#00d4ff' }}
+                  >
                     {rock.rarity}
                   </div>
 
                   <div className="rock-visual-box">
-                    <span className="rock-emoji-art">{rock.icon}</span>
+                    <img src={rockImg} alt={rock.name} className="rock-item-img" />
                   </div>
 
                   <h3 className="rock-item-name">{rock.name}</h3>
-                  <p className="rock-item-desc">{rock.description}</p>
 
                   <button
                     className={`rock-buy-btn ${canAfford ? 'affordable' : 'unaffordable'}`}
@@ -245,30 +265,6 @@ const Shop = () => {
         </section>
       </main>
 
-      {/* 4. NAVEGACIÓN INFERIOR COMPARTIDA */}
-      <nav className="shop-bottom-bar">
-        <button className="bottom-nav-btn active">
-          <span className="bottom-nav-icon">⛏️</span>
-          <span className="bottom-nav-text">Tienda</span>
-        </button>
-
-        <button className="bottom-nav-btn" onClick={() => navigate('/collection')}>
-          <span className="bottom-nav-icon">🎴</span>
-          <span className="bottom-nav-text">Mazo</span>
-        </button>
-
-        <button className="bottom-nav-btn battle-highlight" onClick={() => navigate('/battle')}>
-          <span className="bottom-nav-icon">⚔️</span>
-          <span className="bottom-nav-text">Batalla</span>
-        </button>
-
-        <button className="bottom-nav-btn" onClick={() => navigate('/home')}>
-          <span className="bottom-nav-icon">🏠</span>
-          <span className="bottom-nav-text">Inicio</span>
-        </button>
-      </nav>
-
-      {/* MINIJUEGO DE PICAR ROCAS */}
       {activeRock && (
         <RockMiner
           onClose={handleRockMinerClose}

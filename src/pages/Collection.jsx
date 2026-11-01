@@ -2,8 +2,8 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { RUNES_DB } from '../data/runes';
 import { getUserCollection, getUserDecks, saveDeck, deleteDeck } from '../services/firestore';
-import RuneCard from './RuneCard';
-import RuneDetail from './RuneDetail';
+import RuneCard from '../components/RuneCard';
+import RuneDetail from '../components/RuneDetail';
 import './Collection.css';
 
 const Collection = () => {
@@ -19,10 +19,10 @@ const Collection = () => {
   const loadData = async () => {
     if (!user) return;
     try {
-      const collection = await getUserCollection(user.uid);
+      const collectionData = await getUserCollection(user.uid);
       const ownedMap = {};
 
-      collection.forEach(rune => {
+      collectionData.forEach(rune => {
         const runeData = RUNES_DB.find(r => r.id === (rune.runeId || rune.id));
         if (runeData) {
           ownedMap[runeData.id] = {
@@ -36,6 +36,8 @@ const Collection = () => {
 
       const userDecks = await getUserDecks(user.uid);
       if (userDecks.length > 0) {
+        userDecks.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+        
         const deck = userDecks[0];
         setDeckId(deck.id);
         const deckRunes = (deck.runes || []).map(id => ownedMap[id]).filter(Boolean);
@@ -64,7 +66,10 @@ const Collection = () => {
 
     try {
       const newRunes = [...myDeck, rune];
-      if (deckId) await deleteDeck(user.uid, deckId);
+      
+      if (deckId) {
+        await deleteDeck(user.uid, deckId);
+      }
 
       await saveDeck(user.uid, {
         name: 'Mi Mazo',
@@ -72,8 +77,12 @@ const Collection = () => {
       });
 
       setMyDeck(newRunes);
+      
       const decks = await getUserDecks(user.uid);
-      if (decks.length > 0) setDeckId(decks[0].id);
+      if (decks.length > 0) {
+        decks.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+        setDeckId(decks[0].id);
+      }
     } catch (error) {
       console.error('Error añadiendo al mazo:', error);
     }
@@ -83,7 +92,10 @@ const Collection = () => {
     if (e) e.stopPropagation();
     try {
       const newRunes = myDeck.filter(r => r.id !== rune.id);
-      if (deckId) await deleteDeck(user.uid, deckId);
+      
+      if (deckId) {
+        await deleteDeck(user.uid, deckId);
+      }
 
       if (newRunes.length > 0) {
         await saveDeck(user.uid, {
@@ -99,7 +111,10 @@ const Collection = () => {
         setDeckId(null);
       } else {
         const decks = await getUserDecks(user.uid);
-        if (decks.length > 0) setDeckId(decks[0].id);
+        if (decks.length > 0) {
+          decks.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+          setDeckId(decks[0].id);
+        }
       }
     } catch (error) {
       console.error('Error quitando del mazo:', error);
@@ -115,16 +130,10 @@ const Collection = () => {
 
   return (
     <div className="collection-screen">
-      {/* 1. EL MAZO PROTAGONISTA (3 arriba + 2 abajo) */}
+      {/* 1. EL MAZO PROTAGONISTA (Anclado arriba) */}
       <section className="deck-hero-section">
         <div className="deck-hero-header">
-          <div className="deck-title-group">
-            <span className="deck-icon">⚡</span>
-            <h2 className="deck-hero-title">MAZO DE BATALLA</h2>
-          </div>
-          <div className="deck-pill-badge">
-            <span className="badge-count">{myDeck.length}/5</span>
-          </div>
+          <h2 className="deck-hero-title">MAZO DE BATALLA</h2>
         </div>
 
         <div className="deck-hero-grid">
@@ -166,7 +175,7 @@ const Collection = () => {
 
       {/* 2. BARRA DIVISORIA LIMPIA */}
       <div className="collection-divider-clean">
-        <h3 className="divider-label">COLECCIÓN Y RESERVA</h3>
+        <h3 className="divider-label">COLECCIÓN</h3>
         <span className="divider-stats-pill">
           {unlockedCount} / {RUNES_DB.length}
         </span>

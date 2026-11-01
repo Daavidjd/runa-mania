@@ -133,3 +133,57 @@
   opacity: 0.6;
   cursor: not-allowed;
 }
+
+/* Indicador de golpes (3 puntos) */
+.miner-hits-indicator {
+  display: flex;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.hit-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #334155;
+  border: 2px solid #475569;
+  transition: all 0.2s ease;
+}
+
+.hit-dot.hit {
+  background: #ffd000;
+  border-color: #f59e0b;
+  box-shadow: 0 0 10px rgba(255, 208, 0, 0.6);
+  transform: scale(1.2);
+}
+
+/* Banner de error no bloqueante */
+.save-error-banner {
+  background: rgba(239, 68, 68, 0.15);
+  border: 1px solid #ef4444;
+  color: #fca5a5;
+  padding: 8px 14px;
+  border-radius: 10px;
+  font-size: 11px;
+  font-weight: 700;
+  text-align: center;
+  max-width: 280px;
+  animation: popIn 0.3s ease;
+}
+
+@keyframes popIn {
+  from { transform: scale(0.9); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+
+/* Botón en modo warning (error de guardado) */
+.collect-minimal-btn.btn-warning {
+  background: #b45309;
+  border-color: #f59e0b;
+  box-shadow: 0 5px 0 #92400e, 0 8px 20px rgba(0, 0, 0, 0.6);
+}
+
+.collect-minimal-btn.btn-warning:active:not(:disabled) {
+  transform: translateY(3px);
+  box-shadow: 0 2px 0 #92400e;
+}

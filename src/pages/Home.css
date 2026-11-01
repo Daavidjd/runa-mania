@@ -7,7 +7,7 @@
   background: #0b0f19;
   display: flex;
   flex-direction: column;
-  padding-bottom: 84px; /* Espacio para el Navbar rúnico fijo */
+  padding-bottom: 84px;
   box-sizing: border-box;
   user-select: none;
   max-width: 480px;
@@ -15,9 +15,12 @@
 }
 
 /* --------------------------------------------------------------------------
-   1. HUD SUPERIOR
+   1. HUD SUPERIOR (ANCLADO ARRIBA CON STICKY)
    -------------------------------------------------------------------------- */
 .home-hud {
+  position: sticky;
+  top: 0;
+  z-index: 50;
   background: #141a29;
   border-bottom: 4px solid #070a12;
   padding: 12px 14px;
@@ -44,19 +47,14 @@
   border-color: #2b3e63;
 }
 
-.hud-level-circle {
-  width: 26px;
-  height: 26px;
-  background: #00d4ff;
-  color: #061826;
-  border: 2px solid #090d18;
+.hud-avatar-img {
+  width: 36px;
+  height: 36px;
   border-radius: 50%;
-  font-size: 13px;
-  font-weight: 900;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  border: 2px solid #00d4ff;
+  object-fit: cover;
   box-shadow: 0 2px 0 #0088a3;
+  flex-shrink: 0;
 }
 
 .hud-player-meta {
@@ -68,7 +66,7 @@
 
 .hud-name {
   color: #ffffff;
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 900;
   line-height: 1.1;
   text-shadow: 0 1px 2px #000;
@@ -76,32 +74,21 @@
 
 .hud-id {
   color: #7284a3;
-  font-size: 9px;
+  font-size: 10px;
   font-weight: 800;
   letter-spacing: 0.3px;
-}
-
-.hud-right-actions {
-  display: flex;
-  align-items: center;
-  gap: 8px;
 }
 
 .hud-coins-pill {
   background: #090d18;
   border: 2px solid #ffd000;
   border-radius: 14px;
-  padding: 4px 10px;
+  padding: 6px 12px;
   display: flex;
   align-items: center;
   gap: 6px;
-  cursor: pointer;
+  cursor: default;
   box-shadow: 0 3px 0 #8c5e00;
-  transition: transform 0.12s ease;
-}
-
-.hud-coins-pill:hover {
-  transform: translateY(-2px);
 }
 
 .coin-icon {
@@ -110,133 +97,12 @@
 
 .coin-amount {
   color: #ffffff;
-  font-size: 13px;
-  font-weight: 900;
-}
-
-.coin-add-badge {
-  background: #00e676;
-  color: #052613;
-  font-size: 10px;
-  font-weight: 900;
-  width: 16px;
-  height: 16px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border: 1px solid #090d18;
-}
-
-.hud-logout-btn {
-  background: #232a3d;
-  color: #a4b3cf;
-  border: 2px solid #090d18;
-  border-radius: 10px;
-  width: 32px;
-  height: 32px;
-  font-size: 13px;
-  font-weight: 900;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.12s ease;
-}
-
-.hud-logout-btn:hover {
-  background: #ff2e4d;
-  color: #ffffff;
-}
-
-/* --------------------------------------------------------------------------
-   2. BANNER DE RECOMPENSA DIARIA
-   -------------------------------------------------------------------------- */
-.home-banner-section {
-  padding: 12px 14px 0 14px;
-}
-
-.daily-portal-strip {
-  width: 100%;
-  background: #141c2c;
-  border: 3px solid #090d18;
-  border-radius: 16px;
-  padding: 8px 12px;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  cursor: pointer;
-  box-shadow: 0 4px 0 #0b0f19;
-  transition: transform 0.12s ease;
-  box-sizing: border-box;
-}
-
-.daily-portal-strip:hover {
-  transform: translateY(-2px);
-}
-
-.daily-portal-strip.active-ready {
-  border-color: #ffd000;
-  box-shadow: 0 4px 0 #b37400, 0 0 12px rgba(255, 208, 0, 0.2);
-}
-
-.portal-icon-box {
-  position: relative;
-  width: 38px;
-  height: 38px;
-  background: #090d18;
-  border: 2px solid #23314d;
-  border-radius: 10px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-}
-
-.portal-emoji {
-  font-size: 20px;
-}
-
-.portal-ping {
-  position: absolute;
-  top: -3px;
-  right: -3px;
-  width: 8px;
-  height: 8px;
-  background: #00e676;
-  border-radius: 50%;
-  border: 2px solid #090d18;
-  box-shadow: 0 0 6px #00e676;
-}
-
-.portal-text {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  text-align: left;
-}
-
-.portal-title {
-  color: #ffffff;
-  font-size: 12px;
-  font-weight: 900;
-}
-
-.portal-desc {
-  color: #8fa0be;
-  font-size: 10px;
-  font-weight: 700;
-}
-
-.portal-arrow {
-  color: #ffd000;
-  font-size: 11px;
+  font-size: 14px;
   font-weight: 900;
 }
 
 /* --------------------------------------------------------------------------
-   3. ARENA CENTRAL Y BOTÓN DE BATALLA
+   2. ARENA CENTRAL Y BOTÓN DE BATALLA
    -------------------------------------------------------------------------- */
 .home-arena-stage {
   padding: 14px;
@@ -259,75 +125,130 @@
     inset 0 2px 4px rgba(255, 255, 255, 0.08);
 }
 
-.arena-rank-badge {
+/* Badge NPC clickeable */
+.arena-npc-badge {
   background: #090d18;
   border: 2px solid #00d4ff;
-  border-radius: 14px;
-  padding: 3px 14px;
-  display: flex;
-  align-items: center;
-  gap: 6px;
+  border-radius: 12px;
+  padding: 4px 20px;
+  cursor: pointer;
   box-shadow: 0 3px 0 #006b80;
+  transition: all 0.2s ease;
+  margin-bottom: 12px;
 }
 
-.rank-rune {
+.arena-npc-badge:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 5px 0 #006b80, 0 0 15px rgba(0, 212, 255, 0.4);
+}
+
+.arena-npc-badge:active {
+  transform: translateY(1px);
+  box-shadow: 0 2px 0 #006b80;
+}
+
+.npc-badge-title {
   color: #00d4ff;
-  font-size: 14px;
+  font-size: 12px;
   font-weight: 900;
+  letter-spacing: 1.5px;
 }
 
-.rank-title {
-  color: #ffffff;
-  font-size: 10px;
-  font-weight: 900;
-  letter-spacing: 0.8px;
-}
-
-/* Monolito central */
-.arena-monolith-view {
-  margin: 18px 0 16px 0;
+/* ==========================================================================
+   TARJETA DEL RIVAL (Layout vertical centrado)
+   ========================================================================== */
+.selected-opponent-card {
+  width: 100%;
+  max-width: 320px;
+  background: transparent;
+  border: none;
+  border-radius: 16px;
+  padding: 10px 16px;
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 10px;
+  cursor: pointer;
+  margin: 0 auto 14px auto;
+  box-shadow: none;
 }
 
-.monolith-pillar {
-  width: 86px;
-  height: 86px;
-  background: #080c15;
-  border: 3px solid #283754;
-  border-radius: 22px;
+/* Avatar grande cuadrado con borde cyan */
+.opponent-avatar-box {
+  width: 80px;
+  height: 80px;
+  border-radius: 14px;
+  border: 3px solid #00d4ff;
+  overflow: hidden;
+  flex-shrink: 0;
+  background: #090d18;
+  box-shadow: 0 4px 0 #006b80, 0 0 16px rgba(0, 212, 255, 0.3);
+}
+
+.opponent-avatar {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Info box: nombre y recompensa centrados debajo del avatar */
+.opponent-info-box {
   display: flex;
+  flex-direction: column;
+  gap: 8px;
   align-items: center;
   justify-content: center;
-  position: relative;
-  box-shadow: inset 0 4px 10px rgba(0, 0, 0, 0.8);
 }
 
-.monolith-glyph {
-  font-size: 42px;
-  color: #00e5ff;
+/* Nombre en cyan, grande y bold */
+.opponent-name {
+  color: #00d4ff;
+  font-size: 20px;
   font-weight: 900;
-  font-family: serif;
-  text-shadow: 0 0 12px rgba(0, 229, 255, 0.6);
-  animation: monolithFloat 3s ease-in-out infinite alternate;
-}
-
-@keyframes monolithFloat {
-  from { transform: translateY(0); }
-  to { transform: translateY(-4px); }
-}
-
-.arena-mantra {
-  color: #8fa0be;
-  font-size: 11px;
-  font-weight: 700;
+  line-height: 1.1;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.6);
+  letter-spacing: 0.3px;
   text-align: center;
-  margin: 0;
 }
 
-/* BOTÓN GIGANTE DE BATALLA */
+/* Píldora de recompensa: fondo amarillo, texto NEGRO */
+.opponent-reward {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #ffd000;
+  border: none;
+  border-radius: 10px;
+  padding: 6px 14px;
+  width: fit-content;
+  box-shadow: none;
+}
+
+.opponent-reward .reward-coin-icon {
+  font-size: 14px;
+}
+
+.opponent-reward .reward-amount {
+  color: #000000 !important;
+  font-size: 14px;
+  font-weight: 900;
+  text-shadow: none;
+}
+
+/* Ocultar la dificultad */
+.opponent-difficulty {
+  display: none;
+}
+
+.opponent-stats {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* --------------------------------------------------------------------------
+   BOTÓN DE BATALLA
+   -------------------------------------------------------------------------- */
 .huge-battle-cta {
   width: 100%;
   max-width: 320px;
@@ -356,6 +277,49 @@
 .huge-battle-cta:active {
   transform: translateY(6px);
   box-shadow: 0 2px 0 #9e6400;
+}
+
+/* Estado deshabilitado */
+.huge-battle-cta.cta-disabled {
+  background: #2a3441;
+  border-color: #4a5568;
+  cursor: not-allowed;
+  box-shadow: 
+    0 8px 0 #1a202c,
+    0 12px 18px rgba(0, 0, 0, 0.5),
+    inset 0 3px 4px rgba(255, 255, 255, 0.05);
+  opacity: 0.7;
+}
+
+.huge-battle-cta.cta-disabled:hover {
+  transform: none;
+  background: #2a3441;
+}
+
+.huge-battle-cta.cta-disabled:active {
+  transform: none;
+  box-shadow: 
+    0 8px 0 #1a202c,
+    0 12px 18px rgba(0, 0, 0, 0.5),
+    inset 0 3px 4px rgba(255, 255, 255, 0.05);
+}
+
+.huge-battle-cta.cta-disabled .cta-txt {
+  color: #a0aec0;
+  text-shadow: none;
+  letter-spacing: 1px;
+}
+
+.huge-battle-cta.cta-disabled .cta-sub {
+  color: #718096;
+}
+
+.huge-battle-cta.cta-disabled .cta-swords {
+  filter: grayscale(100%) opacity(0.6);
+}
+
+.huge-battle-cta.cta-disabled .cta-glare {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.08) 0%, transparent 100%);
 }
 
 .cta-glare {
@@ -395,61 +359,278 @@
 }
 
 /* --------------------------------------------------------------------------
-   4. ACCESOS RÁPIDOS INFERIORES
+   3. VISTA PREVIA DEL MAZO (1 sola línea horizontal)
    -------------------------------------------------------------------------- */
-.home-quick-actions {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 10px;
+.home-deck-preview {
+  background: #121828;
+  border: 3px solid #1c273e;
+  border-radius: 20px;
+  padding: 14px;
+  box-shadow: 0 6px 0 #080c14, 0 10px 16px rgba(0, 0, 0, 0.4);
 }
 
-.quick-card {
-  background: #141c2c;
-  border: 3px solid #090d18;
-  border-radius: 16px;
-  padding: 10px 12px;
+.deck-preview-header {
   display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+  padding: 0 4px;
+}
+
+.deck-preview-title {
+  color: #9cb1d6;
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+.deck-preview-count {
+  background: #090d18;
+  color: #00d4ff;
+  border: 1.5px solid #1c273e;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 900;
+  padding: 3px 12px;
+}
+
+.deck-preview-track {
+  display: flex;
+  justify-content: center;
   align-items: center;
   gap: 8px;
-  cursor: pointer;
-  box-shadow: 0 4px 0 #0b0f19;
-  text-align: left;
-  transition: transform 0.12s ease;
+  width: 100%;
 }
 
-.quick-card:hover:not(:disabled) {
-  transform: translateY(-2px);
-  border-color: #23314d;
+.deck-preview-slot {
+  width: 18%;
+  max-width: 80px;
+  aspect-ratio: 1;
+  flex-shrink: 0;
 }
 
-.quick-card:active:not(:disabled) {
-  transform: translateY(2px);
-  box-shadow: 0 2px 0 #0b0f19;
-}
-
-.quick-card.disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-  background: #0f1420;
-}
-
-.quick-icon-wrap {
-  font-size: 20px;
-}
-
-.quick-info {
+.deck-preview-empty {
+  width: 100%;
+  height: 100%;
+  border-radius: 14px;
+  border: 2px dashed #243350;
+  background: rgba(16, 23, 38, 0.45);
   display: flex;
-  flex-direction: column;
+  align-items: center;
+  justify-content: center;
 }
 
-.quick-title {
-  color: #ffffff;
-  font-size: 12px;
+.deck-preview-empty .empty-plus {
+  color: #4a638f;
+  font-size: 20px;
   font-weight: 900;
 }
 
-.quick-sub {
-  color: #7284a3;
-  font-size: 9px;
-  font-weight: 700;
+.deck-preview-slot .rune-battle {
+  padding: 4px !important;
+  border-width: 2px !important;
+}
+
+.deck-preview-slot .rune-battle .battle-inner {
+  width: 85% !important;
+  height: 85% !important;
+}
+
+.deck-preview-slot .rune-battle .battle-image {
+  height: 85% !important;
+}
+
+.deck-preview-slot .rune-battle .battle-arrow {
+  font-size: 8px !important;
+}
+
+/* --------------------------------------------------------------------------
+   4. PRÓXIMAMENTE (PvP)
+   -------------------------------------------------------------------------- */
+.home-coming-soon {
+  margin-top: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  opacity: 0.6;
+}
+
+.coming-soon-rune {
+  color: #4a638f;
+  font-size: 14px;
+}
+
+.coming-soon-text {
+  color: #4a638f;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+/* ==========================================================================
+   MODAL DE SELECCIÓN DE RIVALES
+   ========================================================================== */
+.opponent-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(4, 7, 15, 0.9);
+  backdrop-filter: blur(6px);
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  animation: fadeIn 0.2s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.opponent-modal {
+  background: #0f172a;
+  border: 3px solid #1e293b;
+  border-radius: 24px;
+  padding: 24px;
+  width: 100%;
+  max-width: 360px;
+  position: relative;
+  box-shadow: 0 10px 0 #020617, 0 20px 40px rgba(0, 0, 0, 0.8);
+  animation: modalPop 0.3s cubic-bezier(0.18, 0.89, 0.32, 1.28);
+}
+
+@keyframes modalPop {
+  from {
+    transform: scale(0.85);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.opponent-modal-close {
+  position: absolute;
+  top: -12px;
+  right: -12px;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: #ef4444;
+  border: 3px solid #0f172a;
+  color: #ffffff;
+  font-size: 18px;
+  font-weight: 900;
+  cursor: pointer;
+  box-shadow: 0 3px 0 #991b1b;
+  transition: transform 0.1s ease;
+  z-index: 10;
+}
+
+.opponent-modal-close:hover {
+  transform: scale(1.1);
+}
+
+.opponent-modal-close:active {
+  transform: scale(0.95);
+}
+
+.opponent-modal-title {
+  margin: 0 0 20px 0;
+  color: #ffffff;
+  font-size: 16px;
+  font-weight: 900;
+  text-align: center;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+}
+
+.opponent-modal-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.opponent-modal-btn {
+  background: #121828;
+  border: 2px solid #1e293b;
+  border-radius: 14px;
+  padding: 10px 12px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  width: 100%;
+}
+
+.opponent-modal-btn:hover {
+  background: #1a2438;
+  transform: translateY(-2px);
+}
+
+.opponent-modal-btn.is-selected {
+  background: #0d1527;
+  box-shadow: 0 0 0 2px currentColor;
+}
+
+.opp-modal-avatar-box {
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  border: 2px solid #334155;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.opp-modal-avatar {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.opp-modal-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  text-align: left;
+}
+
+.opp-modal-name {
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: 900;
+  line-height: 1.1;
+}
+
+.opp-modal-difficulty {
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+}
+
+.opp-modal-reward {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: #060a14;
+  border: 1px solid #1e293b;
+  border-radius: 8px;
+  padding: 4px 10px;
+}
+
+.reward-coin {
+  font-size: 12px;
+}
+
+.reward-amount {
+  color: #ffd000;
+  font-size: 12px;
+  font-weight: 900;
 }

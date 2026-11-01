@@ -4,22 +4,8 @@ import { useAuth } from '../context/AuthContext';
 import { getUserProfile, createUserProfile } from '../services/firestore';
 import { EmailAuthProvider, linkWithCredential } from 'firebase/auth';
 import { auth } from '../services/firebase';
-import Arquero from '../assets/avatar/Arquero.jpg';
-import Bruja from '../assets/avatar/Bruja.jpg';
-import Caballero from '../assets/avatar/Caballero.jpg';
-import Elfo from '../assets/avatar/Elfo.jpg';
-import Lobo from '../assets/avatar/Lobo.jpg';
-import Mago from '../assets/avatar/Mago.jpg';
+import { AVATAR_OPTIONS } from '../data/avatars'; // ✅ IMPORTACIÓN CENTRALIZADA
 import './Profile.css';
-
-const AVATAR_OPTIONS = [
-  { id: 'arquero', src: Arquero, name: 'Arquero' },
-  { id: 'bruja', src: Bruja, name: 'Bruja' },
-  { id: 'caballero', src: Caballero, name: 'Caballero' },
-  { id: 'elfo', src: Elfo, name: 'Elfo' },
-  { id: 'lobo', src: Lobo, name: 'Lobo' },
-  { id: 'mago', src: Mago, name: 'Mago' }
-];
 
 const Profile = () => {
   const { user, logout } = useAuth();
@@ -148,7 +134,7 @@ const Profile = () => {
 
   const getSelectedAvatarSrc = () => {
     const avatar = AVATAR_OPTIONS.find(a => a.id === (editing ? selectedAvatarId : profile?.avatarId));
-    return avatar ? avatar.src : Arquero;
+    return avatar ? avatar.src : AVATAR_OPTIONS[0].src;
   };
 
   if (loading) {
@@ -167,7 +153,7 @@ const Profile = () => {
       {/* 1. HUD SUPERIOR COHERENTE CON HOME */}
       <header className="profile-hud-header">
         <div className="profile-title-block">
-          <span className="profile-title-rune">ᛟ</span>
+          <span className="profile-title-rune"></span>
           <div>
             <h1 className="profile-title-txt">PERFIL DE INVOCADOR</h1>
             <span className="profile-id-txt">ID: {profile?.userId || '----'}</span>
@@ -214,7 +200,7 @@ const Profile = () => {
             </div>
             <div className="profile-stat-slot">
               <span className="stat-slot-label">Monedas</span>
-              <span className="stat-slot-value coin-val">🪙 {profile?.coins || 0}</span>
+              <span className="stat-slot-value coin-val"> {profile?.coins || 0}</span>
             </div>
           </div>
 
@@ -281,7 +267,7 @@ const Profile = () => {
             </button>
 
             <button className="profile-logout-trigger-btn" onClick={handleLogout}>
-              🚪 Cerrar Sesión
+               Cerrar Sesión
             </button>
           </div>
         )}

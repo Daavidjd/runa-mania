@@ -63,8 +63,8 @@
 
 /* Altar / Marco de Arte */
 .rd-frame {
-  width: 140px;
-  height: 140px;
+  width: 160px;
+  height: 160px;
   background: #080d18;
   border: 3px solid #38bdf8;
   border-radius: 20px;
@@ -74,6 +74,8 @@
   justify-content: center;
   position: relative;
   margin-bottom: 14px;
+  padding: 8px;
+  box-sizing: border-box;
 }
 
 .rd-artwork-box {
@@ -85,31 +87,16 @@
   justify-content: center;
 }
 
-.rd-image {
-  width: 82%;
-  height: 82%;
-  object-fit: contain;
-  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.6));
+/* Ajuste para que RuneCard encaje perfectamente en el marco */
+.rd-artwork-box .rune-battle {
+  width: 100% !important;
+  height: 100% !important;
+  box-shadow: none !important; /* Quitamos la sombra 3D para que encaje limpio */
 }
 
-/* Flechas con valores de ataque/defensa (Skystones) */
-.rd-stat-arrow {
-  position: absolute;
-  background: #090d18;
-  color: #ffd000;
-  border: 1.5px solid #ffd000;
-  border-radius: 6px;
-  font-size: 0.7rem;
-  font-weight: 900;
-  padding: 1px 4px;
-  box-shadow: 0 2px 0 #8c7200;
-  line-height: 1;
+.rd-artwork-box .rune-battle:hover {
+  transform: none !important; /* Sin hover en el modal */
 }
-
-.rd-stat-top { top: -8px; left: 50%; transform: translateX(-50%); }
-.rd-stat-bottom { bottom: -8px; left: 50%; transform: translateX(-50%); }
-.rd-stat-left { left: -10px; top: 50%; transform: translateY(-50%); }
-.rd-stat-right { right: -10px; top: 50%; transform: translateY(-50%); }
 
 /* Estado Bloqueado */
 .rd-locked-box {
@@ -189,24 +176,42 @@
   font-weight: 900;
   cursor: pointer;
   border: 2px solid;
-  transition: transform 0.1s ease;
+  transition: transform 0.1s ease, box-shadow 0.1s ease;
+  letter-spacing: 0.5px;
 }
 
 .rd-action-btn:active:not(:disabled) {
   transform: translateY(2px);
 }
 
+/* ✅ Botón amarillo estilo "¡A LUCHAR!" */
 .rd-action-btn.is-add {
-  background: #0284c7;
-  border-color: #38bdf8;
-  color: #ffffff;
-  box-shadow: 0 4px 0 #0369a1;
+  background: #ffd000;
+  border-color: #fff275;
+  color: #2b1700;
+  box-shadow: 0 4px 0 #9e6400, inset 0 2px 3px rgba(255, 255, 255, 0.4);
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.4);
 }
 
+.rd-action-btn.is-add:hover {
+  background: #ffdb1a;
+  transform: translateY(-1px);
+}
+
+.rd-action-btn.is-add:active {
+  transform: translateY(3px);
+  box-shadow: 0 1px 0 #9e6400, inset 0 2px 3px rgba(255, 255, 255, 0.4);
+}
+
+/* Botón deshabilitado (ya en el mazo) */
 .rd-action-btn.is-in-deck {
   background: #14281f;
   border-color: #10b981;
   color: #34d399;
   box-shadow: 0 4px 0 #064e3b;
   cursor: default;
+}
+
+.rd-action-btn.is-in-deck:active {
+  transform: none;
 }

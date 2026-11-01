@@ -1,5 +1,5 @@
 /* ==========================================================================
-   COLLECTION.CSS - MAZO PROTAGONISTA & COLECCIÓN COMPACTA (NAVBAR CLEAN)
+   COLLECTION.CSS - MAZO PROTAGONISTA STICKY & COLECCIÓN COMPACTA
    ========================================================================== */
 
 .collection-screen {
@@ -7,11 +7,12 @@
   background: #0b0f19;
   display: flex;
   flex-direction: column;
-  padding-bottom: 96px; /* Espacio para que el Navbar global no tape la última fila */
+  padding-bottom: 96px; /* Espacio para el Navbar global */
   box-sizing: border-box;
   user-select: none;
   max-width: 480px;
   margin: 0 auto;
+  /* El scroll lo maneja el navegador de forma nativa para que el sticky funcione */
 }
 
 .collection-loading {
@@ -26,9 +27,12 @@
 }
 
 /* --------------------------------------------------------------------------
-   1. SECCIÓN DEL MAZO PROTAGONISTA (Grande, espacioso y centrado)
+   1. SECCIÓN DEL MAZO PROTAGONISTA (ANCLADA ARRIBA)
    -------------------------------------------------------------------------- */
 .deck-hero-section {
+  position: sticky;
+  top: 0;
+  z-index: 50; /* Se mantiene por encima de las runas al hacer scroll */
   background: #121827;
   border-bottom: 4px solid #070a12;
   padding: 14px 16px 18px 16px;
@@ -37,46 +41,22 @@
 
 .deck-hero-header {
   display: flex;
-  justify-content: space-between;
+  justify-content: center; /* Centrado perfecto */
   align-items: center;
   margin-bottom: 12px;
-}
-
-.deck-title-group {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.deck-icon {
-  font-size: 16px;
 }
 
 .deck-hero-title {
   color: #ffffff;
   font-size: 15px;
   font-weight: 900;
-  letter-spacing: 0.8px;
+  letter-spacing: 1.5px;
   margin: 0;
   text-shadow: 0 2px 0 #000;
+  text-align: center;
 }
 
-.deck-pill-badge {
-  background: #090d18;
-  border: 2px solid #1c273e;
-  border-radius: 12px;
-  padding: 4px 12px;
-  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.4);
-}
-
-.badge-count {
-  color: #00e5ff;
-  font-size: 13px;
-  font-weight: 900;
-  letter-spacing: 0.5px;
-}
-
-/* Distribución 3 arriba + 2 abajo centrados con cartas de buen tamaño */
+/* Distribución 3 arriba + 2 abajo centrados */
 .deck-hero-grid {
   display: flex;
   flex-wrap: wrap;
@@ -173,6 +153,8 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
+  position: relative;
+  z-index: 40;
 }
 
 .divider-label {
@@ -200,7 +182,7 @@
 .collection-compact-area {
   flex: 1;
   padding: 12px;
-  overflow-y: auto;
+  /* Eliminamos overflow-y: auto para que el scroll sea nativo de la pantalla y el sticky funcione */
 }
 
 .runes-compact-grid {
@@ -223,18 +205,6 @@
 .compact-item-wrapper .rune-name {
   font-size: 8px;
   padding: 1px 2px;
-}
-
-.compact-item-wrapper .rune-arrows-top .arrow,
-.compact-item-wrapper .rune-arrows-bottom .arrow {
-  width: 11px;
-  height: 9px;
-}
-
-.compact-item-wrapper .rune-arrows-left .arrow,
-.compact-item-wrapper .rune-arrows-right .arrow {
-  width: 9px;
-  height: 11px;
 }
 
 /* Insignia compacta de "EN MAZO" */

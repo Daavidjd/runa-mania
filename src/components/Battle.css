@@ -1,5 +1,5 @@
 /* ==========================================================
-   BATTLE ARENA: RUNA MANIA (COMPACT, LARGE RUNES & ZERO VOID)
+   BATTLE ARENA: RUNA MANIA (OPTIMIZADO PARA 60 FPS)
    ========================================================== */
 
 .bp {
@@ -10,7 +10,6 @@
   margin: 0 auto;
   display: flex;
   flex-direction: column;
-  /* Centrado total y espacio compacto entre secciones */
   justify-content: center;
   align-items: center;
   gap: clamp(4px, 1.2vh, 8px);
@@ -19,13 +18,13 @@
   background-color: #050813;
   overflow: hidden;
   user-select: none;
+  contain: layout style paint;
 }
 
-/* Fondo espacial con estrellas */
 .bp-stars {
   position: absolute;
   inset: 0;
-  background-image: 
+  background-image:
     radial-gradient(1px 1px at 25px 35px, #ffffff, transparent),
     radial-gradient(1.5px 1.5px at 150px 75px, #7dd3fc, transparent),
     radial-gradient(1px 1px at 280px 190px, #ffffff, transparent),
@@ -35,6 +34,7 @@
   opacity: 0.5;
   pointer-events: none;
   z-index: 0;
+  will-change: opacity;
 }
 
 .bp-stars-2 {
@@ -42,9 +42,6 @@
   opacity: 0.3;
 }
 
-/* ==========================================================
-   HUDS DE PERFIL (Pegados a sus mazos, compactos y estilizados)
-   ========================================================== */
 .bp-player-strip {
   position: relative;
   z-index: 3;
@@ -70,129 +67,56 @@
   box-shadow: 0 3px 0 #0284c7, 0 4px 12px rgba(14, 165, 233, 0.2);
 }
 
-.bp-user-meta {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
+.bp-user-meta { display: flex; align-items: center; gap: 8px; }
 
 .bp-avatar-frame {
-  width: 34px;
-  height: 34px;
-  border-radius: 8px;
-  border: 2px solid;
-  object-fit: cover;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: #1e293b;
-  flex-shrink: 0;
+  width: 34px; height: 34px; border-radius: 8px; border: 2px solid;
+  object-fit: cover; display: flex; align-items: center; justify-content: center;
+  background: #1e293b; flex-shrink: 0;
 }
 
-.bp-enemy-frame {
-  border-color: #f87171;
-  background: #450a0a;
-}
+.bp-enemy-frame { border-color: #f87171; background: #450a0a; }
+.bp-bot-icon { font-size: 1.2rem; line-height: 1; }
+.bp-self-frame { border-color: #38bdf8; }
 
-.bp-bot-icon {
-  font-size: 1.2rem;
-  line-height: 1;
-}
-
-.bp-self-frame {
-  border-color: #38bdf8;
-}
-
-.bp-user-names {
-  display: flex;
-  flex-direction: column;
-}
-
-.bp-user-title {
-  font-size: 0.84rem;
-  font-weight: 900;
-  color: #ffffff;
-  line-height: 1.1;
-}
-
-.bp-user-tag {
-  font-size: 0.65rem;
-  font-weight: 800;
-  color: #94a3b8;
-}
+.bp-user-names { display: flex; flex-direction: column; }
+.bp-user-title { font-size: 0.84rem; font-weight: 900; color: #ffffff; line-height: 1.1; }
+.bp-user-tag { font-size: 0.65rem; font-weight: 800; color: #94a3b8; }
 
 .bp-score-badge-box {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 3px 10px;
-  border-radius: 8px;
-  background: #060a14;
-  border: 1px solid #1e293b;
+  display: flex; align-items: center; gap: 6px; padding: 3px 10px;
+  border-radius: 8px; background: #060a14; border: 1px solid #1e293b;
 }
 
-.bp-score-badge-label {
-  font-size: 0.65rem;
-  font-weight: 800;
-  color: #64748b;
-  letter-spacing: 0.5px;
-}
+.bp-score-badge-label { font-size: 0.65rem; font-weight: 800; color: #64748b; letter-spacing: 0.5px; }
+.bp-score-badge-value { font-size: 1.25rem; font-weight: 900; color: #ffffff; line-height: 1; }
+.bp-score-ai-box .bp-score-badge-value { color: #f87171; }
+.bp-score-self-box .bp-score-badge-value { color: #38bdf8; }
 
-.bp-score-badge-value {
-  font-size: 1.25rem;
-  font-weight: 900;
-  color: #ffffff;
-  line-height: 1;
-}
-
-.bp-score-ai-box .bp-score-badge-value {
-  color: #f87171;
-}
-
-.bp-score-self-box .bp-score-badge-value {
-  color: #38bdf8;
-}
-
-/* ==========================================================
-   MAZOS: RUNAS GIGANTES CON SOLAPAMIENTO ESTILO CLASH ROYALE
-   ========================================================== */
+/* MAZOS */
 .bp-hand-area {
-  position: relative;
-  z-index: 2;
-  width: 100%;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  flex-shrink: 0;
-  padding: 2px 0;
+  position: relative; z-index: 2; width: 100%;
+  display: flex; justify-content: center; align-items: center;
+  flex-shrink: 0; padding: 2px 0;
 }
 
 .bp-hand-track {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  width: 100%;
-  max-width: 440px;
-  padding: 0 4px;
+  display: flex; justify-content: center; align-items: center;
+  width: 100%; max-width: 440px; padding: 0 4px;
 }
 
-/* Ranuras de las cartas: Mucho más grandes */
 .bp-slot {
   width: clamp(78px, 21vw, 92px);
   aspect-ratio: 1 / 1;
   border-radius: 12px;
-  transition: transform 0.18s cubic-bezier(0.18, 0.89, 0.32, 1.28), filter 0.18s ease;
+  transition: transform 0.18s cubic-bezier(0.18, 0.89, 0.32, 1.28);
   position: relative;
   flex-shrink: 0;
-  /* Ligero solape negativo para que quepan grandes en cualquier móvil */
   margin: 0 -4px;
+  will-change: transform;
 }
 
-/* Mano del jugador interactiva */
-.bp-slot-player {
-  cursor: pointer;
-  z-index: 2;
-}
+.bp-slot-player { cursor: pointer; z-index: 2; }
 
 .bp-slot-player:hover {
   z-index: 10;
@@ -203,176 +127,109 @@
   transform: scale(0.94);
 }
 
-/* Runa seleccionada: salta al frente absoluto con resplandor */
 .bp-slot-player.bp-selected {
   transform: translateY(-16px) scale(1.18);
   z-index: 25 !important;
-  filter: drop-shadow(0 6px 16px rgba(56, 189, 248, 0.85));
+  box-shadow: 0 8px 20px rgba(56, 189, 248, 0.6), 0 0 0 3px rgba(56, 189, 248, 0.4);
 }
 
 .bp-slot-player.bp-disabled {
   opacity: 0.4;
   cursor: not-allowed;
+  transition: opacity 0.2s ease;
 }
 
-/* Mano IA (ligeramente más pequeña y pegada) */
 .bp-slot-ai {
   width: clamp(70px, 19vw, 82px);
   opacity: 0.94;
   margin: 0 -5px;
 }
 
-/* ==========================================================
-   ZONA CENTRAL: TURNO + TABLERO 3x3 EXPANDIDO
-   ========================================================== */
+/* ZONA CENTRAL */
 .bp-arena-center {
-  position: relative;
-  z-index: 2;
-  width: 100%;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  gap: 6px;
+  position: relative; z-index: 2; width: 100%;
+  display: flex; flex-direction: column; align-items: center;
+  justify-content: center; flex-shrink: 0; gap: 6px;
 }
 
-/* Indicador de turno compacto */
 .bp-turn-indicator {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  background: #0f172a;
-  border: 2px solid;
-  border-radius: 999px;
-  padding: 3px 14px;
-  box-shadow: 0 3px 0 #020617;
+  display: inline-flex; align-items: center; gap: 6px;
+  background: #0f172a; border: 2px solid; border-radius: 999px;
+  padding: 3px 14px; box-shadow: 0 3px 0 #020617;
 }
 
-.bp-turn-indicator.is-turn-player {
-  border-color: #38bdf8;
-  box-shadow: 0 3px 0 #0284c7;
-}
+.bp-turn-indicator.is-turn-player { border-color: #38bdf8; box-shadow: 0 3px 0 #0284c7; }
+.bp-turn-indicator.is-turn-ai { border-color: #f87171; box-shadow: 0 3px 0 #991b1b; }
 
-.bp-turn-indicator.is-turn-ai {
-  border-color: #f87171;
-  box-shadow: 0 3px 0 #991b1b;
-}
+.bp-turn-icon { font-size: 0.88rem; }
+.bp-turn-txt { font-size: 0.74rem; font-weight: 800; color: #f1f5f9; letter-spacing: 0.3px; }
 
-.bp-turn-icon {
-  font-size: 0.88rem;
-}
-
-.bp-turn-txt {
-  font-size: 0.74rem;
-  font-weight: 800;
-  color: #f1f5f9;
-  letter-spacing: 0.3px;
-}
-
-/* Tablero 3x3 protagónico: Se expande para llenar la arena */
 .bp-board-container {
-  background: #0b1220;
-  border: 4px solid #1e293b;
-  border-radius: 20px;
-  padding: 8px;
-  box-shadow: 0 8px 0 #020617, 0 0 28px rgba(2, 132, 199, 0.2);
+  background: #0b1220; border: 4px solid #1e293b; border-radius: 20px;
+  padding: 8px; box-shadow: 0 8px 0 #020617, 0 0 28px rgba(2, 132, 199, 0.2);
   box-sizing: border-box;
-
-  /* Máximo tamaño en base a pantalla vertical y horizontal */
   width: min(94vw, calc(100dvh - 310px), 380px);
-  aspect-ratio: 1 / 1;
-  display: flex;
+  aspect-ratio: 1 / 1; display: flex;
 }
 
 .bp-grid-3x3 {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  grid-template-rows: repeat(3, 1fr);
-  gap: 8px;
-  width: 100%;
-  height: 100%;
+  display: grid; grid-template-columns: repeat(3, 1fr);
+  grid-template-rows: repeat(3, 1fr); gap: 8px; width: 100%; height: 100%;
 }
 
 .bp-cell {
-  background: #111c30;
-  border: 2px solid #1e293b;
-  border-radius: 12px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  position: relative;
-  cursor: pointer;
+  background: #111c30; border: 2px solid #1e293b; border-radius: 12px;
+  display: flex; align-items: center; justify-content: center;
+  position: relative; cursor: pointer;
   box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.4);
   transition: background 0.15s ease, border-color 0.15s ease;
-  overflow: hidden;
+  overflow: visible;
+  z-index: 1;
 }
 
-.bp-cell-empty:hover {
-  border-color: #38bdf8;
-  background: #162640;
-}
+.bp-cell-empty:hover { border-color: #38bdf8; background: #162640; }
 
 .bp-cell-slot-dot {
-  color: #1e293b;
-  font-size: 1.6rem;
-  font-weight: 900;
-  opacity: 0.55;
-  pointer-events: none;
+  color: #1e293b; font-size: 1.6rem; font-weight: 900;
+  opacity: 0.55; pointer-events: none;
 }
 
-.bp-cell-player {
-  border-color: #0284c7;
-}
+.bp-cell-player { border-color: #0284c7; }
+.bp-cell-ai { border-color: #b91c1c; }
 
-.bp-cell-ai {
-  border-color: #b91c1c;
-}
-
-.bp-cell-flip {
-  animation: bp-flip 0.75s ease;
-}
-
+.bp-cell-flip { animation: bp-flip 0.75s ease; }
 @keyframes bp-flip {
   0% { transform: scale(1) rotateY(0); }
   50% { transform: scale(1.12) rotateY(180deg); }
   100% { transform: scale(1) rotateY(360deg); }
 }
 
-.bp-cell-placed {
-  animation: bp-placed 0.45s ease-out;
-}
-
+.bp-cell-placed { animation: bp-placed 0.45s ease-out; }
 @keyframes bp-placed {
   0% { transform: scale(1.2); }
   100% { transform: scale(1); }
 }
 
-/* ==========================================================
-   MODAL DE FIN DE PARTIDA
-   ========================================================== */
+/* Celda con ataque activo se eleva */
+.bp-cell:has(.arrow-attack-top),
+.bp-cell:has(.arrow-attack-bottom),
+.bp-cell:has(.arrow-attack-left),
+.bp-cell:has(.arrow-attack-right) {
+  z-index: 20;
+}
+
+/* MODAL */
 .bp-modal-overlay {
-  position: fixed;
-  inset: 0;
+  position: fixed; inset: 0;
   background: rgba(4, 7, 15, 0.88);
   backdrop-filter: blur(5px);
-  z-index: 100;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 16px;
+  z-index: 100; display: flex; align-items: center; justify-content: center; padding: 16px;
 }
 
 .bp-modal {
-  width: 100%;
-  max-width: 320px;
-  background: #0f172a;
-  border-radius: 22px;
-  border: 4px solid #334155;
-  padding: 24px 20px;
-  box-shadow: 0 10px 0 #020617;
-  text-align: center;
-  animation: bp-modal-pop 0.3s cubic-bezier(0.18, 0.89, 0.32, 1.28);
+  width: 100%; max-width: 320px; background: #0f172a; border-radius: 22px;
+  border: 4px solid #334155; padding: 24px 20px; box-shadow: 0 10px 0 #020617;
+  text-align: center; animation: bp-modal-pop 0.3s cubic-bezier(0.18, 0.89, 0.32, 1.28);
 }
 
 @keyframes bp-modal-pop {
@@ -380,126 +237,55 @@
   100% { transform: scale(1); opacity: 1; }
 }
 
-.win-modal {
-  border-color: #f59e0b;
-  box-shadow: 0 10px 0 #b45309;
-}
+.win-modal { border-color: #f59e0b; box-shadow: 0 10px 0 #b45309; }
+.lose-modal { border-color: #ef4444; box-shadow: 0 10px 0 #991b1b; }
+.draw-modal { border-color: #64748b; box-shadow: 0 10px 0 #334155; }
 
-.lose-modal {
-  border-color: #ef4444;
-  box-shadow: 0 10px 0 #991b1b;
-}
-
-.draw-modal {
-  border-color: #64748b;
-  box-shadow: 0 10px 0 #334155;
-}
-
-.bp-modal-banner {
-  margin-bottom: 14px;
-}
-
-.bp-modal-icon {
-  font-size: 3rem;
-  line-height: 1;
-  display: block;
-  margin-bottom: 4px;
-}
-
-.bp-modal-title {
-  margin: 0;
-  font-size: 1.8rem;
-  font-weight: 900;
-  color: #ffffff;
-}
+.bp-modal-banner { margin-bottom: 14px; }
+.bp-modal-icon { font-size: 3rem; line-height: 1; display: block; margin-bottom: 4px; }
+.bp-modal-title { margin: 0; font-size: 1.8rem; font-weight: 900; color: #ffffff; }
 
 .bp-modal-scoreboard {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 16px;
-  background: #1e293b;
-  border-radius: 14px;
-  padding: 10px 14px;
-  margin-bottom: 14px;
+  display: flex; align-items: center; justify-content: center; gap: 16px;
+  background: #1e293b; border-radius: 14px; padding: 10px 14px; margin-bottom: 14px;
 }
 
-.bp-modal-score-col {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-}
-
-.bp-modal-label {
-  font-size: 0.75rem;
-  font-weight: 800;
-  color: #94a3b8;
-}
-
-.bp-modal-points {
-  font-size: 1.6rem;
-  font-weight: 900;
-  color: #f8fafc;
-}
-
-.bp-modal-vs {
-  font-size: 0.9rem;
-  font-weight: 900;
-  color: #64748b;
-}
+.bp-modal-score-col { display: flex; flex-direction: column; align-items: center; }
+.bp-modal-label { font-size: 0.75rem; font-weight: 800; color: #94a3b8; }
+.bp-modal-points { font-size: 1.6rem; font-weight: 900; color: #f8fafc; }
+.bp-modal-vs { font-size: 0.9rem; font-weight: 900; color: #64748b; }
 
 .bp-modal-reward {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  background: #14281f;
-  border: 2px solid #10b981;
-  border-radius: 999px;
-  padding: 6px 16px;
-  margin-bottom: 18px;
+  display: inline-flex; align-items: center; gap: 8px;
+  background: #14281f; border: 2px solid #10b981; border-radius: 999px;
+  padding: 6px 16px; margin-bottom: 18px;
 }
 
-.bp-reward-coin {
-  font-size: 1.2rem;
-}
+.bp-reward-coin { font-size: 1.2rem; }
+.bp-reward-val { font-size: 0.95rem; font-weight: 900; color: #34d399; }
 
-.bp-reward-val {
-  font-size: 0.95rem;
-  font-weight: 900;
-  color: #34d399;
-}
-
-.bp-modal-actions {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
+.bp-modal-actions { display: flex; flex-direction: column; gap: 10px; }
 
 .bp-btn {
-  width: 100%;
-  padding: 13px;
-  border-radius: 12px;
-  font-size: 1rem;
-  font-weight: 900;
-  cursor: pointer;
-  border: 2px solid;
+  width: 100%; padding: 13px; border-radius: 12px; font-size: 1rem;
+  font-weight: 900; cursor: pointer; border: 2px solid;
   transition: transform 0.1s ease;
 }
 
-.bp-btn:active {
-  transform: translateY(2px);
-}
+.bp-btn:active { transform: translateY(2px); }
 
 .bp-btn-repeat {
-  background: #0284c7;
-  border-color: #38bdf8;
-  box-shadow: 0 4px 0 #0369a1;
-  color: #ffffff;
+  background: #0284c7; border-color: #38bdf8; box-shadow: 0 4px 0 #0369a1; color: #ffffff;
 }
 
 .bp-btn-exit {
-  background: #334155;
-  border-color: #475569;
-  box-shadow: 0 4px 0 #1e293b;
-  color: #f1f5f9;
+  background: #334155; border-color: #475569; box-shadow: 0 4px 0 #1e293b; color: #f1f5f9;
+}
+
+/* Temblor */
+.bp-shake { animation: bp-shake 0.5s ease-in-out; }
+@keyframes bp-shake {
+  0%, 100% { transform: translateX(0); }
+  10%, 30%, 50%, 70%, 90% { transform: translateX(-6px); }
+  20%, 40%, 60%, 80% { transform: translateX(6px); }
 }

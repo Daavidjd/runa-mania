@@ -1,5 +1,5 @@
 /* ==========================================================
-   RUNIC NAVBAR: SIEMPRE VISIBLE EN PRIMER PLANO
+   RUNIC NAVBAR: CON LUZ DESLIZANTE ANIMADA
    ========================================================== */
 
 .rn-navbar {
@@ -10,7 +10,7 @@
   display: flex !important;
   justify-content: center !important;
   padding: 0 12px !important;
-  z-index: 9999 !important; /* Por encima de cualquier fondo o tarjeta */
+  z-index: 9999 !important;
   pointer-events: none;
 }
 
@@ -26,6 +26,44 @@
   align-items: center;
   justify-content: space-around;
   padding: 6px 4px 5px 4px;
+  position: relative; /* Necesario para posicionar la gema deslizante */
+  overflow: hidden; /* Evita que la gema se salga */
+}
+
+/* ✅ GEMA DESLIZANTE: Se mueve suavemente entre botones */
+.rn-sliding-gem {
+  position: absolute;
+  bottom: 4px;
+  left: 4px; /* Posición inicial (primer botón) */
+  width: calc(25% - 8px); /* 1/4 del ancho menos padding */
+  height: 3px;
+  background: #38bdf8;
+  border-radius: 2px;
+  box-shadow: 0 0 12px #38bdf8, 0 0 20px rgba(56, 189, 248, 0.5);
+  /* Transición suave con efecto de "resorte" */
+  transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+  z-index: 1;
+  pointer-events: none;
+}
+
+/* Efecto de "estela" de luz detrás de la gema */
+.rn-sliding-gem::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 200%;
+  height: 200%;
+  background: radial-gradient(ellipse, rgba(56, 189, 248, 0.3) 0%, transparent 70%);
+  border-radius: 50%;
+  filter: blur(4px);
+  animation: gemPulse 2s ease-in-out infinite;
+}
+
+@keyframes gemPulse {
+  0%, 100% { opacity: 0.6; transform: translate(-50%, -50%) scale(1); }
+  50% { opacity: 1; transform: translate(-50%, -50%) scale(1.2); }
 }
 
 .rn-nav-btn {
@@ -35,7 +73,7 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 2px;
+  gap: 4px;
   flex: 1;
   padding: 6px 2px;
   cursor: pointer;
@@ -43,24 +81,19 @@
   border-radius: 12px;
   transition: transform 0.1s ease;
   user-select: none;
+  z-index: 2; /* Por encima de la gema */
 }
 
 .rn-nav-btn:active {
   transform: translateY(2px);
 }
 
-.rn-nav-rune {
-  font-size: 0.72rem;
-  font-weight: 900;
-  color: #334155;
-  transition: color 0.15s ease;
-  line-height: 1;
-}
-
 .rn-nav-icon {
-  font-size: 1.3rem;
-  line-height: 1;
-  transition: transform 0.15s ease;
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
+  transition: transform 0.3s ease, filter 0.3s ease;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.4));
 }
 
 .rn-nav-label {
@@ -68,29 +101,13 @@
   font-weight: 800;
   color: #94a3b8;
   letter-spacing: 0.3px;
-  transition: color 0.15s ease;
+  transition: color 0.3s ease;
 }
 
-.rn-active-gem {
-  position: absolute;
-  bottom: 2px;
-  width: 16px;
-  height: 3px;
-  background: #38bdf8;
-  border-radius: 2px;
-  box-shadow: 0 0 8px #38bdf8;
-}
-
-.rn-nav-btn.is-active {
-  background: #132238;
-}
-
-.rn-nav-btn.is-active .rn-nav-rune {
-  color: #38bdf8;
-}
-
+/* Estado activo */
 .rn-nav-btn.is-active .rn-nav-icon {
   transform: translateY(-2px) scale(1.1);
+  filter: drop-shadow(0 0 8px rgba(56, 189, 248, 0.6));
 }
 
 .rn-nav-btn.is-active .rn-nav-label {

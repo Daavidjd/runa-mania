@@ -1,3 +1,4 @@
+import RuneCard from './RuneCard';
 import './RuneDetail.css';
 
 const RuneDetail = ({ rune, owned, quantity, onClose, onAddToDeck, isInDeck }) => {
@@ -8,8 +9,6 @@ const RuneDetail = ({ rune, owned, quantity, onClose, onAddToDeck, isInDeck }) =
     onClose();
   };
 
-  const arrows = rune?.arrows || {};
-
   return (
     <div className="rd-overlay" onClick={onClose}>
       <div className="rd-modal" onClick={(e) => e.stopPropagation()}>
@@ -18,25 +17,11 @@ const RuneDetail = ({ rune, owned, quantity, onClose, onAddToDeck, isInDeck }) =
           ✕
         </button>
 
-        {/* Marco de la Ilustración / Altar */}
+        {/* Marco de la Ilustración usando RuneCard en modo batalla */}
         <div className="rd-frame">
           {owned ? (
             <div className="rd-artwork-box">
-              <img src={rune.image} alt={rune.name} className="rd-image" />
-              
-              {/* Valores de combate direccionales (Skystones) */}
-              {arrows.top !== undefined && (
-                <div className="rd-stat-arrow rd-stat-top">▲ {arrows.top}</div>
-              )}
-              {arrows.bottom !== undefined && (
-                <div className="rd-stat-arrow rd-stat-bottom">▼ {arrows.bottom}</div>
-              )}
-              {arrows.left !== undefined && (
-                <div className="rd-stat-arrow rd-stat-left">◀ {arrows.left}</div>
-              )}
-              {arrows.right !== undefined && (
-                <div className="rd-stat-arrow rd-stat-right">▶ {arrows.right}</div>
-              )}
+              <RuneCard rune={rune} owned={true} battleMode={true} />
             </div>
           ) : (
             <div className="rd-locked-box">
@@ -66,7 +51,7 @@ const RuneDetail = ({ rune, owned, quantity, onClose, onAddToDeck, isInDeck }) =
               onClick={handleAddToDeck}
               disabled={isInDeck}
             >
-              {isInDeck ? '✓ Ya en el Mazo' : '⚡ Equipar en Mazo'}
+              {isInDeck ? '✓ Ya en el Mazo' : 'EQUIPAR EN MAZO'}
             </button>
           )}
         </div>
