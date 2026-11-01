@@ -1,14 +1,41 @@
 /* ============================================
-   🌐 FRIENDS PANEL — Zona Social (Perfil)
+   🌐 FRIENDS PANEL — Zona Social (Popup)
    ============================================ */
 
+/* Fondo oscuro del popup */
+.fp-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1200;
+  background: rgba(4, 7, 14, 0.78);
+  backdrop-filter: blur(3px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  animation: fp-fade-in 0.2s ease;
+}
+
 .fp-panel {
-  margin-top: 18px;
+  width: min(560px, 100%);
+  max-height: 86vh;
+  overflow-y: auto;
   background: linear-gradient(160deg, #101a2e 0%, #0b1220 100%);
   border: 2px solid #23314d;
   border-radius: 18px;
-  padding: 14px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+  padding: 16px;
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.65);
+  animation: fp-pop-in 0.22s cubic-bezier(0.34, 1.4, 0.64, 1);
+}
+
+@keyframes fp-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes fp-pop-in {
+  from { opacity: 0; transform: translateY(24px) scale(0.96); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
 }
 
 .fp-header {
@@ -16,6 +43,31 @@
   align-items: center;
   justify-content: space-between;
   margin-bottom: 10px;
+}
+
+.fp-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.fp-close {
+  background: #2a1512;
+  color: #ff5252;
+  border: 2px solid #3d201c;
+  border-radius: 10px;
+  width: 32px;
+  height: 32px;
+  font-size: 14px;
+  font-weight: 900;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.fp-close:hover {
+  background: #ff5252;
+  color: #ffffff;
+  border-color: #ff5252;
 }
 
 .fp-title {
