@@ -138,8 +138,9 @@ const Home = () => {
   useEffect(() => {
     if (!user || !searching) return undefined;
     let navigated = false;
+    let expired = false;
     const unsub = watchMyQueueEntry(user.uid, (entry) => {
-      if (!entry || navigated) return;
+      if (!entry || navigated || expired) return;
       if (entry.status === 'matched' && entry.roomId) {
         navigated = true;
         localStorage.setItem('onlineBattle', JSON.stringify({
@@ -152,6 +153,14 @@ const Home = () => {
         localStorage.removeItem('randomMatchPending');
         setSearching(false);
         navigate('/battle-online');
+      } else if (typeof entry.searchedAt === 'number' && Date.now() - entry.searchedAt > 60000) {
+        // ⏱️ Llevamos más de 1 minuto esperando: avisamos y salimos de la cola
+        expired = true;
+        setSearching(false);
+        localStorage.removeItem('randomMatchPending');
+        leaveQueue(user.uid);
+        setMatchError('No hay rivales disponibles ahora mismo. Inténtalo de nuevo 🌙');
+        setTimeout(() => setMatchError(''), 4000);
       }
     });
     return () => unsub();

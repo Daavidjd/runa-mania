@@ -336,15 +336,20 @@ export const createBattleChallenge = async (challengerUid, opponentUid) => {
   try {
     const challengerSnap = await getDoc(doc(db, 'users', challengerUid));
     const cData = challengerSnap.exists() ? challengerSnap.data() : {};
-    const docRef = await addDoc(collection(db, 'challenges'), {
+    // ⚠️ IMPORTANTE: el ID del reto se genera en cliente y es IGUAL a la sala
+    // ('challenge-{ts}-{rand}'). Así, al aceptar, el rival puede escribir la
+    // sala sin crear documentos (las reglas solo permiten UPDATE sobre salas).
+    const challengeId = `challenge-${Date.now()}-${Math.floor(Math.random() * 1e6).toString(36)}`;
+    await setDoc(doc(db, 'challenges', challengeId), {
       from: challengerUid,
       to: opponentUid,
       fromName: cData.username || 'Invocador',
       fromAvatarId: cData.avatarId || 'arquero',
+      roomId: challengeId,
       status: 'pending',
       createdAt: serverTimestamp()
     });
-    return { success: true, challengeId: docRef.id, message: '⚔️ ¡Reto enviado!' };
+    return { success: true, challengeId, message: '⚔️ ¡Reto enviado!' };
   } catch (error) {
     console.error('Error creando reto:', error);
     return { success: false, message: 'Error al enviar el reto' };
@@ -362,6 +367,22 @@ export const getPendingChallengesFor = async (userId) => {
     return snap.docs.map(d => ({ id: d.id, ...d.data() }));
   } catch (error) {
     console.error('Error obteniendo retos:', error);
+    return [];
+  }
+};
+
+// Retos salientes pendientes (para saber cuando el rival acepta nuestro reto)
+export const getOutgoingPendingChallenges = async (userId) => {
+  try {
+    const q = query(
+      collection(db, 'challenges'),
+      where('from', '==', userId),
+      where('status', '==', 'pending')
+    );
+    const snap = await getDocs(q);
+    return snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  } catch (error) {
+    console.error('Error obteniendo retos salientes:', error);
     return [];
   }
 };
@@ -407,10 +428,33 @@ export const joinOnlineRoom = async (roomId, myUid, displayName) => {
   try {
     const snap = await getDoc(ref);
     const data = snap.exists() ? snap.data() : {};
+    const now = Date.now();
+
+    // 🎨 El primer jugador en unirse es AZUL 🔵 (blueUid). Si la sala aún no
+    // existe, el propio azul la CREA (las reglas permiten create solo si
+    // blueUid == creador). El rojo que llega después solo hace UPDATE
+    // (permitido porque ya está incluido en players.keys()).
+    if (!snap.exists()) {
+      // ⚠️ No se incluyen campos con valor null: las reglas de create validan
+      // que todos los valores estén definidos (starterUid se añade luego por merge)
+      await setDoc(ref, {
+        roomId,
+        blueUid: myUid,
+        createdAt: now,
+        [`players.${myUid}`]: { name: displayName, ready: true, joinedAt: now },
+        board: Array(9).fill(null),
+        deckSizes: {},
+        finished: false
+      });
+      return { success: true };
+    }
+
     const updates = {
-      [`players.${myUid}`]: { name: displayName, ready: true, joinedAt: Date.now() }
+      [`players.${myUid}`]: { name: displayName, ready: true, joinedAt: now }
     };
+    // ⚠️ No escribir blueUid=null en update: las reglas lo exigirían definido
     if (!data.blueUid) updates.blueUid = myUid;
+
     await setDoc(ref, updates, { merge: true });
     return { success: true };
   } catch (error) {
@@ -512,13 +556,20 @@ export const watchMyQueueEntry = (myUid, callback) => {
   });
 };
 
+// Eliminar mi ficha de cola tras caducar el timeout (si las reglas lo permiten; si no, se ignora)
+const purgeMyQueueEntry = async (myUid) => {
+  try { await deleteDoc(doc(db, 'queues', myUid)); } catch { /* opcional */ }
+};
+
 // Salir de la cola (solo si sigo esperando; si ya fui emparejado no borro nada)
 export const leaveQueue = async (myUid) => {
   try {
     const ref = doc(db, 'queues', myUid);
     const snap = await getDoc(ref);
     if (snap.exists() && snap.data().status === 'waiting') {
-      await deleteDoc(ref);
+      // ⚠️ Las reglas de seguridad no permiten DELETE a los jugadores:
+      // salimos de la marcando la ficha como 'cancelled' (es mi doc, update ok)
+      await updateDoc(ref, { status: 'cancelled', cancelledAt: Date.now() });
     }
   } catch (error) {
     console.error('Error saliendo de la cola:', error);
