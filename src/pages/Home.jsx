@@ -1,7 +1,13 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { getUserProfile, getUserDecks } from '../services/firestore';
+import {
+  getUserProfile,
+  getUserDecks,
+  findRandomMatch,
+  watchMyQueueEntry,
+  leaveQueue
+} from '../services/firestore';
 import { RUNES_DB } from '../data/runes';
 import { AVATAR_OPTIONS } from '../data/avatars'; // ✅ IMPORTACIÓN CENTRALIZADA
 import RuneCard from '../components/RuneCard';
@@ -46,6 +52,10 @@ const Home = () => {
   const [userDeck, setUserDeck] = useState([]);
   const [showOpponentModal, setShowOpponentModal] = useState(false);
 
+  // 🎮 Estado del matchmaking aleatorio (batalla online con cualquiera)
+  const [searching, setSearching] = useState(() => localStorage.getItem('randomMatchPending') === '1');
+  const [matchError, setMatchError] = useState('');
+
   const [selectedOpponent, setSelectedOpponent] = useState(() => {
     const saved = localStorage.getItem('selectedOpponent');
     return AI_OPPONENTS.find(o => o.id === saved) || AI_OPPONENTS[0];
@@ -79,6 +89,80 @@ const Home = () => {
     localStorage.setItem('selectedOpponent', opp.id);
     setShowOpponentModal(false);
   };
+
+  // 🎮 BUSCAR PARTIDA ALEATORIA (cualquier jugador online)
+  const stopSearching = async () => {
+    setSearching(false);
+    localStorage.removeItem('randomMatchPending');
+    if (user) await leaveQueue(user.uid);
+  };
+
+  const handleRandomBattle = async () => {
+    if (!user || searching) return;
+    if (userDeck.length < 5) {
+      setMatchError('Necesitas un mazo completo de 5 runas para luchar 🔵🔴');
+      setTimeout(() => setMatchError(''), 3500);
+      return;
+    }
+    setMatchError('');
+    setSearching(true);
+    localStorage.setItem('randomMatchPending', '1');
+
+    const displayName = profile?.username || user.displayName || user.email?.split('@')[0] || 'Invocador';
+    const res = await findRandomMatch(user.uid, displayName, profile?.avatarId || 'mago');
+
+    if (!res.success) {
+      setSearching(false);
+      localStorage.removeItem('randomMatchPending');
+      setMatchError(res.message || 'No se pudo conectar con la arena online');
+      setTimeout(() => setMatchError(''), 3500);
+      return;
+    }
+
+    if (res.matched) {
+      // El segundo en llegar empareja al primero: entramos directo a la sala
+      localStorage.setItem('onlineBattle', JSON.stringify({
+        roomId: res.roomId,
+        opponentUid: res.opponentUid,
+        opponentName: res.opponentName,
+        opponentAvatarId: res.opponentAvatarId,
+        role: 'random'
+      }));
+      localStorage.removeItem('randomMatchPending');
+      navigate('/battle-online');
+    }
+    // Si no hay rival aún, el useEffect de abajo nos mantiene escuchando la cola
+  };
+
+  // ⚔️ Escucha en tiempo real: cuando alguien nos encuentra en la cola, entramos a la sala
+  useEffect(() => {
+    if (!user || !searching) return undefined;
+    let navigated = false;
+    const unsub = watchMyQueueEntry(user.uid, (entry) => {
+      if (!entry || navigated) return;
+      if (entry.status === 'matched' && entry.roomId) {
+        navigated = true;
+        localStorage.setItem('onlineBattle', JSON.stringify({
+          roomId: entry.roomId,
+          opponentUid: entry.opponentUid,
+          opponentName: entry.opponentName || 'Rival',
+          opponentAvatarId: entry.opponentAvatarId || 'mago',
+          role: 'random'
+        }));
+        localStorage.removeItem('randomMatchPending');
+        setSearching(false);
+        navigate('/battle-online');
+      }
+    });
+    return () => unsub();
+  }, [user, searching, navigate]);
+
+  // Al volver a Home sin batalla activa (p. ej. cancelado), limpiar cola pendiente
+  useEffect(() => {
+    if (localStorage.getItem('randomMatchPending') === '1' && localStorage.getItem('onlineBattle')) {
+      localStorage.removeItem('randomMatchPending');
+    }
+  }, []);
 
   const getPlayerAvatar = () => {
     const found = AVATAR_OPTIONS.find(a => a.id === profile?.avatarId);
@@ -152,6 +236,32 @@ const Home = () => {
               <span className="cta-sub">Equipas {userDeck.length}/5 runas</span>
             )}
           </button>
+
+          {/* 🎮 BOTÓN DE BATALLA ONLINE ALEATORIA */}
+          {searching ? (
+            <div className="online-search-box">
+              <div className="online-search-row">
+                <span className="online-search-orb"></span>
+                <div className="online-search-text">
+                  <span className="online-search-title">BUSCANDO RIVAL...</span>
+                  <span className="online-search-sub">🔵🔴 Cualquier invocador · 50/50</span>
+                </div>
+              </div>
+              <button className="online-cancel-btn" onClick={stopSearching}>✕ Cancelar búsqueda</button>
+            </div>
+          ) : (
+            <button
+              className={`online-battle-btn ${userDeck.length < 5 ? 'online-disabled' : ''}`}
+              onClick={handleRandomBattle}
+              title={userDeck.length < 5 ? 'Necesitas 5 runas en el mazo para el modo online' : 'Batalla online contra un rival aleatorio'}
+            >
+              <span className="online-btn-icon">🌐</span>
+              <span className="online-btn-txt">BATALLA ONLINE</span>
+              <span className="online-btn-sub">{userDeck.length < 5 ? 'Mazo incompleto' : 'vs. jugador aleatorio'}</span>
+            </button>
+          )}
+
+          {matchError && <div className="online-match-error">{matchError}</div>}
         </div>
 
         {/* VISTA PREVIA DEL MAZO */}
@@ -180,7 +290,7 @@ const Home = () => {
 
         <div className="home-coming-soon">
           <span className="coming-soon-rune">ᛟ</span>
-          <span className="coming-soon-text">Modo PvP Online en desarrollo</span>
+          <span className="coming-soon-text">Matchmaking por rango próximamente</span>
         </div>
       </main>
 

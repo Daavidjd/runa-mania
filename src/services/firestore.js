@@ -9,7 +9,6 @@ import {
   deleteDoc,
   query,
   where,
-  orderBy,
   limit as fsLimit,
   serverTimestamp,
   onSnapshot
@@ -431,6 +430,112 @@ export const leaveOnlineRoom = (roomId, myUid) => {
   return updateDoc(doc(db, 'rooms', roomId), {
     [`players.${myUid}`]: null
   }).catch(() => {});
+};
+
+// ============================================================
+// 🎮 MATCHMAKING ALEATORIO (batalla online con cualquier jugador)
+// Cola en la colección 'queues': el primer jugador que llega deja su
+// ficha; el segundo se la encuentra y ambos entran a la misma sala
+// ('rooms/{roomId}') reutilizando el motor de batalla online 50/50.
+// ⚠️ Las reglas deben permitir update de la ficha del rival emparejado:
+//    allow update: if signedIn() && (request.auth.uid == resourceId
+//                  || resource.data.status != 'waiting');
+// ============================================================
+const QUEUE_TIMEOUT_MS = 24 * 60 * 60 * 1000; // fichas más antiguas se ignoran
+
+// ⚔️ Emparejamiento aleatorio: cualquiera con sesión puede entrar a la cola.
+export const findRandomMatch = async (myUid, displayName, avatarId) => {
+  try {
+    const myRef = doc(db, 'queues', myUid);
+    // Ficha propia: la creamos/actualizamos primero (solo dueño → permitido)
+    await setDoc(myRef, {
+      status: 'searching',
+      name: displayName,
+      avatarId: avatarId || 'mago',
+      searchedAt: Date.now()
+    }, { merge: true });
+
+    const snap = await getDocs(collection(db, 'queues'));
+    const now = Date.now();
+    const candidates = snap.docs
+      .map(d => ({ uid: d.id, data: d.data() }))
+      .filter(({ uid, data }) =>
+        uid !== myUid &&
+        (data?.status === 'waiting' || data?.status === 'searching') &&
+        !data.matched &&
+        typeof data.searchedAt === 'number' &&
+        now - data.searchedAt < QUEUE_TIMEOUT_MS
+      )
+      .sort((a, b) => a.data.searchedAt - b.data.searchedAt);
+
+    if (candidates.length > 0) {
+      // ⚔️ ¡Emparejados! Ambos entran a la misma sala aleatoria
+      const opp = candidates[0];
+      const roomId = `random-${now}-${Math.floor(Math.random() * 1e6).toString(36)}`;
+      await setDoc(myRef, {
+        status: 'matched',
+        opponentUid: opp.uid,
+        opponentName: opp.data.name || 'Rival',
+        opponentAvatarId: opp.data.avatarId || 'mago',
+        roomId
+      }, { merge: true });
+      await setDoc(doc(db, 'queues', opp.uid), {
+        status: 'matched',
+        opponentUid: myUid,
+        opponentName: displayName,
+        opponentAvatarId: avatarId || 'mago',
+        roomId
+      }, { merge: true });
+      return {
+        success: true,
+        matched: true,
+        roomId,
+        opponentUid: opp.uid,
+        opponentName: opp.data.name || 'Rival',
+        opponentAvatarId: opp.data.avatarId || 'mago'
+      };
+    }
+
+    // 🕐 Nadie esperando: quedarme en 'waiting' para que otro me encuentre
+    await setDoc(myRef, { status: 'waiting' }, { merge: true });
+    return { success: true, matched: false };
+  } catch (error) {
+    console.error('Error buscando partida aleatoria:', error);
+    return { success: false, matched: false, message: 'Error al buscar rival' };
+  }
+};
+
+// Escucha en tiempo real mi ficha de cola (para saber cuando alguien me encuentra)
+export const watchMyQueueEntry = (myUid, callback) => {
+  return onSnapshot(doc(db, 'queues', myUid), (snap) => {
+    callback(snap.exists() ? { uid: snap.id, ...snap.data() } : null);
+  });
+};
+
+// Salir de la cola (solo si sigo esperando; si ya fui emparejado no borro nada)
+export const leaveQueue = async (myUid) => {
+  try {
+    const ref = doc(db, 'queues', myUid);
+    const snap = await getDoc(ref);
+    if (snap.exists() && snap.data().status === 'waiting') {
+      await deleteDoc(ref);
+    }
+  } catch (error) {
+    console.error('Error saliendo de la cola:', error);
+  }
+};
+
+// Limpiar fichas huérfanas de la cola (mejora opcional, sin permisos falla silenciosamente)
+export const cleanupQueueStale = async () => {
+  try {
+    const q = query(
+      collection(db, 'queues'),
+      where('status', '==', 'waiting'),
+      where('searchedAt', '<', Date.now() - QUEUE_TIMEOUT_MS)
+    );
+    const snap = await getDocs(q);
+    await Promise.all(snap.docs.map(d => deleteDoc(d.ref)));
+  } catch { /* sin permisos: se ignora, los stale ya se filtran arriba */ }
 };
 
 // Guardar resultado de una batalla online (estadísticas del perfil)
