@@ -634,3 +634,152 @@
   font-size: 12px;
   font-weight: 900;
 }
+/* ============================================================
+   🌐 BOTÓN DE BATALLA ONLINE (matchmaking aleatorio)
+   ============================================================ */
+.online-battle-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  width: min(320px, 90%);
+  margin-top: 14px;
+  padding: 12px 18px;
+  border: none;
+  border-radius: 14px;
+  cursor: pointer;
+  background: linear-gradient(180deg, #7c3aed 0%, #4c1d95 100%);
+  box-shadow: 0 4px 0 #2e1065, 0 6px 18px rgba(124, 58, 237, 0.45);
+  color: #fff;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, filter 0.15s ease;
+}
+
+.online-battle-btn:hover:not(.online-disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 0 #2e1065, 0 10px 26px rgba(124, 58, 237, 0.6);
+  filter: brightness(1.08);
+}
+
+.online-battle-btn:active:not(.online-disabled) {
+  transform: translateY(2px);
+  box-shadow: 0 2px 0 #2e1065, 0 4px 12px rgba(124, 58, 237, 0.4);
+}
+
+.online-btn-icon {
+  font-size: 1.3rem;
+  line-height: 1;
+}
+
+.online-btn-txt {
+  font-weight: 800;
+  font-size: 1rem;
+  letter-spacing: 1.5px;
+}
+
+.online-btn-sub {
+  font-size: 0.7rem;
+  opacity: 0.85;
+  letter-spacing: 0.5px;
+}
+
+.online-battle-btn.online-disabled {
+  background: linear-gradient(180deg, #4b5563 0%, #374151 100%);
+  box-shadow: 0 4px 0 #1f2937;
+  opacity: 0.75;
+  cursor: not-allowed;
+}
+
+/* ---- Estado buscando rival ---- */
+.online-search-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  width: min(320px, 90%);
+  margin-top: 14px;
+  padding: 14px 18px;
+  border-radius: 14px;
+  background: rgba(76, 29, 149, 0.25);
+  border: 1px solid rgba(139, 92, 246, 0.5);
+  animation: online-pulse-border 1.6s ease-in-out infinite;
+}
+
+@keyframes online-pulse-border {
+  0%, 100% { border-color: rgba(139, 92, 246, 0.35); box-shadow: 0 0 0 rgba(139, 92, 246, 0); }
+  50% { border-color: rgba(139, 92, 246, 0.9); box-shadow: 0 0 18px rgba(139, 92, 246, 0.35); }
+}
+
+.online-search-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.online-search-orb {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: 3px solid rgba(255, 255, 255, 0.15);
+  border-top-color: #a78bfa;
+  border-right-color: #60a5fa;
+  animation: online-spin 0.9s linear infinite;
+}
+
+@keyframes online-spin {
+  to { transform: rotate(360deg); }
+}
+
+.online-search-text {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.online-search-title {
+  color: #e9d5ff;
+  font-weight: 800;
+  font-size: 0.85rem;
+  letter-spacing: 1.5px;
+}
+
+.online-search-sub {
+  color: #c4b5fd;
+  font-size: 0.7rem;
+  letter-spacing: 0.5px;
+}
+
+.online-cancel-btn {
+  border: 1px solid rgba(248, 113, 113, 0.6);
+  background: rgba(239, 68, 68, 0.15);
+  color: #fca5a5;
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 6px 14px;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.online-cancel-btn:hover {
+  background: rgba(239, 68, 68, 0.35);
+}
+
+/* ---- Error transitorio (mazo incompleto / sin conexión) ---- */
+.online-match-error {
+  margin-top: 10px;
+  padding: 8px 14px;
+  border-radius: 10px;
+  background: rgba(239, 68, 68, 0.18);
+  border: 1px solid rgba(248, 113, 113, 0.55);
+  color: #fecaca;
+  font-size: 0.78rem;
+  font-weight: 600;
+  max-width: min(320px, 90%);
+  text-align: center;
+  animation: online-fade-in 0.25s ease;
+}
+
+@keyframes online-fade-in {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
