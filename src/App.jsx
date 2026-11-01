@@ -9,6 +9,7 @@ import Collection from './pages/Collection';
 import Profile from './pages/Profile';
 import Shop from './pages/Shop';
 import Battle from './components/Battle';
+import BattleOnline from './components/BattleOnline';
 import ProtectedRoute from './components/ProtectedRoute';
 import Navbar from './components/Navbar';
 import LoadingScreen from './components/LoadingScreen';
@@ -85,6 +86,13 @@ export default function App() {
               <Route path="/battle" element={
                 <ProtectedRoute>
                   <Battle />
+                </ProtectedRoute>
+              } />
+
+              {/* Batalla en línea estilo Match (vs amigos) */}
+              <Route path="/battle-online" element={
+                <ProtectedRoute>
+                  <BattleOnline />
                 </ProtectedRoute>
               } />
 
