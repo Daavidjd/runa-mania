@@ -13,8 +13,10 @@ import {
   removeFriend,
   createBattleChallenge,
   getPendingChallengesFor,
+  getOutgoingPendingChallenges,
   acceptChallenge,
-  declineChallenge
+  declineChallenge,
+  watchChallenge
 } from '../services/firestore';
 import './FriendsPanel.css';
 
@@ -87,6 +89,40 @@ const FriendsPanel = ({ profile, open = true, onClose }) => {
     return () => window.removeEventListener('keydown', onKey);
   }, [open, onClose]);
 
+  // ⚔️ Si el rival ACEPTA un reto que nosotros enviamos, entramos directo a la arena
+  useEffect(() => {
+    if (!open || !user) return undefined;
+    let cancelled = false;
+    let unsubs = [];
+    const setupWatchers = async () => {
+      const outgoing = await getOutgoingPendingChallenges(user.uid);
+      if (cancelled || outgoing.length === 0) return;
+      unsubs = outgoing.map(ch => watchChallenge(ch.id, (data) => {
+        if (cancelled || !data) return;
+        if (data.status === 'accepted') {
+          unsubs.forEach(u => u());
+          localStorage.setItem('onlineBattle', JSON.stringify({
+            challengeId: ch.id,
+            roomId: data.roomId || ch.id,
+            opponentUid: data.to,
+            opponentName: (friends.find(f => f.uid === data.to)?.username) || 'Rival',
+            opponentAvatarId: (friends.find(f => f.uid === data.to)?.avatarId) || 'mago',
+            role: 'challenger'
+          }));
+          localStorage.removeItem('pendingOutgoingChallenge');
+          showToast('⚔️ ¡Tu rival aceptó el reto! Entrando a la arena...');
+          setTimeout(() => navigate('/battle-online'), 900);
+          cancelled = true;
+        } else if (data.status === 'declined') {
+          showToast(`${data.toName || 'El rival'} rechazó tu reto`, false);
+          refreshAll();
+        }
+      }));
+    };
+    setupWatchers();
+    return () => { cancelled = true; unsubs.forEach(u => u()); };
+  }, [open, user, friends, navigate, showToast, refreshAll]);
+
   if (!open) return null;
 
   // ---------- AGREGAR AMIGOS ----------
@@ -155,6 +191,7 @@ const FriendsPanel = ({ profile, open = true, onClose }) => {
     if (res.success) {
       localStorage.setItem('onlineBattle', JSON.stringify({
         challengeId: ch.id,
+        roomId: ch.roomId || ch.id, // la sala comparte id con el reto (creada en cliente)
         opponentUid: ch.from,
         opponentName: ch.fromName || 'Rival',
         opponentAvatarId: ch.fromAvatarId || 'mago',
