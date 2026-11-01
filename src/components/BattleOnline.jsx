@@ -10,7 +10,7 @@ import {
   leaveOnlineRoom,
   recordOnlineBattleResult
 } from '../services/firestore';
-import { doc as fsDoc, updateDoc as fsUpdate, getDoc as fsGetDoc, serverTimestamp } from 'firebase/firestore';
+import { doc as fsDoc, setDoc as fsSet, getDoc as fsGetDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../services/firebase';
 import { RUNES_DB } from '../data/runes';
 import { AVATAR_OPTIONS } from '../data/avatars';
@@ -69,7 +69,7 @@ const BattleOnline = () => {
   // Al entrar a la sala, el reto saliente ya fue aceptado: limpiarlo
   useEffect(() => { localStorage.removeItem('pendingOutgoingChallenge'); }, []);
 
-  const [phase, setPhase] = useState(battleData ? 'connecting' : 'error'); // connecting | playing | error
+  const [phase, setPhase] = useState(battleData ? 'connecting' : 'error'); // connecting | coinflip | playing | error
   const [room, setRoom] = useState({});
   const [myProfile, setMyProfile] = useState(null);
   const [oppProfile, setOppProfile] = useState(null);
@@ -86,9 +86,12 @@ const BattleOnline = () => {
   const [lastPlaced, setLastPlaced] = useState(null);
   const [attackDirs, setAttackDirs] = useState({});
   const [shakeHand, setShakeHand] = useState(false);
+  const [countdown, setCountdown] = useState(3); // ⏳ cuenta regresiva del volteo de moneda
 
   const roomUnsubRef = useRef(null);
   const challengeUnsubRef = useRef(null);
+  const phaseRef = useRef(phase);
+  useEffect(() => { phaseRef.current = phase; }, [phase]);
   const appliedRemoteMovesRef = useRef(new Set());
   const myUidRef = useRef(user?.uid || null);
   const reportedRef = useRef(false);
@@ -164,7 +167,7 @@ const BattleOnline = () => {
             }
             updates[`deckSizes.${user.uid}`] = hand.length;
             updates[`deckSizes.${battleData.opponentUid}`] = oppHand.length;
-            await fsUpdate(fsDoc(db, 'rooms', roomId), updates, { merge: true });
+            await fsSet(fsDoc(db, 'rooms', roomId), updates, { merge: true });
           } catch (err) { console.error('Error preparando duelo online:', err); }
         })();
 
@@ -190,9 +193,15 @@ const BattleOnline = () => {
 
   // ---------- SINCRONIZACIÓN DEL TABLERO ----------
   useEffect(() => {
-    if (phase !== 'playing' && phase !== 'connecting') return;
+    if (phase === 'error' || phase === 'playing') return;
     const remoteBoard = room.board;
-    if (!Array.isArray(remoteBoard) || remoteBoard.length !== 9) return;
+    if (!Array.isArray(remoteBoard) || remoteBoard.length !== 9) {
+      // Ambos dentro y con colores asignados → mostrar volteo de moneda 50/50
+      if (bothJoined && room.starterUid && phaseRef.current === 'connecting') {
+        setPhase('coinflip');
+      }
+      return;
+    }
 
     const lastMove = room.lastMove;
 
@@ -250,15 +259,15 @@ const BattleOnline = () => {
       const shared = rawBoardWithUids.map(c => c ? {
         id: c.id, name: c.name, image: c.image, tier: c.tier, arrows: c.arrows,
         owner: c.owner === myUidRef.current ? (iAmFirst ? 'blue' : 'red') : (iAmFirst ? 'red' : 'blue'),
-        flipped: capturedIdxs.includes(lastMove.index) ? false : c.flipped
+        flipped: false
       } : null);
       // Aplicar capturas del movimiento actual
       capturedIdxs.forEach(ci => { shared[ci] = { ...shared[ci], owner: lastMove.by === myUidRef.current ? (iAmFirst ? 'blue' : 'red') : (iAmFirst ? 'red' : 'blue'), flipped: true }; });
-      await fsUpdate(fsDoc(db, 'rooms', roomIdRef.current), {
+      await fsSet(fsDoc(db, 'rooms', roomIdRef.current), {
         board: shared,
         lastMove,
         updatedAt: serverTimestamp()
-      });
+      }, { merge: true });
     } catch (err) {
       console.error('Error sincronizando sala:', err);
     }
@@ -328,6 +337,18 @@ const BattleOnline = () => {
     }
   }, [showEndModal, iWon, user]);
 
+  // ---------- ⏳ CUENTA REGRESIVA DEL VOLTEO → INICIO AUTOMÁTICO ----------
+  useEffect(() => {
+    if (phase !== 'coinflip') return undefined;
+    const id = setInterval(() => {
+      setCountdown(c => {
+        if (c <= 1) { clearInterval(id); setPhase('playing'); return 0; }
+        return c - 1;
+      });
+    }, 1000);
+    return () => clearInterval(id);
+  }, [phase]);
+
   // ---------- RENDER ----------
   const avatarSrcOf = (p) => {
     const found = AVATAR_OPTIONS.find(a => a.id === p?.avatarId);
@@ -381,16 +402,41 @@ const BattleOnline = () => {
 
           {oppJoined && (
             <div className="bo-lobby-info">
-              🎲 Volteo de moneda 50/50 resuelto:{' '}
-              <b>{room.starterUid ? (starterIsMe ? '¡Tú empiezas!' : 'Empieza el rival') : 'Asignando...'}</b>
+              🎲 Volteo de moneda 50/50 en curso...
             </div>
           )}
-          {oppJoined && (
-            <button className="bo-start-btn" onClick={() => setPhase('playing')}>
-              ⚔️ ¡COMENZAR BATALLA!
-            </button>
-          )}
 
+          <button className="bp-btn bp-btn-exit bo-leave" onClick={() => navigate('/home')}>🚪 Salir</button>
+        </div>
+      </div>
+    );
+  }
+
+  // 🎲 PANTALLA DE VOLTEO DE MONEDA 50/50 (rojo vs azul) — Clash Royale style
+  if (phase === 'coinflip') {
+    return (
+      <div className="bp bo-screen">
+        <div className="bp-stars"></div>
+        <div className="bo-lobby">
+          <h2 className="bo-lobby-title">🎲 Volteo de moneda</h2>
+          <div className="bo-coin">🪙</div>
+          <div className="bo-vs-row bo-coinflip-names">
+            <div className="bo-lobby-player bo-me">
+              <img src={avatarSrcOf(myProfile)} alt="yo" className="bp-avatar-frame" style={{ borderColor: myColor === 'red' ? '#f44336' : '#2196f3' }} />
+              <span className="bo-lobby-name">{myProfile?.username || 'Tú'}</span>
+              <span className="bo-lobby-tag" style={{ color: myColor === 'red' ? '#ff8a80' : '#4fc3f7' }}>{myColor === 'red' ? '🔴 Rojo' : '🔵 Azul'}</span>
+            </div>
+            <span className="bo-vs-bolt">VS</span>
+            <div className="bo-lobby-player bo-them">
+              <img src={avatarSrcOf(oppProfile)} alt="rival" className="bp-avatar-frame" style={{ borderColor: oppColor === 'red' ? '#f44336' : '#2196f3' }} />
+              <span className="bo-lobby-name">{battleData?.opponentName || 'Rival'}</span>
+              <span className="bo-lobby-tag" style={{ color: oppColor === 'red' ? '#ff8a80' : '#4fc3f7' }}>{oppColor === 'red' ? '🔴 Rojo' : '🔵 Azul'}</span>
+            </div>
+          </div>
+          <div className="bo-lobby-info bo-coinflip-result">
+            {starterIsMe ? '¡Empiezas tú! 🔵🔴' : `Empieza ${battleData?.opponentName || 'el rival'}`}
+          </div>
+          <p className="bo-coinflip-countdown">La batalla comienza en {countdown}...</p>
           <button className="bp-btn bp-btn-exit bo-leave" onClick={() => navigate('/home')}>🚪 Salir</button>
         </div>
       </div>
