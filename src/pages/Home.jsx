@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import {
   getUserProfile,
-  getUserDecks,
+  getPlayerDecks,
   findRandomMatch,
   watchMyQueueEntry,
   leaveQueue
@@ -49,7 +49,8 @@ const Home = () => {
   const navigate = useNavigate();
 
   const [profile, setProfile] = useState(null);
-  const [userDeck, setUserDeck] = useState([]);
+  const [npcDeck, setNpcDeck] = useState([]);    // mazo de 5 runas para batallas NPC
+  const [onlineDeck, setOnlineDeck] = useState([]); // mazo de 8 runas para batallas online
   const [showOpponentModal, setShowOpponentModal] = useState(false);
 
   // 🎮 Estado del matchmaking aleatorio (batalla online con cualquiera)
@@ -67,16 +68,9 @@ const Home = () => {
       try {
         const userProfile = await getUserProfile(user.uid);
         if (userProfile) setProfile(userProfile);
-        const decks = await getUserDecks(user.uid);
-        if (decks.length > 0) {
-          decks.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-          if (decks[0].runes?.length > 0) {
-            const deckRunes = decks[0].runes
-              .map(id => RUNES_DB.find(r => r.id === id))
-              .filter(Boolean);
-            setUserDeck(deckRunes);
-          }
-        }
+        const rawDecks = await getPlayerDecks(user.uid);
+        setNpcDeck((rawDecks.npc || []).map(id => RUNES_DB.find(r => r.id === id)).filter(Boolean));
+        setOnlineDeck((rawDecks.online || []).map(id => RUNES_DB.find(r => r.id === id)).filter(Boolean));
       } catch (err) {
         console.error('Error cargando datos del home:', err);
       }
@@ -99,8 +93,8 @@ const Home = () => {
 
   const handleRandomBattle = async () => {
     if (!user || searching) return;
-    if (userDeck.length < 8) {
-      setMatchError('Necesitas un mazo completo de 8 runas para luchar 🔵🔴');
+    if (onlineDeck.length < 8) {
+      setMatchError('Necesitas el mazo ONLINE completo de 8 runas para luchar 🔵🔴');
       setTimeout(() => setMatchError(''), 3500);
       return;
     }
@@ -192,7 +186,7 @@ const Home = () => {
             <span className="hud-name">
               {profile?.username || user?.displayName || user?.email?.split('@')[0] || 'Invocador'}
             </span>
-            <span className="hud-id">Nv. {profile?.level || 1} • ID: {profile?.userId || '----'}</span>
+            <span className="hud-id">Nv. {profile?.level || 1} • ID: {profile?.playerCode || profile?.userId || '------'}</span>
           </div>
         </button>
 
@@ -229,20 +223,20 @@ const Home = () => {
 
           {/* BOTÓN DE BATALLA */}
           <button
-            className={`huge-battle-cta ${userDeck.length < 8 ? 'cta-disabled' : ''}`}
-            onClick={() => userDeck.length >= 8 && navigate('/battle')}
-            disabled={userDeck.length < 8}
-            title={userDeck.length < 8 ? `Necesitas 8 runas en el mazo (${userDeck.length}/8)` : 'Iniciar batalla'}
+            className={`huge-battle-cta ${npcDeck.length < 5 ? 'cta-disabled' : ''}`}
+            onClick={() => npcDeck.length >= 5 && navigate('/battle')}
+            disabled={npcDeck.length < 5}
+            title={npcDeck.length < 5 ? `Necesitas 5 runas en el mazo NPC (${npcDeck.length}/5)` : 'Iniciar batalla'}
           >
             <div className="cta-glare"></div>
             <div className="cta-main-content">
-              <span className="cta-swords">{userDeck.length < 8 ? '' : '⚔️'}</span>
+              <span className="cta-swords">{npcDeck.length < 5 ? '' : '⚔️'}</span>
               <span className="cta-txt">
-                {userDeck.length < 8 ? 'MAZO INCOMPLETO' : '¡A LUCHAR!'}
+                {npcDeck.length < 5 ? 'MAZO NPC INCOMPLETO' : '¡A LUCHAR!'}
               </span>
             </div>
-            {userDeck.length < 8 && (
-              <span className="cta-sub">Equipas {userDeck.length}/8 runas</span>
+            {npcDeck.length < 5 && (
+              <span className="cta-sub">Equipas {npcDeck.length}/5 runas en el mazo NPC</span>
             )}
           </button>
 
@@ -260,42 +254,47 @@ const Home = () => {
             </div>
           ) : (
             <button
-              className={`online-battle-btn ${userDeck.length < 8 ? 'online-disabled' : ''}`}
+              className={`online-battle-btn ${onlineDeck.length < 8 ? 'online-disabled' : ''}`}
               onClick={handleRandomBattle}
-              title={userDeck.length < 8 ? 'Necesitas 8 runas en el mazo para el modo online' : 'Batalla online contra un rival aleatorio'}
+              title={onlineDeck.length < 8 ? 'Necesitas 8 runas en el mazo ONLINE para el modo online' : 'Batalla online contra un rival aleatorio'}
             >
               <span className="online-btn-icon">🌐</span>
               <span className="online-btn-txt">BATALLA ONLINE</span>
-              <span className="online-btn-sub">{userDeck.length < 8 ? 'Mazo incompleto' : 'vs. jugador aleatorio'}</span>
+              <span className="online-btn-sub">{onlineDeck.length < 8 ? `Mazo online ${onlineDeck.length}/8` : 'vs. jugador aleatorio'}</span>
             </button>
           )}
 
           {matchError && <div className="online-match-error">{matchError}</div>}
         </div>
 
-        {/* VISTA PREVIA DEL MAZO */}
-        <div className="home-deck-preview">
-          <div className="deck-preview-header">
-            <span className="deck-preview-title">TU MAZO ACTUAL</span>
-            <span className="deck-preview-count">{userDeck.length}/8</span>
+        {/* VISTA PREVIA DE LOS DOS MAZOS */}
+        {[
+          { title: '🤖 MAZO NPC', deck: npcDeck, size: 5, color: '#f39c12' },
+          { title: '🌐 MAZO ONLINE', deck: onlineDeck, size: 8, color: '#a855f7' }
+        ].map(({ title, deck, size, color }) => (
+          <div className="home-deck-preview" key={title}>
+            <div className="deck-preview-header">
+              <span className="deck-preview-title" style={{ color }}>{title}</span>
+              <span className={`deck-preview-count ${deck.length === size ? 'deck-count-ok' : ''}`}>{deck.length}/{size}</span>
+            </div>
+            <div className="deck-preview-track">
+              {Array.from({ length: size }).map((_, i) => {
+                const rune = deck[i];
+                return (
+                  <div key={i} className="deck-preview-slot">
+                    {rune ? (
+                      <RuneCard rune={rune} owned={true} battleMode={true} />
+                    ) : (
+                      <div className="deck-preview-empty">
+                        <span className="empty-plus">+</span>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
           </div>
-          <div className="deck-preview-track">
-            {Array.from({ length: 8 }).map((_, i) => {
-              const rune = userDeck[i];
-              return (
-                <div key={i} className="deck-preview-slot">
-                  {rune ? (
-                    <RuneCard rune={rune} owned={true} battleMode={true} />
-                  ) : (
-                    <div className="deck-preview-empty">
-                      <span className="empty-plus">+</span>
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        </div>
+        ))}
 
         <div className="home-coming-soon">
           <span className="coming-soon-rune">ᛟ</span>

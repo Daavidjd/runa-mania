@@ -784,3 +784,9 @@
   from { opacity: 0; transform: translateY(-4px); }
   to { opacity: 1; transform: translateY(0); }
 }
+
+/* Contador de mazo completo en preview del home */
+.deck-count-ok {
+  color: #00e676 !important;
+  border-color: #00e676 !important;
+}

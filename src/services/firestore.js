@@ -48,11 +48,42 @@ export const getUserDecks = async (userId) => {
   return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 };
 
+// Guardado con ID determinista por tipo de mazo ('npc' -> 5 runas, 'online' -> 8 runas)
+// Evita duplicados y reemplaza el mazo anterior del mismo tipo.
 export const saveDeck = async (userId, deck) => {
-  await addDoc(collection(db, `users/${userId}/decks`), {
+  const deckType = deck.type || 'npc';
+  await setDoc(doc(db, `users/${userId}/decks`, deckType), {
     ...deck,
+    type: deckType,
     createdAt: new Date().toISOString()
-  });
+  }, { merge: true });
+};
+
+// Obtiene los mazos separados por tipo con fallback a datos heredados
+export const getPlayerDecks = async (userId) => {
+  try {
+    const decks = await getUserDecks(userId);
+    let npc = decks.find(d => d.type === 'npc') || null;
+    let online = decks.find(d => d.type === 'online') || null;
+
+    // Compatibilidad con mazos antiguos sin campo 'type':
+    // >5 runas se considera mazo online, <=5 mazo NPC
+    if (!npc && !online) {
+      const legacy = decks.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))[0];
+      if (legacy) {
+        if ((legacy.runes || []).length > 5) online = legacy;
+        else npc = legacy;
+      }
+    }
+
+    return {
+      npc: npc?.runes || [],
+      online: online?.runes || []
+    };
+  } catch (error) {
+    console.error('Error obteniendo mazos:', error);
+    return { npc: [], online: [] };
+  }
 };
 
 export const deleteDeck = async (userId, deckId) => {
@@ -150,19 +181,28 @@ export const getDailyRockStatus = async (userId) => {
 // 🌐 SISTEMA EN LÍNEA: AMIGOS (agregar, eliminar, retar)
 // ============================================================
 
-// Búsqueda de jugadores por su ID de invocador (los primeros 8 caracteres)
+// Búsqueda de jugadores por su código de invocador (6 caracteres: 3 letras + 3 números)
 export const searchUserByCode = async (code) => {
-  const clean = (code || '').trim().toUpperCase();
+  const clean = (code || '').trim().toUpperCase().replace(/[^A-Z0-9]/g, '');
   if (!clean) return [];
   try {
-    const q = query(
-      collection(db, 'users'),
-      where('userId', '>=', clean),
-      where('userId', '<=', clean + '\uf8ff'),
-      fsLimit(10)
-    );
-    const snap = await getDocs(q);
-    return snap.docs.map(d => ({ uid: d.id, ...d.data() }));
+    // 1) Búsqueda exacta por playerCode nuevo (K7RM2Q) o legacy (8 chars uid)
+    let q = query(collection(db, 'users'), where('playerCode', '==', clean), fsLimit(10));
+    let snap = await getDocs(q);
+    let results = snap.docs.map(d => ({ uid: d.id, ...d.data() }));
+
+    // 2) Compatibilidad: también coincide con los primeros caracteres del ID antiguo
+    if (results.length === 0 && clean.length >= 4) {
+      q = query(
+        collection(db, 'users'),
+        where('userId', '>=', clean),
+        where('userId', '<=', clean + '\uf8ff'),
+        fsLimit(10)
+      );
+      snap = await getDocs(q);
+      results = snap.docs.map(d => ({ uid: d.id, ...d.data() }));
+    }
+    return results;
   } catch (error) {
     console.error('Error buscando jugadores:', error);
     return [];
@@ -608,15 +648,55 @@ export const recordOnlineBattleResult = async (userId, won) => {
 };
 
 
-// Mazo activo de un jugador (último guardado) — usado por las batallas en línea
+// Mazo activo de un jugador para batallas EN LÍNEA (mazo de 8 runas).
+// Fallback: último mazo guardado de cualquier tipo.
 export const getUserActiveDeck = async (userId) => {
   try {
-    const decks = await getUserDecks(userId);
-    if (!decks.length) return [];
-    decks.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-    return decks[0].runes || [];
+    const { online, npc } = await getPlayerDecks(userId);
+    return online.length ? online : npc;
   } catch (error) {
     console.error('Error obteniendo mazo activo:', error);
     return [];
   }
+};
+
+// Mazo activo para batallas NPC (mazo de 5 runas).
+// Fallback: mazo online recortado a 5.
+export const getUserNpcDeck = async (userId) => {
+  try {
+    const { npc, online } = await getPlayerDecks(userId);
+    return npc.length ? npc : online.slice(0, 5);
+  } catch (error) {
+    console.error('Error obteniendo mazo NPC:', error);
+    return [];
+  }
+};
+
+// ============================================================
+// 🆔 CÓDIGO DE JUGADOR: 6 caracteres — 3 letras + 3 números
+// Ejemplo: K7RM2Q → se muestra como "K7R-M2Q"
+// ============================================================
+const CODE_LETTERS = 'ABCDEFGHJKLMNPQRSTUVWXYZ'; // sin I/O para evitar confusiones
+const CODE_DIGITS = '0123456789';
+
+export const generatePlayerCode = () => {
+  const pick = (chars) => chars[Math.floor(Math.random() * chars.length)];
+  // 3 letras y 3 números intercalados en posiciones aleatorias
+  const slots = [null, null, null, null, null, null];
+  const letterPositions = [...Array(6).keys()].sort(() => Math.random() - 0.5).slice(0, 3);
+  for (let i = 0; i < 6; i++) {
+    slots[i] = letterPositions.includes(i) ? pick(CODE_LETTERS) : pick(CODE_DIGITS);
+  }
+  return slots.join('');
+};
+
+// Busca un perfil disponible cuyo playerCode aún no esté en uso
+export const findFreePlayerCode = async () => {
+  for (let attempt = 0; attempt < 8; attempt++) {
+    const code = generatePlayerCode();
+    const q = query(collection(db, 'users'), where('playerCode', '==', code), fsLimit(1));
+    const snap = await getDocs(q);
+    if (snap.empty) return code;
+  }
+  return generatePlayerCode(); // colisión improbable: se acepta
 };

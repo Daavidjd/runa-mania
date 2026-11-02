@@ -235,7 +235,7 @@ const FriendsPanel = ({ profile, open = true, onClose }) => {
             showToast('¡ID copiado al portapapeles! 📋');
           }}
         >
-          #{profile?.userId || '----'} 📋
+          #{profile?.playerCode || profile?.userId || '----'} 📋
         </span>
       </div>
 
@@ -268,7 +268,7 @@ const FriendsPanel = ({ profile, open = true, onClose }) => {
                   <img src={avatarSrc(f.avatarId)} alt={f.username} className="fp-avatar" />
                   <div className="fp-row-info">
                     <span className="fp-row-name">{f.username || 'Invocador'}</span>
-                    <span className="fp-row-sub">Nv. {f.level || 1} · #{f.userId} · 🏆 {f.onlineWins || 0}V / {f.onlineLosses || 0}D</span>
+                    <span className="fp-row-sub">Nv. {f.level || 1} · #{f.playerCode || f.userId} · 🏆 {f.onlineWins || 0}V / {f.onlineLosses || 0}D</span>
                   </div>
                   <div className="fp-row-actions">
                     <button className="fp-btn fp-btn-challenge" onClick={() => handleChallenge(f)}>⚔️ Retar</button>
@@ -289,7 +289,7 @@ const FriendsPanel = ({ profile, open = true, onClose }) => {
                   <img src={avatarSrc(r.sender.avatarId)} alt={r.sender.username} className="fp-avatar" />
                   <div className="fp-row-info">
                     <span className="fp-row-name">{r.sender.username || 'Invocador'}</span>
-                    <span className="fp-row-sub">Nv. {r.sender.level || 1} · #{r.sender.userId}</span>
+                    <span className="fp-row-sub">Nv. {r.sender.level || 1} · #{r.sender.playerCode || r.sender.userId}</span>
                   </div>
                   <div className="fp-row-actions">
                     <button className="fp-btn fp-btn-accept" onClick={() => handleAcceptRequest(r)}>✔️ Aceptar</button>
@@ -322,7 +322,7 @@ const FriendsPanel = ({ profile, open = true, onClose }) => {
                 <input
                   type="text"
                   className="fp-search-input"
-                  placeholder="ID del invocador (ej: A1B2C3D4)"
+                  placeholder="Código del invocador (ej: K7RM2Q)"
                   value={searchCode}
                   onChange={(e) => setSearchCode(e.target.value.toUpperCase())}
                   maxLength={12}
@@ -338,7 +338,7 @@ const FriendsPanel = ({ profile, open = true, onClose }) => {
                     <img src={avatarSrc(r.avatarId)} alt={r.username} className="fp-avatar" />
                     <div className="fp-row-info">
                       <span className="fp-row-name">{r.username || 'Invocador'}</span>
-                      <span className="fp-row-sub">Nv. {r.level || 1} · #{r.userId}</span>
+                      <span className="fp-row-sub">Nv. {r.level || 1} · #{r.playerCode || r.userId}</span>
                     </div>
                     <div className="fp-row-actions">
                       {isFriend(r.uid) ? (
@@ -353,7 +353,7 @@ const FriendsPanel = ({ profile, open = true, onClose }) => {
                 ))}
                 {searchResults.length === 0 && (
                   <p className="fp-empty">
-                    Comparte tu <b>#{profile?.userId}</b> con otros invocadores. Ellos deben buscarte por ese ID y viceversa. 💡 Si ambos se envían solicitud, se aceptan automáticamente.
+                    Comparte tu <b>#{profile?.playerCode || profile?.userId}</b> con otros invocadores. Ellos deben buscarte por ese ID y viceversa. 💡 Si ambos se envían solicitud, se aceptan automáticamente.
                   </p>
                 )}
               </div>
