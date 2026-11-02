@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { getUserDecks, getUserProfile, updateUserProfile } from '../services/firestore';
+import { getUserNpcDeck, getUserProfile, updateUserProfile } from '../services/firestore';
 import { RUNES_DB } from '../data/runes';
 import RuneCard from './RuneCard';
 
@@ -32,11 +32,11 @@ const generateAIDeck = (difficulty) => {
   let deck = [];
 
   if (difficulty === 'Fácil') {
-    // Sky: 100% comunes (runas débiles, 2-4 flechas)
+    // Sky: 100% comunes (runas débiles, 2-4 flechas) — mazo NPC de 5
     const shuffled = [...comunRunes].sort(() => 0.5 - Math.random());
     deck = shuffled.slice(0, 5).map(r => r.id);
   } else if (difficulty === 'Medio') {
-    // elJonny: 60% comunes, 40% raras
+    // elJonny: 60% comunes, 40% raras — mazo NPC de 5
     const shuffledComun = [...comunRunes].sort(() => 0.5 - Math.random());
     const shuffledRara = [...raraRunes].sort(() => 0.5 - Math.random());
     deck = [
@@ -44,7 +44,7 @@ const generateAIDeck = (difficulty) => {
       ...shuffledRara.slice(0, 2).map(r => r.id)
     ];
   } else if (difficulty === 'Difícil') {
-    // Eustakio: 20% comunes, 40% raras, 40% épicas
+    // Eustakio: 20% comunes, 40% raras, 40% épicas — mazo NPC de 5
     const shuffledComun = [...comunRunes].sort(() => 0.5 - Math.random());
     const shuffledRara = [...raraRunes].sort(() => 0.5 - Math.random());
     const shuffledEpica = [...epicaRunes].sort(() => 0.5 - Math.random());
@@ -54,6 +54,7 @@ const generateAIDeck = (difficulty) => {
       ...shuffledEpica.slice(0, 2).map(r => r.id)
     ];
   }
+  return deck.slice(0, 5);
 
   return deck;
 };
@@ -147,18 +148,14 @@ const Battle = () => {
 
       let playerRunes = [];
       if (user) {
-        const decks = await getUserDecks(user.uid);
-        if (decks.length > 0) {
-          decks.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-          if (decks[0].runes?.length > 0) {
-            playerRunes = decks[0].runes
-              .map(id => RUNES_DB.find(r => r.id === id))
-              .filter(Boolean)
-              .map(r => ({ ...r, owner: 'player' }));
-          }
-        }
+        const npcDeckIds = await getUserNpcDeck(user.uid); // mazo de 5 runas para NPC
+        playerRunes = npcDeckIds
+          .map(id => RUNES_DB.find(r => r.id === id))
+          .filter(Boolean)
+          .slice(0, 5)
+          .map(r => ({ ...r, owner: 'player' }));
       }
-      if (playerRunes.length === 0) {
+      if (playerRunes.length < 2) {
         const shuffled = [...RUNES_DB].sort(() => 0.5 - Math.random());
         playerRunes = shuffled.slice(0, 5).map(r => ({ ...r, owner: 'player' }));
       }

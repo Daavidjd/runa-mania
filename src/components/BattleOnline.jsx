@@ -47,7 +47,7 @@ const buildHandFromIds = (runeIds, owner) => {
   if (runes.length >= 2) return runes;
   // Fallback si el rival no tiene mazo guardado: runas aleatorias
   const shuffled = [...RUNES_DB].sort(() => 0.5 - Math.random());
-  return shuffled.slice(0, 5).map(r => ({ ...r, owner }));
+  return shuffled.slice(0, 8).map(r => ({ ...r, owner }));
 };
 
 const getRoomSnapshot = async (roomId) => {

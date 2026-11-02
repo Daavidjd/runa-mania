@@ -56,12 +56,12 @@
   text-align: center;
 }
 
-/* Distribución 3 arriba + 2 abajo centrados */
+/* Distribución 4 arriba + 4 abajo (mazo de 8 cartas) */
 .deck-hero-grid {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 12px;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  justify-items: center;
+  gap: 10px;
   background: #080c14;
   border: 3px solid #1a2438;
   border-radius: 24px;
@@ -70,8 +70,8 @@
 }
 
 .deck-hero-slot {
-  width: calc(33.333% - 12px);
-  max-width: 105px;
+  width: 100%;
+  max-width: 95px;
   aspect-ratio: 1;
   position: relative;
 }
@@ -223,4 +223,98 @@
   box-shadow: 0 1.5px 0 #008f49;
   z-index: 15;
   white-space: nowrap;
+}
+
+/* ==========================================================================
+   SELECTOR DE MAZOS (NPC 5 runas / ONLINE 8 runas)
+   ========================================================================== */
+.deck-tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.deck-tab {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  background: #0a101d;
+  border: 2.5px solid #1c2740;
+  border-radius: 14px;
+  color: #7488ad;
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.5px;
+  padding: 8px 10px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  box-shadow: 0 3px 0 #05080f;
+}
+
+.deck-tab:active {
+  transform: translateY(2px);
+  box-shadow: 0 1px 0 #05080f;
+}
+
+.deck-tab-active {
+  background: #16203a;
+  border-color: var(--tab-color, #00d4ff);
+  color: #ffffff;
+  box-shadow: 0 3px 0 #05080f, 0 0 12px color-mix(in srgb, var(--tab-color, #00d4ff) 35%, transparent);
+}
+
+.deck-tab-count {
+  background: #05080f;
+  border: 1.5px solid #243350;
+  border-radius: 8px;
+  padding: 1px 6px;
+  font-size: 10px;
+  color: #9cb1d6;
+}
+
+.deck-tab-active .deck-tab-count {
+  border-color: var(--tab-color, #00d4ff);
+  color: var(--tab-color, #00d4ff);
+}
+
+/* Header con hint de completado */
+.deck-hero-header {
+  gap: 8px;
+}
+
+.deck-hero-hint {
+  background: #090d18;
+  border: 1.5px solid #243350;
+  color: #f39c12;
+  border-radius: 8px;
+  font-size: 10px;
+  font-weight: 900;
+  padding: 2px 8px;
+}
+
+.deck-hero-hint-ok {
+  color: #00e676;
+  border-color: #00e676;
+}
+
+/* Grid según tipo de mazo */
+.deck-grid-npc {
+  grid-template-columns: repeat(5, 1fr);
+  gap: 6px;
+}
+
+.deck-grid-npc .deck-hero-slot {
+  max-width: 62px;
+}
+
+.deck-grid-online {
+  grid-template-columns: repeat(4, 1fr);
+}
+
+/* En el mazo NPC no existe "segunda fila" visual separada */
+.deck-grid-npc .deck-hero-slot.bottom-row {
+  /* mismo espaciado que la primera fila */
 }

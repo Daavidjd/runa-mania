@@ -396,16 +396,17 @@
 }
 
 .deck-preview-track {
-  display: flex;
-  justify-content: center;
+  display: grid;
+  grid-template-columns: repeat(8, 1fr);
+  justify-items: center;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   width: 100%;
 }
 
 .deck-preview-slot {
-  width: 18%;
-  max-width: 80px;
+  width: 100%;
+  max-width: 56px;
   aspect-ratio: 1;
   flex-shrink: 0;
 }
@@ -782,4 +783,10 @@
 @keyframes online-fade-in {
   from { opacity: 0; transform: translateY(-4px); }
   to { opacity: 1; transform: translateY(0); }
+}
+
+/* Contador de mazo completo en preview del home */
+.deck-count-ok {
+  color: #00e676 !important;
+  border-color: #00e676 !important;
 }
