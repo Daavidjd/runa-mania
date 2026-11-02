@@ -66,8 +66,11 @@ const BattleOnline = () => {
     catch { return null; }
   });
 
-  // Al entrar a la sala, el reto saliente ya fue aceptado: limpiarlo
-  useEffect(() => { localStorage.removeItem('pendingOutgoingChallenge'); }, []);
+  // Al entrar a la sala, el reto saliente / cola de matchmaking ya se consumió: limpiar
+  useEffect(() => {
+    localStorage.removeItem('pendingOutgoingChallenge');
+    localStorage.removeItem('randomMatchPending');
+  }, []);
 
   const [phase, setPhase] = useState(battleData ? 'connecting' : 'error'); // connecting | coinflip | playing | error
   const [room, setRoom] = useState({});
@@ -132,7 +135,7 @@ const BattleOnline = () => {
         setMyHand(hand.map(h => ({ ...h, owner: user.uid })));
         const oppHand = buildHandFromIds(oppDeckIds, 'opp');
 
-        const roomId = battleData.challengeId;
+        const roomId = battleData.roomId || battleData.challengeId;
         roomIdRef.current = roomId;
 
         // Unirse a la sala y escucharla en tiempo real
@@ -172,9 +175,12 @@ const BattleOnline = () => {
         })();
 
         // Si el reto fue cancelado/rechazado mientras conectábamos
-        challengeUnsubRef.current = watchChallenge(roomId, (ch) => {
-          if (!cancelled && ch && ch.status === 'declined') setPhase('error');
-        });
+        // (en partidas aleatorias no hay documento de reto, se omite)
+        if (battleData.challengeId) {
+          challengeUnsubRef.current = watchChallenge(battleData.challengeId, (ch) => {
+            if (!cancelled && ch && ch.status === 'declined') setPhase('error');
+          });
+        }
       } catch (err) {
         console.error('Error conectando a la sala online:', err);
         if (!cancelled) setPhase('error');
