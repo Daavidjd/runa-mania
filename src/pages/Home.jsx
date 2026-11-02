@@ -99,8 +99,8 @@ const Home = () => {
 
   const handleRandomBattle = async () => {
     if (!user || searching) return;
-    if (userDeck.length < 5) {
-      setMatchError('Necesitas un mazo completo de 5 runas para luchar 🔵🔴');
+    if (userDeck.length < 8) {
+      setMatchError('Necesitas un mazo completo de 8 runas para luchar 🔵🔴');
       setTimeout(() => setMatchError(''), 3500);
       return;
     }
@@ -229,20 +229,20 @@ const Home = () => {
 
           {/* BOTÓN DE BATALLA */}
           <button
-            className={`huge-battle-cta ${userDeck.length < 5 ? 'cta-disabled' : ''}`}
-            onClick={() => userDeck.length >= 5 && navigate('/battle')}
-            disabled={userDeck.length < 5}
-            title={userDeck.length < 5 ? `Necesitas 5 runas en el mazo (${userDeck.length}/5)` : 'Iniciar batalla'}
+            className={`huge-battle-cta ${userDeck.length < 8 ? 'cta-disabled' : ''}`}
+            onClick={() => userDeck.length >= 8 && navigate('/battle')}
+            disabled={userDeck.length < 8}
+            title={userDeck.length < 8 ? `Necesitas 8 runas en el mazo (${userDeck.length}/8)` : 'Iniciar batalla'}
           >
             <div className="cta-glare"></div>
             <div className="cta-main-content">
-              <span className="cta-swords">{userDeck.length < 5 ? '' : '⚔️'}</span>
+              <span className="cta-swords">{userDeck.length < 8 ? '' : '⚔️'}</span>
               <span className="cta-txt">
-                {userDeck.length < 5 ? 'MAZO INCOMPLETO' : '¡A LUCHAR!'}
+                {userDeck.length < 8 ? 'MAZO INCOMPLETO' : '¡A LUCHAR!'}
               </span>
             </div>
-            {userDeck.length < 5 && (
-              <span className="cta-sub">Equipas {userDeck.length}/5 runas</span>
+            {userDeck.length < 8 && (
+              <span className="cta-sub">Equipas {userDeck.length}/8 runas</span>
             )}
           </button>
 
@@ -260,13 +260,13 @@ const Home = () => {
             </div>
           ) : (
             <button
-              className={`online-battle-btn ${userDeck.length < 5 ? 'online-disabled' : ''}`}
+              className={`online-battle-btn ${userDeck.length < 8 ? 'online-disabled' : ''}`}
               onClick={handleRandomBattle}
-              title={userDeck.length < 5 ? 'Necesitas 5 runas en el mazo para el modo online' : 'Batalla online contra un rival aleatorio'}
+              title={userDeck.length < 8 ? 'Necesitas 8 runas en el mazo para el modo online' : 'Batalla online contra un rival aleatorio'}
             >
               <span className="online-btn-icon">🌐</span>
               <span className="online-btn-txt">BATALLA ONLINE</span>
-              <span className="online-btn-sub">{userDeck.length < 5 ? 'Mazo incompleto' : 'vs. jugador aleatorio'}</span>
+              <span className="online-btn-sub">{userDeck.length < 8 ? 'Mazo incompleto' : 'vs. jugador aleatorio'}</span>
             </button>
           )}
 
@@ -277,10 +277,10 @@ const Home = () => {
         <div className="home-deck-preview">
           <div className="deck-preview-header">
             <span className="deck-preview-title">TU MAZO ACTUAL</span>
-            <span className="deck-preview-count">{userDeck.length}/5</span>
+            <span className="deck-preview-count">{userDeck.length}/8</span>
           </div>
           <div className="deck-preview-track">
-            {Array.from({ length: 5 }).map((_, i) => {
+            {Array.from({ length: 8 }).map((_, i) => {
               const rune = userDeck[i];
               return (
                 <div key={i} className="deck-preview-slot">

@@ -59,8 +59,8 @@ const Collection = () => {
 
   const handleAddToDeck = async (rune) => {
     if (myDeck.find(r => r.id === rune.id)) return;
-    if (myDeck.length >= 5) {
-      alert('El mazo ya está lleno (5 runas máximo)');
+    if (myDeck.length >= 8) {
+      alert('El mazo ya está lleno (8 runas máximo)');
       return;
     }
 
@@ -137,14 +137,14 @@ const Collection = () => {
         </div>
 
         <div className="deck-hero-grid">
-          {Array.from({ length: 5 }).map((_, index) => {
+          {Array.from({ length: 8 }).map((_, index) => {
             const rune = myDeck[index];
             const isSelected = selectedDeckRune?.id === rune?.id;
 
             return (
               <div
                 key={index}
-                className={`deck-hero-slot ${index >= 3 ? 'bottom-row' : ''}`}
+                className={`deck-hero-slot ${index >= 4 ? 'bottom-row' : ''}`}
               >
                 {rune ? (
                   <div
