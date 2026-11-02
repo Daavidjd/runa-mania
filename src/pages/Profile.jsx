@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { getUserProfile, createUserProfile, getIncomingRequests, getPendingChallengesFor } from '../services/firestore';
+import { getUserProfile, createUserProfile, getIncomingRequests, getPendingChallengesFor, findFreePlayerCode } from '../services/firestore';
 import FriendsPanel from '../components/FriendsPanel';
 import { EmailAuthProvider, linkWithCredential } from 'firebase/auth';
 import { auth } from '../services/firebase';
@@ -30,6 +30,13 @@ const Profile = () => {
     try {
       const userProfile = await getUserProfile(user.uid);
       if (userProfile) {
+        // Migración automática: cuentas antiguas con ID largo -> código corto 6 chars
+        if (!userProfile.playerCode) {
+          const playerCode = await findFreePlayerCode();
+          await createUserProfile(user.uid, { ...userProfile, playerCode, userId: playerCode });
+          userProfile.playerCode = playerCode;
+          userProfile.userId = playerCode;
+        }
         setProfile(userProfile);
         setUsername(userProfile.username || '');
         setSelectedAvatarId(userProfile.avatarId || 'arquero');
@@ -39,7 +46,7 @@ const Profile = () => {
           email: user.email,
           username: user.email ? user.email.split('@')[0] : 'Invitado',
           avatarId: 'arquero',
-          userId: user.uid.substring(0, 8).toUpperCase(),
+          playerCode: await findFreePlayerCode(),
           coins: 100,
           level: 1,
           xp: 0,
@@ -188,7 +195,7 @@ const Profile = () => {
           <span className="profile-title-rune"></span>
           <div>
             <h1 className="profile-title-txt">PERFIL DE INVOCADOR</h1>
-            <span className="profile-id-txt">ID: {profile?.userId || '----'}</span>
+            <span className="profile-id-txt">ID: {profile?.playerCode || profile?.userId || '------'}</span>
           </div>
         </div>
 

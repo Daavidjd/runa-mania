@@ -1,20 +1,29 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { RUNES_DB } from '../data/runes';
-import { getUserCollection, getUserDecks, saveDeck, deleteDeck } from '../services/firestore';
+import { getUserCollection, getPlayerDecks, saveDeck } from '../services/firestore';
 import RuneCard from '../components/RuneCard';
 import RuneDetail from '../components/RuneDetail';
 import './Collection.css';
+
+// Dos mazos: NPC (5 runas) y ONLINE (8 runas)
+const DECK_CONFIG = {
+  npc:    { label: '🤖 MAZO NPC',    size: 5, slots: 5, color: '#f39c12' },
+  online: { label: '🌐 MAZO ONLINE', size: 8, slots: 8, color: '#a855f7' }
+};
 
 const Collection = () => {
   const { user } = useAuth();
 
   const [ownedRunes, setOwnedRunes] = useState({});
   const [selectedRune, setSelectedRune] = useState(null);
-  const [myDeck, setMyDeck] = useState([]);
-  const [deckId, setDeckId] = useState(null);
+  const [activeTab, setActiveTab] = useState('npc'); // 'npc' | 'online'
+  const [decks, setDecks] = useState({ npc: [], online: [] }); // listas de runas por mazo
   const [selectedDeckRune, setSelectedDeckRune] = useState(null);
   const [loading, setLoading] = useState(true);
+
+  const cfg = DECK_CONFIG[activeTab];
+  const currentDeck = decks[activeTab];
 
   const loadData = async () => {
     if (!user) return;
@@ -34,18 +43,11 @@ const Collection = () => {
 
       setOwnedRunes(ownedMap);
 
-      const userDecks = await getUserDecks(user.uid);
-      if (userDecks.length > 0) {
-        userDecks.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-        
-        const deck = userDecks[0];
-        setDeckId(deck.id);
-        const deckRunes = (deck.runes || []).map(id => ownedMap[id]).filter(Boolean);
-        setMyDeck(deckRunes);
-      } else {
-        setMyDeck([]);
-        setDeckId(null);
-      }
+      const rawDecks = await getPlayerDecks(user.uid);
+      setDecks({
+        npc: (rawDecks.npc || []).map(id => ownedMap[id]).filter(Boolean),
+        online: (rawDecks.online || []).map(id => ownedMap[id]).filter(Boolean)
+      });
     } catch (error) {
       console.error('Error cargando colección:', error);
     } finally {
@@ -57,88 +59,73 @@ const Collection = () => {
     loadData();
   }, [user]);
 
+  // Guarda el mazo completo en su doc determinista ('npc' o 'online')
+  const persistDeck = async (type, runes) => {
+    const next = { ...decks, [type]: runes };
+    setDecks(next);
+    try {
+      await saveDeck(user.uid, {
+        name: type === 'npc' ? 'Mazo NPC' : 'Mazo Online',
+        type,
+        runes: runes.map(r => r.id)
+      });
+    } catch (error) {
+      console.error('Error guardando mazo:', error);
+    }
+  };
+
   const handleAddToDeck = async (rune) => {
-    if (myDeck.find(r => r.id === rune.id)) return;
-    if (myDeck.length >= 8) {
-      alert('El mazo ya está lleno (8 runas máximo)');
+    if (currentDeck.find(r => r.id === rune.id)) return;
+    if (currentDeck.length >= cfg.size) {
+      alert(`El mazo ${activeTab === 'npc' ? 'NPC' : 'Online'} ya está lleno (${cfg.size} runas máximo)`);
       return;
     }
-
-    try {
-      const newRunes = [...myDeck, rune];
-      
-      if (deckId) {
-        await deleteDeck(user.uid, deckId);
-      }
-
-      await saveDeck(user.uid, {
-        name: 'Mi Mazo',
-        runes: newRunes.map(r => r.id)
-      });
-
-      setMyDeck(newRunes);
-      
-      const decks = await getUserDecks(user.uid);
-      if (decks.length > 0) {
-        decks.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-        setDeckId(decks[0].id);
-      }
-    } catch (error) {
-      console.error('Error añadiendo al mazo:', error);
-    }
+    await persistDeck(activeTab, [...currentDeck, rune]);
+    setSelectedRune(null);
   };
 
   const handleRemoveFromDeck = async (rune, e) => {
     if (e) e.stopPropagation();
-    try {
-      const newRunes = myDeck.filter(r => r.id !== rune.id);
-      
-      if (deckId) {
-        await deleteDeck(user.uid, deckId);
-      }
-
-      if (newRunes.length > 0) {
-        await saveDeck(user.uid, {
-          name: 'Mi Mazo',
-          runes: newRunes.map(r => r.id)
-        });
-      }
-
-      setMyDeck(newRunes);
-      setSelectedDeckRune(null);
-
-      if (newRunes.length === 0) {
-        setDeckId(null);
-      } else {
-        const decks = await getUserDecks(user.uid);
-        if (decks.length > 0) {
-          decks.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-          setDeckId(decks[0].id);
-        }
-      }
-    } catch (error) {
-      console.error('Error quitando del mazo:', error);
-    }
+    await persistDeck(activeTab, currentDeck.filter(r => r.id !== rune.id));
+    setSelectedDeckRune(null);
   };
 
-  const isInDeck = (rune) => myDeck.some(r => r.id === rune.id);
+  const isInDeck = (rune) => currentDeck.some(r => r.id === rune.id);
   const unlockedCount = Object.keys(ownedRunes).length;
 
   if (loading) {
-    return <div className="collection-loading">Cargando mazo y runas...</div>;
+    return <div className="collection-loading">Cargando mazos y runas...</div>;
   }
 
   return (
     <div className="collection-screen">
       {/* 1. EL MAZO PROTAGONISTA (Anclado arriba) */}
       <section className="deck-hero-section">
-        <div className="deck-hero-header">
-          <h2 className="deck-hero-title">MAZO DE BATALLA</h2>
+        {/* Selector de mazo: NPC (5) u Online (8) */}
+        <div className="deck-tabs">
+          {Object.entries(DECK_CONFIG).map(([key, c]) => (
+            <button
+              key={key}
+              className={`deck-tab ${activeTab === key ? 'deck-tab-active' : ''}`}
+              style={activeTab === key ? { '--tab-color': c.color } : undefined}
+              onClick={() => { setActiveTab(key); setSelectedDeckRune(null); }}
+            >
+              <span className="deck-tab-label">{c.label}</span>
+              <span className="deck-tab-count">{decks[key].length}/{c.size}</span>
+            </button>
+          ))}
         </div>
 
-        <div className="deck-hero-grid">
-          {Array.from({ length: 8 }).map((_, index) => {
-            const rune = myDeck[index];
+        <div className="deck-hero-header">
+          <h2 className="deck-hero-title" style={{ color: cfg.color }}>{cfg.label}</h2>
+          <span className={`deck-hero-hint ${currentDeck.length === cfg.size ? 'deck-hero-hint-ok' : ''}`}>
+            {currentDeck.length === cfg.size ? '✓ Completo' : `${currentDeck.length}/${cfg.size}`}
+          </span>
+        </div>
+
+        <div className={`deck-hero-grid ${activeTab === 'npc' ? 'deck-grid-npc' : 'deck-grid-online'}`}>
+          {Array.from({ length: cfg.slots }).map((_, index) => {
+            const rune = currentDeck[index];
             const isSelected = selectedDeckRune?.id === rune?.id;
 
             return (
@@ -195,7 +182,11 @@ const Collection = () => {
                   owned={owned}
                   onClick={() => setSelectedRune(rune)}
                 />
-                {inDeck && <div className="compact-deck-badge">✓ EN MAZO</div>}
+                {inDeck && (
+                  <div className="compact-deck-badge" style={{ background: cfg.color }}>
+                    ✓ EN MAZO
+                  </div>
+                )}
               </div>
             );
           })}

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { createUserProfile, getUserProfile } from '../services/firestore';
+import { createUserProfile, getUserProfile, findFreePlayerCode } from '../services/firestore';
 import './Auth.css';
 
 const Auth = () => {
@@ -41,12 +41,14 @@ const Auth = () => {
       if (mode === 'register') {
         const userCredential = await register(email, password);
         const userId = userCredential.user.uid;
+        const playerCode = await findFreePlayerCode();
 
         await createUserProfile(userId, {
           email: email,
           username: username.trim(),
           avatarId: 'arquero',
-          userId: userId.substring(0, 8).toUpperCase(),
+          playerCode: playerCode,
+          userId: playerCode,
           coins: 1000,
           level: 1,
           xp: 0,
@@ -59,11 +61,13 @@ const Auth = () => {
 
         const profile = await getUserProfile(userId);
         if (!profile) {
+          const playerCode = await findFreePlayerCode();
           await createUserProfile(userId, {
             email: email,
             username: email.split('@')[0],
             avatarId: 'arquero',
-            userId: userId.substring(0, 8).toUpperCase(),
+            playerCode: playerCode,
+            userId: playerCode,
             coins: 10000,
             level: 1,
             xp: 0,
@@ -91,13 +95,14 @@ const Auth = () => {
     try {
       const userCredential = await registerGuest();
       const userId = userCredential.user.uid;
-      const randomId = Math.random().toString(36).substring(2, 8).toUpperCase();
+      const playerCode = await findFreePlayerCode();
 
       await createUserProfile(userId, {
         email: 'guest@runamania.com',
-        username: `Invitado_${randomId}`,
+        username: `Invitado_${playerCode}`,
         avatarId: 'arquero',
-        userId: userId.substring(0, 8).toUpperCase(),
+        playerCode: playerCode,
+        userId: playerCode,
         coins: 1000,
         level: 1,
         xp: 0,

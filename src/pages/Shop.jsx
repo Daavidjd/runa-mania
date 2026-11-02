@@ -77,11 +77,14 @@ const Shop = () => {
       if (userProfile) {
         setProfile(userProfile);
       } else {
+        const { findFreePlayerCode } = await import('../services/firestore');
+        const playerCode = await findFreePlayerCode();
         const initialProfile = {
           email: user.email,
           username: user.email ? user.email.split('@')[0] : 'Invocador',
           avatarId: 'arquero',
-          userId: user.uid.substring(0, 8).toUpperCase(),
+          playerCode: playerCode,
+          userId: playerCode,
           coins: 100,
           level: 1,
           xp: 0,
