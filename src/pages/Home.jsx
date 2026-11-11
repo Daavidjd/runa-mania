@@ -258,7 +258,7 @@ const Home = () => {
             onClick={handleRandomBattle}
             title={battleDeck.length < 8 ? 'Necesitas 8 runas en el mazo compartido para el modo online' : 'Batalla online contra un rival aleatorio'}
           >
-            <span className="online-btn-icon">🌐</span>
+            <span className="online-btn-icon" aria-hidden="true">?</span>
             <span className="online-btn-txt">BATALLA ONLINE</span>
             <span className="online-btn-sub">{battleDeck.length < 8 ? `Mazo compartido ${battleDeck.length}/8` : 'vs. jugador aleatorio'}</span>
           </button>
