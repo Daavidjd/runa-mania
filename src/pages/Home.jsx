@@ -10,7 +10,6 @@ import {
 } from '../services/firestore';
 import { RUNES_DB } from '../data/runes';
 import { AVATAR_OPTIONS } from '../data/avatars'; // ✅ IMPORTACIÓN CENTRALIZADA
-import RuneCard from '../components/RuneCard';
 
 import './Home.css';
 
@@ -238,60 +237,34 @@ const Home = () => {
             )}
           </button>
 
-          {/* 🎮 BOTÓN DE BATALLA ONLINE ALEATORIA */}
-          {searching ? (
-            <div className="online-search-box">
-              <div className="online-search-row">
-                <span className="online-search-orb"></span>
-                <div className="online-search-text">
-                  <span className="online-search-title">BUSCANDO RIVAL...</span>
-                  <span className="online-search-sub">🔵🔴 Cualquier invocador · 50/50</span>
-                </div>
-              </div>
-              <button className="online-cancel-btn" onClick={stopSearching}>✕ Cancelar búsqueda</button>
-            </div>
-          ) : (
-            <button
-              className={`online-battle-btn ${battleDeck.length < 8 ? 'online-disabled' : ''}` }
-              onClick={handleRandomBattle}
-              title={battleDeck.length < 8 ? 'Necesitas 8 runas en el mazo compartido para el modo online' : 'Batalla online contra un rival aleatorio'}
-            >
-              <span className="online-btn-icon">🌐</span>
-              <span className="online-btn-txt">BATALLA ONLINE</span>
-              <span className="online-btn-sub">{battleDeck.length < 8 ? `Mazo compartido ${battleDeck.length}/8` : 'vs. jugador aleatorio'}</span>
-            </button>
-          )}
-
-          {matchError && <div className="online-match-error">{matchError}</div>}
         </div>
 
-        {/* VISTA PREVIA DEL MAZO COMPARTIDO */}
-        {[
-          { title: '⚔️ MAZO DE BATALLA', deck: battleDeck, size: 8, color: '#a855f7' }
-        ].map(({ title, deck, size, color }) => (
-          <div className="home-deck-preview" key={title}>
-            <div className="deck-preview-header">
-              <span className="deck-preview-title" style={{ color }}>{title}</span>
-              <span className={`deck-preview-count ${deck.length === size ? 'deck-count-ok' : ''}`}>{deck.length}/{size}</span>
+        {/* BATALLA ONLINE: fuera de la tarjeta NPC */}
+        {/* 🎮 BOTÓN DE BATALLA ONLINE ALEATORIA */}
+        {searching ? (
+          <div className="online-search-box">
+            <div className="online-search-row">
+              <span className="online-search-orb"></span>
+              <div className="online-search-text">
+                <span className="online-search-title">BUSCANDO RIVAL...</span>
+                <span className="online-search-sub">🔵🔴 Cualquier invocador · 50/50</span>
+              </div>
             </div>
-            <div className="deck-preview-track">
-              {Array.from({ length: size }).map((_, i) => {
-                const rune = deck[i];
-                return (
-                  <div key={i} className="deck-preview-slot">
-                    {rune ? (
-                      <RuneCard rune={rune} owned={true} battleMode={true} />
-                    ) : (
-                      <div className="deck-preview-empty">
-                        <span className="empty-plus">+</span>
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
+            <button className="online-cancel-btn" onClick={stopSearching}>✕ Cancelar búsqueda</button>
           </div>
-        ))}
+        ) : (
+          <button
+            className={`online-battle-btn ${battleDeck.length < 8 ? 'online-disabled' : ''}` }
+            onClick={handleRandomBattle}
+            title={battleDeck.length < 8 ? 'Necesitas 8 runas en el mazo compartido para el modo online' : 'Batalla online contra un rival aleatorio'}
+          >
+            <span className="online-btn-icon">🌐</span>
+            <span className="online-btn-txt">BATALLA ONLINE</span>
+            <span className="online-btn-sub">{battleDeck.length < 8 ? `Mazo compartido ${battleDeck.length}/8` : 'vs. jugador aleatorio'}</span>
+          </button>
+        )}
+
+        {matchError && <div className="online-match-error">{matchError}</div>}
 
         <div className="home-coming-soon">
           <span className="coming-soon-rune">ᛟ</span>
