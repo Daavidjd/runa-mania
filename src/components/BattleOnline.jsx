@@ -307,7 +307,7 @@ const BattleOnline = () => {
     for (const { dr, dc, s, o } of dirs) {
       const nr = row + dr, nc = col + dc;
       if (nr >= 0 && nr < 4 && nc >= 0 && nc < 4) {
-        const idx = nr * 3 + nc;
+        const idx = nr * 4 + nc;
         const adj = newBoard[idx];
         if (adj && adj.owner !== user.uid) {
           const atk = card.arrows?.[s] || 0;
@@ -479,17 +479,6 @@ const BattleOnline = () => {
           <span className="bp-score-badge-value">{scores.opp}</span>
         </div>
       </div>
-
-      {/* MAZO RIVAL (cartas boca abajo) */}
-      <section className="bp-hand-area bp-hand-ai-area">
-        <div className="bp-hand-track">
-          {Array.from({ length: oppHandCount }).map((_, i) => (
-            <div key={i} className="bp-slot bp-slot-ai">
-              <div className={`bo-card-back bo-back-${oppColor}`}>ᛞ</div>
-            </div>
-          ))}
-        </div>
-      </section>
 
       {/* ZONA CENTRAL */}
       <main className="bp-arena-center">
