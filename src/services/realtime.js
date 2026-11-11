@@ -8,36 +8,33 @@ const ROOM_PATH = 'onlineRooms';
 
 export const findRandomMatch = async (uid, name, avatarId) => {
   const myRef = ref(rtdb, `${QUEUE_PATH}/${uid}`);
-  const entry = { uid, name, avatarId: avatarId || 'mago', status: 'searching', searchedAt: Date.now() };
+  const entry = { uid, name, avatarId: avatarId || 'mago', status: 'waiting', searchedAt: Date.now() };
   try {
     await set(myRef, entry);
     await onDisconnect(myRef).remove();
-    const roomId = `online-${Date.now()}-${uid.slice(0, 6)}`;
-    let match = null;
-    const result = await runTransaction(ref(rtdb, QUEUE_PATH), (queue) => {
-      queue = queue || {};
-      const candidates = Object.values(queue)
-        .filter(p => p && p.uid !== uid && ['searching', 'waiting'].includes(p.status)
-          && Date.now() - (p.searchedAt || 0) < 60000)
-        .sort((a, b) => (a.searchedAt || 0) - (b.searchedAt || 0));
-      if (candidates.length) {
-        const opponent = candidates[0];
-        match = { opponent, roomId };
-        queue[opponent.uid] = { ...opponent, status: 'matched', opponentUid: uid,
+
+    const queueSnap = await get(ref(rtdb, QUEUE_PATH));
+    const candidates = Object.values(queueSnap.val() || {})
+      .filter(p => p && p.uid !== uid && p.status === 'waiting'
+        && Date.now() - (p.searchedAt || 0) < 60000)
+      .sort((a, b) => (a.searchedAt || 0) - (b.searchedAt || 0));
+
+    for (const opponent of candidates) {
+      const roomId = `online-${Date.now()}-${uid.slice(0, 6)}`;
+      const opponentRef = ref(rtdb, `${QUEUE_PATH}/${opponent.uid}`);
+      const claim = await runTransaction(opponentRef, current => {
+        if (!current || current.status !== 'waiting'
+          || Date.now() - (current.searchedAt || 0) >= 60000) return;
+        return { ...current, status: 'matched', opponentUid: uid,
           opponentName: name, opponentAvatarId: avatarId || 'mago', roomId };
-        queue[uid] = { ...entry, status: 'matched', opponentUid: opponent.uid,
-          opponentName: opponent.name || 'Rival', opponentAvatarId: opponent.avatarId || 'mago', roomId };
-      } else {
-        queue[uid] = { ...entry, status: 'waiting' };
-      }
-      return queue;
-    }, { applyLocally: false });
-    if (!result.committed) return { success: false, matched: false, message: 'No se pudo entrar en la cola' };
-    const mine = result.snapshot.child(uid).val();
-    if (mine?.status === 'matched') return {
-      success: true, matched: true, roomId: mine.roomId, opponentUid: mine.opponentUid,
-      opponentName: mine.opponentName, opponentAvatarId: mine.opponentAvatarId
-    };
+      }, { applyLocally: false });
+      if (!claim.committed) continue;
+
+      await set(myRef, { ...entry, status: 'matched', opponentUid: opponent.uid,
+        opponentName: opponent.name || 'Rival', opponentAvatarId: opponent.avatarId || 'mago', roomId });
+      return { success: true, matched: true, roomId, opponentUid: opponent.uid,
+        opponentName: opponent.name || 'Rival', opponentAvatarId: opponent.avatarId || 'mago' };
+    }
     return { success: true, matched: false };
   } catch (error) {
     console.error('Error buscando partida en Realtime Database:', error);
