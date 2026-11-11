@@ -404,7 +404,6 @@ const BattleOnline = () => {
                 <>
                   <div className="bo-waiting-orb"></div>
                   <span className="bo-lobby-name">Esperando rivales...</span>
-                  <span className="bo-lobby-dots"></span>
                 </>
               )}
             </div>
