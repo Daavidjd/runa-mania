@@ -49,8 +49,7 @@ const Home = () => {
   const navigate = useNavigate();
 
   const [profile, setProfile] = useState(null);
-  const [npcDeck, setNpcDeck] = useState([]);    // mazo de 5 runas para batallas NPC
-  const [onlineDeck, setOnlineDeck] = useState([]); // mazo de 8 runas para batallas online
+  const [battleDeck, setBattleDeck] = useState([]); // mazo compartido de 8 runas para NPC y online
   const [showOpponentModal, setShowOpponentModal] = useState(false);
 
   // 🎮 Estado del matchmaking aleatorio (batalla online con cualquiera)
@@ -69,8 +68,7 @@ const Home = () => {
         const userProfile = await getUserProfile(user.uid);
         if (userProfile) setProfile(userProfile);
         const rawDecks = await getPlayerDecks(user.uid);
-        setNpcDeck((rawDecks.npc || []).map(id => RUNES_DB.find(r => r.id === id)).filter(Boolean));
-        setOnlineDeck((rawDecks.online || []).map(id => RUNES_DB.find(r => r.id === id)).filter(Boolean));
+        setBattleDeck((rawDecks.shared || rawDecks.online || rawDecks.npc || []).map(id => RUNES_DB.find(r => r.id === id)).filter(Boolean));
       } catch (err) {
         console.error('Error cargando datos del home:', err);
       }
@@ -93,8 +91,8 @@ const Home = () => {
 
   const handleRandomBattle = async () => {
     if (!user || searching) return;
-    if (onlineDeck.length < 8) {
-      setMatchError('Necesitas el mazo ONLINE completo de 8 runas para luchar 🔵🔴');
+    if (battleDeck.length < 8) {
+      setMatchError('Necesitas completar tu mazo de batalla con 8 runas para luchar 🔵🔴');
       setTimeout(() => setMatchError(''), 3500);
       return;
     }
@@ -223,20 +221,20 @@ const Home = () => {
 
           {/* BOTÓN DE BATALLA */}
           <button
-            className={`huge-battle-cta ${npcDeck.length < 5 ? 'cta-disabled' : ''}`}
-            onClick={() => npcDeck.length >= 5 && navigate('/battle')}
-            disabled={npcDeck.length < 5}
-            title={npcDeck.length < 5 ? `Necesitas 5 runas en el mazo NPC (${npcDeck.length}/5)` : 'Iniciar batalla'}
+            className={`huge-battle-cta ${battleDeck.length < 8 ? 'cta-disabled' : ''}`}
+            onClick={() => battleDeck.length >= 8 && navigate('/battle')}
+            disabled={battleDeck.length < 8}
+            title={battleDeck.length < 8 ? `Necesitas 8 runas en el mazo de batalla (${battleDeck.length}/8)` : 'Iniciar batalla'}
           >
             <div className="cta-glare"></div>
             <div className="cta-main-content">
-              <span className="cta-swords">{npcDeck.length < 5 ? '' : '⚔️'}</span>
+              <span className="cta-swords">{battleDeck.length < 8 ? '' : '⚔️'}</span>
               <span className="cta-txt">
-                {npcDeck.length < 5 ? 'MAZO NPC INCOMPLETO' : '¡A LUCHAR!'}
+                {battleDeck.length < 8 ? 'MAZO INCOMPLETO' : '¡A LUCHAR!'}
               </span>
             </div>
-            {npcDeck.length < 5 && (
-              <span className="cta-sub">Equipas {npcDeck.length}/5 runas en el mazo NPC</span>
+            {battleDeck.length < 8 && (
+              <span className="cta-sub">Equipas {battleDeck.length}/8 runas en el mazo compartido</span>
             )}
           </button>
 
@@ -254,23 +252,22 @@ const Home = () => {
             </div>
           ) : (
             <button
-              className={`online-battle-btn ${onlineDeck.length < 8 ? 'online-disabled' : ''}`}
+              className={`online-battle-btn ${battleDeck.length < 8 ? 'online-disabled' : ''}` }
               onClick={handleRandomBattle}
-              title={onlineDeck.length < 8 ? 'Necesitas 8 runas en el mazo ONLINE para el modo online' : 'Batalla online contra un rival aleatorio'}
+              title={battleDeck.length < 8 ? 'Necesitas 8 runas en el mazo compartido para el modo online' : 'Batalla online contra un rival aleatorio'}
             >
               <span className="online-btn-icon">🌐</span>
               <span className="online-btn-txt">BATALLA ONLINE</span>
-              <span className="online-btn-sub">{onlineDeck.length < 8 ? `Mazo online ${onlineDeck.length}/8` : 'vs. jugador aleatorio'}</span>
+              <span className="online-btn-sub">{battleDeck.length < 8 ? `Mazo compartido ${battleDeck.length}/8` : 'vs. jugador aleatorio'}</span>
             </button>
           )}
 
           {matchError && <div className="online-match-error">{matchError}</div>}
         </div>
 
-        {/* VISTA PREVIA DE LOS DOS MAZOS */}
+        {/* VISTA PREVIA DEL MAZO COMPARTIDO */}
         {[
-          { title: '🤖 MAZO NPC', deck: npcDeck, size: 5, color: '#f39c12' },
-          { title: '🌐 MAZO ONLINE', deck: onlineDeck, size: 8, color: '#a855f7' }
+          { title: '⚔️ MAZO DE BATALLA', deck: battleDeck, size: 8, color: '#a855f7' }
         ].map(({ title, deck, size, color }) => (
           <div className="home-deck-preview" key={title}>
             <div className="deck-preview-header">
