@@ -32,31 +32,29 @@ const generateAIDeck = (difficulty) => {
   let deck = [];
 
   if (difficulty === 'Fácil') {
-    // Sky: 100% comunes (runas débiles, 2-4 flechas) — mazo NPC de 5
+    // Sky: 100% comunes — mazo de 8 runas
     const shuffled = [...comunRunes].sort(() => 0.5 - Math.random());
-    deck = shuffled.slice(0, 5).map(r => r.id);
+    deck = shuffled.slice(0, 8).map(r => r.id);
   } else if (difficulty === 'Medio') {
-    // elJonny: 60% comunes, 40% raras — mazo NPC de 5
+    // elJonny: 60% comunes, 40% raras — mazo de 8 runas
     const shuffledComun = [...comunRunes].sort(() => 0.5 - Math.random());
     const shuffledRara = [...raraRunes].sort(() => 0.5 - Math.random());
     deck = [
-      ...shuffledComun.slice(0, 3).map(r => r.id),
-      ...shuffledRara.slice(0, 2).map(r => r.id)
+      ...shuffledComun.slice(0, 5).map(r => r.id),
+      ...shuffledRara.slice(0, 3).map(r => r.id)
     ];
   } else if (difficulty === 'Difícil') {
-    // Eustakio: 20% comunes, 40% raras, 40% épicas — mazo NPC de 5
+    // Eustakio: 25% comunes, 37.5% raras, 37.5% épicas — mazo de 8 runas
     const shuffledComun = [...comunRunes].sort(() => 0.5 - Math.random());
     const shuffledRara = [...raraRunes].sort(() => 0.5 - Math.random());
     const shuffledEpica = [...epicaRunes].sort(() => 0.5 - Math.random());
     deck = [
-      ...shuffledComun.slice(0, 1).map(r => r.id),
-      ...shuffledRara.slice(0, 2).map(r => r.id),
-      ...shuffledEpica.slice(0, 2).map(r => r.id)
+      ...shuffledComun.slice(0, 2).map(r => r.id),
+      ...shuffledRara.slice(0, 3).map(r => r.id),
+      ...shuffledEpica.slice(0, 3).map(r => r.id)
     ];
   }
-  return deck.slice(0, 5);
-
-  return deck;
+  return deck.slice(0, 8);
 };
 
 // Perfiles de rivales (IDs consistentes con Home)
@@ -98,9 +96,9 @@ const getOpponent = () => {
 const getAttackDirections = (placedIdx, capturedIdxs) => {
   const dirs = { top: false, bottom: false, left: false, right: false };
   if (!capturedIdxs.length) return dirs;
-  const pr = Math.floor(placedIdx / 3), pc = placedIdx % 3;
+  const pr = Math.floor(placedIdx / 4), pc = placedIdx % 4;
   capturedIdxs.forEach(ci => {
-    const cr = Math.floor(ci / 3), cc = ci % 3;
+    const cr = Math.floor(ci / 4), cc = ci % 4;
     if (cr === pr - 1 && cc === pc) dirs.top = true;
     if (cr === pr + 1 && cc === pc) dirs.bottom = true;
     if (cr === pr && cc === pc - 1) dirs.left = true;
@@ -117,7 +115,7 @@ const Battle = () => {
   const [selectedOpponent] = useState(getOpponent);
 
   const [playerProfile, setPlayerProfile] = useState(null);
-  const [board, setBoard] = useState(Array(9).fill(null));
+  const [board, setBoard] = useState(Array(16).fill(null));
   const [playerHand, setPlayerHand] = useState([]);
   const [aiHand, setAiHand] = useState([]);
   const [turn, setTurn] = useState('player');
@@ -148,16 +146,16 @@ const Battle = () => {
 
       let playerRunes = [];
       if (user) {
-        const npcDeckIds = await getUserNpcDeck(user.uid); // mazo de 5 runas para NPC
+        const npcDeckIds = await getUserNpcDeck(user.uid); // mazo compartido de 8 runas
         playerRunes = npcDeckIds
           .map(id => RUNES_DB.find(r => r.id === id))
           .filter(Boolean)
-          .slice(0, 5)
+          .slice(0, 8)
           .map(r => ({ ...r, owner: 'player' }));
       }
       if (playerRunes.length < 2) {
         const shuffled = [...RUNES_DB].sort(() => 0.5 - Math.random());
-        playerRunes = shuffled.slice(0, 5).map(r => ({ ...r, owner: 'player' }));
+        playerRunes = shuffled.slice(0, 8).map(r => ({ ...r, owner: 'player' }));
       }
 
       // ✅ Usamos el mazo generado dinámicamente según la dificultad
@@ -168,7 +166,7 @@ const Battle = () => {
 
       setPlayerHand(playerRunes);
       setAiHand(aiRunes);
-      setBoard(Array(9).fill(null));
+      setBoard(Array(16).fill(null));
       setTurn('player');
       setSelectedCard(null);
       setScores({ player: 0, ai: 0 });
@@ -192,8 +190,8 @@ const Battle = () => {
   const resolveCaptures = useCallback((currentBoard, index, owner) => {
     const placed = currentBoard[index];
     if (!placed) return { board: currentBoard, captured: [] };
-    const row = Math.floor(index / 3);
-    const col = index % 3;
+    const row = Math.floor(index / 4);
+    const col = index % 4;
     const dirs = [
       { dr: -1, dc: 0, s: 'top', o: 'bottom' },
       { dr: 0, dc: 1, s: 'right', o: 'left' },
@@ -204,7 +202,7 @@ const Battle = () => {
     const captured = [];
     for (const { dr, dc, s, o } of dirs) {
       const nr = row + dr, nc = col + dc;
-      if (nr >= 0 && nr < 3 && nc >= 0 && nc < 3) {
+      if (nr >= 0 && nr < 4 && nc >= 0 && nc < 4) {
         const idx = nr * 3 + nc;
         const adj = final[idx];
         if (adj && adj.owner !== owner) {
@@ -440,7 +438,7 @@ const Battle = () => {
         </div>
 
         <div className="bp-board-container">
-          <div className="bp-grid-3x3">
+          <div className="bp-grid-4x4">
             {board.map((cell, i) => (
               <div
                 key={i}
