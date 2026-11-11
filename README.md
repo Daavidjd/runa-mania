@@ -21,9 +21,10 @@ If you are developing a production application, we recommend using TypeScript wi
 ## Firebase Realtime Database (batallas online)
 
 El matchmaking y las salas online utilizan Realtime Database. Configura
-`VITE_FIREBASE_DATABASE_URL` en el entorno local y en las variables del
-proveedor de despliegue con la URL de la instancia mostrada en Firebase
-Console → Realtime Database. Mantén las demás variables `VITE_FIREBASE_*`
+`VITE_FIREBASE_DATABASE_URL` es opcional porque la aplicación ya incluye como
+valor predeterminado la instancia `https://runamaniaa-default-rtdb.europe-west1.firebasedatabase.app`.
+Si utilizas otra instancia, define esa variable en el entorno local y en las
+variables del proveedor de despliegue. Mantén las demás variables `VITE_FIREBASE_*`
 que ya utiliza la aplicación.
 
 Las reglas están en `database.rules.json`. Para publicarlas:
