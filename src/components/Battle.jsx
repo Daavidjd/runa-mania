@@ -304,13 +304,6 @@ const Battle = () => {
         }
       }
       if (!bestMove) {
-        const randomCard = aiHand[Math.floor(Math.random() * aiHand.length)];
-        const randomCell = emptyCells[Math.floor(Math.random() * emptyCells.length)];
-        bestMove = { card: randomCard, bi: randomCell };
-      }
-      const newBoard = [...board];
-      newBoard[bestMove.bi] = { ...bestMove.card, owner: 'ai' };
-      if (!bestMove) {
         const finalScores = calcScores(board);
         setScores(finalScores);
         setGameOver(true);
