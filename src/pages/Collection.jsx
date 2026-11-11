@@ -78,11 +78,7 @@ const Collection = () => {
       <section className="deck-hero-section">
         <div className="deck-hero-header">
           <h2 className="deck-hero-title">⚔️ MAZO DE BATALLA</h2>
-          <span className={`deck-hero-hint ${deck.length === DECK_SIZE ? 'deck-hero-hint-ok' : ''}`}>
-            {deck.length === DECK_SIZE ? '✓ Completo' : `${deck.length}/${DECK_SIZE}`}
-          </span>
         </div>
-        <p className="shared-deck-description">El mismo mazo se utiliza en batallas NPC y online</p>
         <div className="deck-hero-grid deck-grid-online">
           {Array.from({ length: DECK_SIZE }).map((_, index) => {
             const rune = deck[index];
