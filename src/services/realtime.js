@@ -3,7 +3,7 @@ import {
 } from 'firebase/database';
 import { rtdb } from './firebase';
 
-const QUEUE_PATH = 'matchmaking/queue';
+const QUEUE_PATH = 'queue';
 const ROOM_PATH = 'onlineRooms';
 
 export const findRandomMatch = async (uid, name, avatarId) => {
