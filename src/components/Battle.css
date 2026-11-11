@@ -101,18 +101,25 @@
 }
 
 .bp-hand-track {
-  display: flex; justify-content: center; align-items: center;
-  width: 100%; max-width: 440px; padding: 0 4px;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-rows: repeat(2, minmax(0, 1fr));
+  justify-items: center;
+  align-items: center;
+  gap: clamp(4px, 1.2vw, 9px);
+  width: 100%;
+  max-width: 360px;
+  padding: 2px 4px;
 }
 
 .bp-slot {
-  width: clamp(78px, 21vw, 92px);
+  width: min(100%, 76px);
   aspect-ratio: 1 / 1;
   border-radius: 12px;
   transition: transform 0.18s cubic-bezier(0.18, 0.89, 0.32, 1.28);
   position: relative;
   flex-shrink: 0;
-  margin: 0 -4px;
+  margin: 0;
   will-change: transform;
 }
 
@@ -140,9 +147,9 @@
 }
 
 .bp-slot-ai {
-  width: clamp(70px, 19vw, 82px);
+  width: min(100%, 70px);
   opacity: 0.94;
-  margin: 0 -5px;
+  margin: 0;
 }
 
 /* ZONA CENTRAL */
@@ -292,3 +299,9 @@
 /* Tablero compartido 4x4: celdas compactas para 16 runas. */
 .bp-grid-4x4 .bp-cell { border-radius: 9px; min-width: 0; min-height: 0; }
 .bp-grid-4x4 .bp-cell-slot-dot { font-size: 1.15rem; }
+
+/* Mano de ocho runas: cuatro columnas por dos filas, sin solapamientos. */
+.bp-hand-player-area .bp-hand-track { max-width: 360px; }
+.bp-hand-player-area .bp-slot-player { width: min(100%, 76px); }
+.bp-hand-player-area { padding: 1px 0; }
+.bp-hand-player-area .bp-slot-player.bp-selected { transform: translateY(-4px) scale(1.06); }
