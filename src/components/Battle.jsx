@@ -245,18 +245,18 @@ const Battle = () => {
     const newBoard = [...board];
     newBoard[index] = { ...card, owner: 'player' };
     const { board: resolved, captured } = resolveCaptures(newBoard, index, 'player');
-    const newScores = calcScores(resolved);
-    setBoard(resolved);
+    const finalBoard = applyCaptures(resolved, captured, 'player');
+    const finalScores = calcScores(finalBoard);
+    setBoard(finalBoard);
     setPlayerHand(prev => prev.filter((_, i) => i !== selectedCard));
-    setScores(newScores);
+    setScores(finalScores);
     setSelectedCard(null);
     setLastPlaced(index);
     if (captured.length > 0) {
       const dirs = getAttackDirections(index, captured);
       setAttackDirs({ [index]: dirs });
       setTimeout(() => {
-        const boardWithNewOwners = applyCaptures(resolved, captured, 'player');
-        setBoard(boardWithNewOwners);
+        setFlippingCells(captured);
         setPendingCaptures(captured);
         setAttackDirs({});
         setTimeout(() => {
@@ -267,13 +267,13 @@ const Battle = () => {
     } else {
       setTimeout(() => setLastPlaced(null), 600);
     }
-    const isPlayerEmpty = playerHand.length - 1 === 0;
-    const isAiEmpty = aiHand.length === 0;
-    if (isPlayerEmpty && isAiEmpty) {
-      const result = newScores.player > newScores.ai ? 'player' : newScores.ai > newScores.player ? 'ai' : 'draw';
+
+    const boardIsFull = finalBoard.every(cell => cell !== null);
+    if (boardIsFull) {
+      const result = finalScores.player > finalScores.ai ? 'player' : finalScores.ai > finalScores.player ? 'ai' : 'draw';
       setGameOver(true);
       setWinner(result);
-      setTimeout(() => setShowEndModal(true), 900);
+      setTimeout(() => setShowEndModal(true), captured.length > 0 ? 1700 : 900);
     } else {
       setTimeout(() => {
         setTurn('ai');
@@ -310,18 +310,30 @@ const Battle = () => {
       }
       const newBoard = [...board];
       newBoard[bestMove.bi] = { ...bestMove.card, owner: 'ai' };
+      if (!bestMove) {
+        const finalScores = calcScores(board);
+        setScores(finalScores);
+        setGameOver(true);
+        setWinner(finalScores.player > finalScores.ai ? 'player' : finalScores.ai > finalScores.player ? 'ai' : 'draw');
+        setTimeout(() => setShowEndModal(true), 900);
+        aiIsPlayingRef.current = false;
+        return;
+      }
+
+      const newBoard = [...board];
+      newBoard[bestMove.bi] = { ...bestMove.card, owner: 'ai' };
       const { board: resolved, captured } = resolveCaptures(newBoard, bestMove.bi, 'ai');
-      const newScores = calcScores(resolved);
-      setBoard(resolved);
+      const finalBoard = applyCaptures(resolved, captured, 'ai');
+      const finalScores = calcScores(finalBoard);
+      setBoard(finalBoard);
       setAiHand(prev => prev.filter(r => r.id !== bestMove.card.id));
-      setScores(newScores);
+      setScores(finalScores);
       setLastPlaced(bestMove.bi);
       if (captured.length > 0) {
         const dirs = getAttackDirections(bestMove.bi, captured);
         setAttackDirs({ [bestMove.bi]: dirs });
         setTimeout(() => {
-          const boardWithNewOwners = applyCaptures(resolved, captured, 'ai');
-          setBoard(boardWithNewOwners);
+          setFlippingCells(captured);
           setPendingCaptures(captured);
           setAttackDirs({});
           setTimeout(() => {
@@ -332,14 +344,14 @@ const Battle = () => {
       } else {
         setTimeout(() => setLastPlaced(null), 600);
       }
-      const isAiEmpty = aiHand.length - 1 === 0;
-      const isPlayerEmpty = playerHand.length === 0;
-      if (isAiEmpty && isPlayerEmpty) {
-        const result = newScores.player > newScores.ai ? 'player' : newScores.ai > newScores.player ? 'ai' : 'draw';
+
+      const boardIsFull = finalBoard.every(cell => cell !== null);
+      if (boardIsFull) {
+        const result = finalScores.player > finalScores.ai ? 'player' : finalScores.ai > finalScores.player ? 'ai' : 'draw';
         setGameOver(true);
         setWinner(result);
-        setTimeout(() => setShowEndModal(true), 900);
-        setTimeout(() => { aiIsPlayingRef.current = false; }, 1000);
+        setTimeout(() => setShowEndModal(true), captured.length > 0 ? 1700 : 900);
+        aiIsPlayingRef.current = false;
       } else {
         setTimeout(() => {
           setTurn('player');
@@ -349,7 +361,7 @@ const Battle = () => {
       }
     }, 1100);
     return () => { clearTimeout(timer); };
-  }, [turn, gameOver]);
+  }, [turn, gameOver, board, aiHand, playerHand, resolveCaptures, applyCaptures, calcScores]);
 
   useEffect(() => {
     if (showEndModal && winner === 'player' && user) {
