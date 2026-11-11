@@ -168,13 +168,13 @@
   background: #0b1220; border: 4px solid #1e293b; border-radius: 20px;
   padding: 8px; box-shadow: 0 8px 0 #020617, 0 0 28px rgba(2, 132, 199, 0.2);
   box-sizing: border-box;
-  width: min(94vw, calc(100dvh - 310px), 380px);
+  width: min(94vw, calc(100dvh - 310px), 420px);
   aspect-ratio: 1 / 1; display: flex;
 }
 
-.bp-grid-3x3 {
-  display: grid; grid-template-columns: repeat(3, 1fr);
-  grid-template-rows: repeat(3, 1fr); gap: 8px; width: 100%; height: 100%;
+.bp-grid-4x4 {
+  display: grid; grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-rows: repeat(4, minmax(0, 1fr)); gap: 6px; width: 100%; height: 100%;
 }
 
 .bp-cell {
@@ -289,3 +289,6 @@
   10%, 30%, 50%, 70%, 90% { transform: translateX(-6px); }
   20%, 40%, 60%, 80% { transform: translateX(6px); }
 }
+/* Tablero compartido 4x4: celdas compactas para 16 runas. */
+.bp-grid-4x4 .bp-cell { border-radius: 9px; min-width: 0; min-height: 0; }
+.bp-grid-4x4 .bp-cell-slot-dot { font-size: 1.15rem; }
