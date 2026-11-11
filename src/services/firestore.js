@@ -476,7 +476,7 @@ export const joinOnlineRoom = async (roomId, myUid, displayName) => {
         blueUid: myUid,
         createdAt: now,
         [`players.${myUid}`]: { name: displayName, ready: true, joinedAt: now },
-        board: Array(9).fill(null),
+        board: Array(16).fill(null),
         deckSizes: {},
         finished: false
       });
