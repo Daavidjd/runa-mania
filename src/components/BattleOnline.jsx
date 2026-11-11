@@ -5,13 +5,10 @@ import {
   getUserProfile,
   getUserActiveDeck,
   watchChallenge,
-  joinOnlineRoom,
-  watchRoom,
-  leaveOnlineRoom,
   recordOnlineBattleResult
 } from '../services/firestore';
-import { doc as fsDoc, setDoc as fsSet, getDoc as fsGetDoc, serverTimestamp } from 'firebase/firestore';
-import { db } from '../services/firebase';
+import { joinOnlineRoom, watchRoom, leaveOnlineRoom, updateOnlineRoom } from '../services/realtime';
+
 import { RUNES_DB } from '../data/runes';
 import { AVATAR_OPTIONS } from '../data/avatars';
 import RuneCard from './RuneCard';
@@ -52,13 +49,6 @@ const buildHandFromIds = (runeIds, owner) => {
     .slice(0, 8 - runes.length)
     .map(r => ({ ...r, owner }));
   return [...runes, ...missingRunes].slice(0, 8);
-};
-
-const getRoomSnapshot = async (roomId) => {
-  try {
-    const snap = await fsGetDoc(fsDoc(db, 'rooms', roomId));
-    return snap.exists() ? snap.data() : null;
-  } catch { return null; }
 };
 
 const BattleOnline = () => {
@@ -149,7 +139,15 @@ const BattleOnline = () => {
         // Esperar a que ambos estén dentro de la sala antes de resolver el duelo
         const waitForBoth = async () => {
           for (let i = 0; i < 60; i++) {
-            const snap = await getRoomSnapshot(roomId);
+            const snap = await new Promise(resolve => {
+              let settled = false;
+              let stop = () => {};
+              stop = watchRoom(roomId, data => {
+                const players = Object.entries(data.players || {}).filter(([, p]) => p && p.joinedAt);
+                if (players.length >= 2 && !settled) { settled = true; stop(); resolve(data); }
+              });
+              setTimeout(() => { if (!settled) { settled = true; stop(); resolve(null); } }, 30000);
+            });
             const players = Object.entries(snap?.players || {}).filter(([, p]) => p && p.joinedAt);
             if (players.length >= 2) return snap;
             await new Promise(r => setTimeout(r, 500));
@@ -174,7 +172,7 @@ const BattleOnline = () => {
             }
             updates[`deckSizes.${user.uid}`] = hand.length;
             updates[`deckSizes.${battleData.opponentUid}`] = oppHand.length;
-            await fsSet(fsDoc(db, 'rooms', roomId), updates, { merge: true });
+            await updateOnlineRoom(roomId, updates);
           } catch (err) { console.error('Error preparando duelo online:', err); }
         })();
 
@@ -273,11 +271,7 @@ const BattleOnline = () => {
       } : null);
       // Aplicar capturas del movimiento actual
       capturedIdxs.forEach(ci => { shared[ci] = { ...shared[ci], owner: lastMove.by === myUidRef.current ? (iAmFirst ? 'blue' : 'red') : (iAmFirst ? 'red' : 'blue'), flipped: true }; });
-      await fsSet(fsDoc(db, 'rooms', roomIdRef.current), {
-        board: shared,
-        lastMove,
-        updatedAt: serverTimestamp()
-      }, { merge: true });
+      await updateOnlineRoom(roomIdRef.current, { board: shared, lastMove, updatedAt: Date.now() });
     } catch (err) {
       console.error('Error sincronizando sala:', err);
     }
