@@ -257,9 +257,10 @@ const FriendsPanel = ({ profile, open = true, onClose }) => {
             className={`fp-tab ${tab === t.id ? 'active' : ''}`}
             onClick={() => setTab(t.id)}
           >
-            #{profile?.userId || '----'} 📋
-          </span>
-        </div>
+            {t.label}
+          </button>
+        ))}
+      </nav>
 
       {loading ? (
         <div className="fp-loading">Conectando con la red de invocadores...</div>
