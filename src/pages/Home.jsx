@@ -94,66 +94,9 @@ const Home = () => {
       return;
     }
     setMatchError('');
-    setSearching(true);
-    localStorage.setItem('randomMatchPending', '1');
-
-    const displayName = profile?.username || user.displayName || user.email?.split('@')[0] || 'Invocador';
-    const res = await findRandomMatch(user.uid, displayName, profile?.avatarId || 'mago');
-
-    if (!res.success) {
-      setSearching(false);
-      localStorage.removeItem('randomMatchPending');
-      setMatchError(res.message || 'No se pudo conectar con la arena online');
-      setTimeout(() => setMatchError(''), 3500);
-      return;
-    }
-
-    if (res.matched) {
-      // El segundo en llegar empareja al primero: entramos directo a la sala
-      localStorage.setItem('onlineBattle', JSON.stringify({
-        roomId: res.roomId,
-        opponentUid: res.opponentUid,
-        opponentName: res.opponentName,
-        opponentAvatarId: res.opponentAvatarId,
-        role: 'random'
-      }));
-      localStorage.removeItem('randomMatchPending');
-      navigate('/battle-online');
-    }
-    // Si no hay rival aún, el useEffect de abajo nos mantiene escuchando la cola
+    localStorage.setItem('onlineBattle', JSON.stringify({ role: 'random', searching: true }));
+    navigate('/battle-online');
   };
-
-  // ⚔️ Escucha en tiempo real: cuando alguien nos encuentra en la cola, entramos a la sala
-  useEffect(() => {
-    if (!user || !searching) return undefined;
-    let navigated = false;
-    let expired = false;
-    const unsub = watchMyQueueEntry(user.uid, (entry) => {
-      if (!entry || navigated || expired) return;
-      if (entry.status === 'matched' && entry.roomId) {
-        navigated = true;
-        localStorage.setItem('onlineBattle', JSON.stringify({
-          roomId: entry.roomId,
-          opponentUid: entry.opponentUid,
-          opponentName: entry.opponentName || 'Rival',
-          opponentAvatarId: entry.opponentAvatarId || 'mago',
-          role: 'random'
-        }));
-        localStorage.removeItem('randomMatchPending');
-        setSearching(false);
-        navigate('/battle-online');
-      } else if (typeof entry.searchedAt === 'number' && Date.now() - entry.searchedAt > 60000) {
-        // ⏱️ Llevamos más de 1 minuto esperando: avisamos y salimos de la cola
-        expired = true;
-        setSearching(false);
-        localStorage.removeItem('randomMatchPending');
-        leaveQueue(user.uid);
-        setMatchError('No hay rivales disponibles ahora mismo. Inténtalo de nuevo 🌙');
-        setTimeout(() => setMatchError(''), 4000);
-      }
-    });
-    return () => unsub();
-  }, [user, searching, navigate]);
 
   // Al volver a Home sin batalla activa (p. ej. cancelado), limpiar cola pendiente
   useEffect(() => {
