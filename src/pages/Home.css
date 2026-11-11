@@ -639,55 +639,110 @@
    🌐 BOTÓN DE BATALLA ONLINE (matchmaking aleatorio)
    ============================================================ */
 .online-battle-btn {
+  width: 100%;
+  max-width: 320px;
+  min-height: 76px;
+  margin-top: 14px;
+  padding: 10px 14px;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 2px;
-  width: min(320px, 90%);
-  margin-top: 14px;
-  padding: 12px 18px;
-  border: none;
-  border-radius: 14px;
+  justify-content: center;
+  gap: 3px;
+  position: relative;
+  overflow: hidden;
+  border: 4px solid #fff275;
+  border-radius: 18px;
+  background: #ffd000;
+  color: #2b1700;
   cursor: pointer;
-  background: linear-gradient(180deg, #7c3aed 0%, #4c1d95 100%);
-  box-shadow: 0 4px 0 #2e1065, 0 6px 18px rgba(124, 58, 237, 0.45);
-  color: #fff;
-  transition: transform 0.15s ease, box-shadow 0.15s ease, filter 0.15s ease;
+  box-shadow:
+    0 8px 0 #9e6400,
+    0 12px 18px rgba(0, 0, 0, 0.5),
+    inset 0 3px 4px rgba(255, 255, 255, 0.6);
+  transition: transform 0.08s ease, box-shadow 0.08s ease, background 0.08s ease;
+}
+
+.online-battle-btn::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 45%;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.4) 0%, transparent 100%);
+  pointer-events: none;
 }
 
 .online-battle-btn:hover:not(.online-disabled) {
   transform: translateY(-2px);
-  box-shadow: 0 6px 0 #2e1065, 0 10px 26px rgba(124, 58, 237, 0.6);
-  filter: brightness(1.08);
+  background: #ffdb1a;
 }
 
 .online-battle-btn:active:not(.online-disabled) {
-  transform: translateY(2px);
-  box-shadow: 0 2px 0 #2e1065, 0 4px 12px rgba(124, 58, 237, 0.4);
+  transform: translateY(6px);
+  box-shadow: 0 2px 0 #9e6400;
 }
 
 .online-btn-icon {
-  font-size: 1.3rem;
+  width: 25px;
+  height: 25px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  border: 2px solid rgba(43, 23, 0, 0.65);
+  font-size: 20px;
   line-height: 1;
+  font-weight: 900;
+  position: relative;
+  z-index: 1;
 }
 
 .online-btn-txt {
-  font-weight: 800;
+  position: relative;
+  z-index: 1;
+  font-weight: 900;
   font-size: 1rem;
   letter-spacing: 1.5px;
+  color: #2b1700;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.6);
 }
 
 .online-btn-sub {
+  position: relative;
+  z-index: 1;
   font-size: 0.7rem;
-  opacity: 0.85;
+  font-weight: 900;
+  color: #5c3800;
   letter-spacing: 0.5px;
 }
 
 .online-battle-btn.online-disabled {
-  background: linear-gradient(180deg, #4b5563 0%, #374151 100%);
-  box-shadow: 0 4px 0 #1f2937;
-  opacity: 0.75;
+  background: #2a3441;
+  border-color: #4a5568;
+  color: #a0aec0;
+  box-shadow: 0 8px 0 #1a202c, 0 12px 18px rgba(0, 0, 0, 0.5);
+  opacity: 0.7;
   cursor: not-allowed;
+}
+
+.online-battle-btn.online-disabled .online-btn-txt {
+  color: #a0aec0;
+  text-shadow: none;
+}
+
+.online-battle-btn.online-disabled .online-btn-sub {
+  color: #718096;
+}
+
+.online-battle-btn.online-disabled .online-btn-icon {
+  border-color: #718096;
+}
+
+.online-battle-btn.online-disabled:hover {
+  transform: none;
+  background: #2a3441;
 }
 
 /* ---- Estado buscando rival ---- */
