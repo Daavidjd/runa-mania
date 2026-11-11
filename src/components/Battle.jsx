@@ -36,23 +36,11 @@ const generateAIDeck = (difficulty) => {
     const shuffled = [...comunRunes].sort(() => 0.5 - Math.random());
     deck = shuffled.slice(0, 8).map(r => r.id);
   } else if (difficulty === 'Medio') {
-    // elJonny: 60% comunes, 40% raras — mazo de 8 runas
-    const shuffledComun = [...comunRunes].sort(() => 0.5 - Math.random());
-    const shuffledRara = [...raraRunes].sort(() => 0.5 - Math.random());
-    deck = [
-      ...shuffledComun.slice(0, 5).map(r => r.id),
-      ...shuffledRara.slice(0, 3).map(r => r.id)
-    ];
+    // elJonny: exclusivamente runas raras.
+    deck = [...raraRunes].sort(() => Math.random() - 0.5).slice(0, 8).map(r => r.id);
   } else if (difficulty === 'Difícil') {
-    // Eustakio: 25% comunes, 37.5% raras, 37.5% épicas — mazo de 8 runas
-    const shuffledComun = [...comunRunes].sort(() => 0.5 - Math.random());
-    const shuffledRara = [...raraRunes].sort(() => 0.5 - Math.random());
-    const shuffledEpica = [...epicaRunes].sort(() => 0.5 - Math.random());
-    deck = [
-      ...shuffledComun.slice(0, 2).map(r => r.id),
-      ...shuffledRara.slice(0, 3).map(r => r.id),
-      ...shuffledEpica.slice(0, 3).map(r => r.id)
-    ];
+    // Eustakio: exclusivamente runas épicas.
+    deck = [...epicaRunes].sort(() => Math.random() - 0.5).slice(0, 8).map(r => r.id);
   }
   return deck.slice(0, 8);
 };
@@ -164,7 +152,7 @@ const Battle = () => {
       }
 
       // ✅ Usamos el mazo generado dinámicamente según la dificultad
-      const aiRunes = selectedOpponent.deck
+      const aiRunes = generateAIDeck(selectedOpponent.difficulty)
         .map(id => RUNES_DB.find(r => r.id === id))
         .filter(Boolean)
         .map(r => ({ ...r, owner: 'ai' }));
@@ -208,7 +196,7 @@ const Battle = () => {
     for (const { dr, dc, s, o } of dirs) {
       const nr = row + dr, nc = col + dc;
       if (nr >= 0 && nr < 4 && nc >= 0 && nc < 4) {
-        const idx = nr * 3 + nc;
+        const idx = nr * 4 + nc;
         const adj = final[idx];
         if (adj && adj.owner !== owner) {
           const atk = placed.arrows?.[s] || 0;
@@ -290,18 +278,35 @@ const Battle = () => {
     aiIsPlayingRef.current = true;
     const timer = setTimeout(() => {
       let bestMove = null;
-      let maxCap = -1;
-      const emptyCells = [];
-      for (let i = 0; i < board.length; i++) {
-        if (board[i] === null) emptyCells.push(i);
-      }
+      let bestScore = -Infinity;
+      const emptyCells = board.map((cell, index) => cell === null ? index : -1).filter(index => index >= 0);
       for (const card of aiHand) {
         for (const bi of emptyCells) {
           const testBoard = [...board];
           testBoard[bi] = { ...card, owner: 'ai' };
           const { captured } = resolveCaptures(testBoard, bi, 'ai');
-          if (captured.length > maxCap) {
-            maxCap = captured.length;
+          const simulated = applyCaptures(testBoard, captured, 'ai');
+          // Prioriza capturas, pero evita dejar flancos débiles al siguiente turno.
+          let incomingThreat = 0;
+          const row = Math.floor(bi / 4), col = bi % 4;
+          const neighbors = [
+            { dr: -1, dc: 0, attack: 'bottom', defend: 'top' },
+            { dr: 0, dc: 1, attack: 'left', defend: 'right' },
+            { dr: 1, dc: 0, attack: 'top', defend: 'bottom' },
+            { dr: 0, dc: -1, attack: 'right', defend: 'left' }
+          ];
+          for (const { dr, dc, attack, defend } of neighbors) {
+            const nr = row + dr, nc = col + dc;
+            if (nr < 0 || nr >= 4 || nc < 0 || nc >= 4) continue;
+            const adjacent = simulated[nr * 4 + nc];
+            if (adjacent?.owner === 'player' && (adjacent.arrows?.[attack] || 0) > (card.arrows?.[defend] || 0)) {
+              incomingThreat += 1 + ((adjacent.arrows?.[attack] || 0) - (card.arrows?.[defend] || 0)) * 0.25;
+            }
+          }
+          const centerBonus = (row === 1 || row === 2 ? 0.2 : 0) + (col === 1 || col === 2 ? 0.2 : 0);
+          const score = captured.length * 12 - incomingThreat * 5 + centerBonus + Math.random() * 0.05;
+          if (score > bestScore) {
+            bestScore = score;
             bestMove = { card, bi };
           }
         }
@@ -419,17 +424,6 @@ const Battle = () => {
           <span className="bp-score-badge-value">{scores.ai}</span>
         </div>
       </div>
-
-      {/* MAZO ENEMIGO */}
-      <section className="bp-hand-area bp-hand-ai-area">
-        <div className="bp-hand-track">
-          {aiHand.map((r) => (
-            <div key={r.id} className="bp-slot bp-slot-ai">
-              <RuneCard rune={r} owned={true} battleMode={true} />
-            </div>
-          ))}
-        </div>
-      </section>
 
       {/* ZONA CENTRAL */}
       <main className="bp-arena-center">
