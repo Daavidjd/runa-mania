@@ -89,69 +89,6 @@ service cloud.firestore {
       allow delete: if false;
     }
 
-    match /rooms/{roomId} {
-      allow read: if signedIn();
-
-      // El primer jugador crea la sala y queda registrado como azul.
-      allow create: if signedIn()
-        && request.resource.data.blueUid == request.auth.uid
-        && request.resource.data.players is map
-        && request.resource.data.players.keys().hasAll([request.auth.uid]);
-
-      // Participantes sincronizan la partida. Un segundo jugador puede unirse
-      // solo si aún hay una plaza y únicamente se añade a sí mismo.
-      allow update: if signedIn()
-        && (
-          request.auth.uid == resource.data.blueUid
-          || request.auth.uid in resource.data.players.keys()
-          || (
-            resource.data.players is map
-            && resource.data.players.keys().size() < 2
-            && request.resource.data.players is map
-            && request.resource.data.players.keys().hasAll(resource.data.players.keys())
-            && request.resource.data.players.keys().hasAny([request.auth.uid])
-          )
-        );
-
-      allow delete: if signedIn() && resource.data.blueUid == request.auth.uid;
-    }
-
-    match /queues/{queueId} {
-      // Los jugadores autenticados pueden consultar la cola para encontrar rivales.
-      allow read: if signedIn();
-
-      // Cada jugador solo puede crear o borrar su propia ficha de búsqueda.
-      allow create: if isUser(queueId)
-        && request.resource.data.status in ['searching', 'waiting']
-        && request.resource.data.keys().hasOnly([
-          'status', 'name', 'avatarId', 'searchedAt'
-        ]);
-
-      allow delete: if isUser(queueId);
-
-      // El propietario puede actualizar su ficha durante la búsqueda/cancelación
-      // y registrar el emparejamiento que ha encontrado.
-      allow update: if (
-          isUser(queueId)
-          && request.resource.data.status in ['searching', 'waiting', 'matched', 'cancelled']
-          && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
-            'status', 'name', 'avatarId', 'searchedAt', 'cancelledAt',
-            'opponentUid', 'opponentName', 'opponentAvatarId', 'roomId'
-          ])
-        )
-        // Otro jugador solo puede emparejar una ficha que siga esperando,
-        // y debe quedar identificado como el rival de esa ficha.
-        || (
-          signedIn()
-          && resource.data.status in ['waiting', 'searching']
-          && request.resource.data.status == 'matched'
-          && request.resource.data.opponentUid == request.auth.uid
-          && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
-            'status', 'opponentUid', 'opponentName', 'opponentAvatarId', 'roomId'
-          ])
-        );
-    }
-
     match /matches/{matchId} {
       allow read: if signedIn()
         && (resource.data.player1 == request.auth.uid || resource.data.player2 == request.auth.uid);
