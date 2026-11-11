@@ -20,7 +20,7 @@ import './BattleOnline.css';
 
 // ============================================================
 // ⚔️ BATALLA EN LÍNEA (estilo Match de Clash Royale)
-// Misma mecánica que la batalla NPC (tablero 3x3 + flechas),
+// Misma mecánica que la batalla NPC (tablero 4x4 + flechas),
 // pero sincronizada entre dos jugadores reales por Firestore.
 // 🔵 AZUL = tú   |   🔴 ROJO = rival   (50/50 al elegir quien empieza)
 // ============================================================
@@ -28,9 +28,9 @@ import './BattleOnline.css';
 const getAttackDirections = (placedIdx, capturedIdxs) => {
   const dirs = { top: false, bottom: false, left: false, right: false };
   if (!capturedIdxs.length) return dirs;
-  const pr = Math.floor(placedIdx / 3), pc = placedIdx % 3;
+  const pr = Math.floor(placedIdx / 4), pc = placedIdx % 4;
   capturedIdxs.forEach(ci => {
-    const cr = Math.floor(ci / 3), cc = ci % 3;
+    const cr = Math.floor(ci / 4), cc = ci % 4;
     if (cr === pr - 1 && cc === pc) dirs.top = true;
     if (cr === pr + 1 && cc === pc) dirs.bottom = true;
     if (cr === pr && cc === pc - 1) dirs.left = true;
@@ -77,9 +77,9 @@ const BattleOnline = () => {
   const [myProfile, setMyProfile] = useState(null);
   const [oppProfile, setOppProfile] = useState(null);
 
-  const [board, setBoard] = useState(Array(9).fill(null));
+  const [board, setBoard] = useState(Array(16).fill(null));
   const [myHand, setMyHand] = useState([]);
-  const [oppHandCount, setOppHandCount] = useState(5);
+  const [oppHandCount, setOppHandCount] = useState(8);
   const [selectedCard, setSelectedCard] = useState(null);
   const [scores, setScores] = useState({ me: 0, opp: 0 });
   const [gameOver, setGameOver] = useState(false);
@@ -99,7 +99,7 @@ const BattleOnline = () => {
   const myUidRef = useRef(user?.uid || null);
   const reportedRef = useRef(false);
   const roomIdRef = useRef(null);
-  const oppDeckSizeRef = useRef(5);
+  const oppDeckSizeRef = useRef(8);
   const myUid = user?.uid || null;
 
   // 🎨 El primer jugador en entrar a la sala es AZUL 🔵 y el segundo ROJO 🔴
@@ -201,7 +201,7 @@ const BattleOnline = () => {
   useEffect(() => {
     if (phase === 'error') return;
     const remoteBoard = room.board;
-    if (!Array.isArray(remoteBoard) || remoteBoard.length !== 9) {
+    if (!Array.isArray(remoteBoard) || remoteBoard.length !== 16) {
       // Ambos dentro y con colores asignados → mostrar volteo de moneda 50/50
       if (bothJoined && room.starterUid && phaseRef.current === 'connecting') {
         setPhase('coinflip');
@@ -217,7 +217,7 @@ const BattleOnline = () => {
 
     // Cartas restantes del rival (su mazo inicial menos las jugadas)
     const oppUid = Object.keys(room.players || {}).find(k => k !== myUidRef.current && room.players[k]);
-    const oppDeckSize = room.deckSizes?.[oppUid] || 5;
+    const oppDeckSize = room.deckSizes?.[oppUid] || 8;
     const playedByOpp = remoteBoard.filter(c => c && c.owner === oppColor).length;
     setOppHandCount(Math.max(0, oppDeckSize - playedByOpp));
 
@@ -292,7 +292,7 @@ const BattleOnline = () => {
     newBoard[index] = { ...card, owner: user.uid };
 
     // Resolver capturas por flechas (misma lógica que la batalla NPC)
-    const row = Math.floor(index / 3), col = index % 3;
+    const row = Math.floor(index / 4), col = index % 4;
     const dirs = [
       { dr: -1, dc: 0, s: 'top', o: 'bottom' },
       { dr: 0, dc: 1, s: 'right', o: 'left' },
@@ -302,7 +302,7 @@ const BattleOnline = () => {
     const captured = [];
     for (const { dr, dc, s, o } of dirs) {
       const nr = row + dr, nc = col + dc;
-      if (nr >= 0 && nr < 3 && nc >= 0 && nc < 3) {
+      if (nr >= 0 && nr < 4 && nc >= 0 && nc < 4) {
         const idx = nr * 3 + nc;
         const adj = newBoard[idx];
         if (adj && adj.owner !== user.uid) {
@@ -501,7 +501,7 @@ const BattleOnline = () => {
         </div>
 
         <div className="bp-board-container">
-          <div className="bp-grid-3x3">
+          <div className="bp-grid-4x4">
             {board.map((cell, i) => (
               <div
                 key={i}
