@@ -7,7 +7,7 @@ import {
   watchChallenge,
   recordOnlineBattleResult
 } from '../services/firestore';
-import { joinOnlineRoom, watchRoom, leaveOnlineRoom, updateOnlineRoom } from '../services/realtime';
+import { findRandomMatch, watchMyQueueEntry, leaveQueue, joinOnlineRoom, watchRoom, leaveOnlineRoom, updateOnlineRoom } from '../services/realtime';
 
 import { RUNES_DB } from '../data/runes';
 import { AVATAR_OPTIONS } from '../data/avatars';
@@ -55,7 +55,7 @@ const BattleOnline = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
 
-  const [battleData] = useState(() => {
+  const [battleData, setBattleData] = useState(() => {
     try { return JSON.parse(localStorage.getItem('onlineBattle') || 'null'); }
     catch { return null; }
   });
@@ -96,6 +96,58 @@ const BattleOnline = () => {
   const oppDeckSizeRef = useRef(8);
   const myUid = user?.uid || null;
 
+  // Matchmaking desde la propia arena: el jugador ve el lobby mientras se busca rival.
+  useEffect(() => {
+    if (!user || !battleData?.searching) return undefined;
+    let cancelled = false;
+    let unsubscribe = null;
+    const acceptMatch = (entry) => {
+      if (cancelled || !entry?.roomId || !entry?.opponentUid) return;
+      const next = {
+        role: 'random',
+        roomId: entry.roomId,
+        opponentUid: entry.opponentUid,
+        opponentName: entry.opponentName || 'Rival',
+        opponentAvatarId: entry.opponentAvatarId || 'mago',
+        searching: false
+      };
+      localStorage.setItem('onlineBattle', JSON.stringify(next));
+      setBattleData(next);
+    };
+    (async () => {
+      try {
+        const profile = await getUserProfile(user.uid);
+        if (cancelled) return;
+        setMyProfile(profile);
+        const displayName = profile?.username || user.displayName || user.email?.split('@')[0] || 'Invocador';
+        const result = await findRandomMatch(user.uid, displayName, profile?.avatarId || 'mago');
+        if (cancelled) return;
+        if (!result.success) throw new Error(result.message || 'No se pudo buscar rival');
+        if (result.matched) {
+          acceptMatch(result);
+          return;
+        }
+        unsubscribe = watchMyQueueEntry(user.uid, acceptMatch);
+      } catch (error) {
+        console.error('Error buscando rival:', error);
+        if (!cancelled) setPhase('error');
+      }
+    })();
+    return () => {
+      cancelled = true;
+      unsubscribe?.();
+      leaveQueue(user.uid);
+    };
+  }, [user, battleData?.searching]);
+
+  const cancelMatchmaking = async () => {
+    if (user) await leaveQueue(user.uid);
+    localStorage.removeItem('onlineBattle');
+    setBattleData(null);
+    setPhase('error');
+    navigate('/home');
+  };
+
   // 🎨 El primer jugador en entrar a la sala es AZUL 🔵 y el segundo ROJO 🔴
   // (el orden de llegada queda guardado en Firestore, ambos clientes coinciden)
   const activePlayers = Object.entries(room.players || {}).filter(([, p]) => p && p.joinedAt);
@@ -112,7 +164,7 @@ const BattleOnline = () => {
     let cancelled = false;
 
     const setup = async () => {
-      if (!user || !battleData) { setPhase('error'); return; }
+      if (!user || !battleData || battleData.searching || !battleData.opponentUid) return;
 
       try {
         const [me, opp, myDeckIds, oppDeckIds] = await Promise.all([
@@ -197,7 +249,7 @@ const BattleOnline = () => {
       challengeUnsubRef.current?.();
       if (roomIdRef.current && myUidRef.current) leaveOnlineRoom(roomIdRef.current, myUidRef.current);
     };
-  }, []);
+  }, [battleData?.roomId, battleData?.opponentUid, battleData?.searching, battleData?.challengeId, user?.uid]);
 
   // ---------- SINCRONIZACIÓN DEL TABLERO ----------
   useEffect(() => {
@@ -378,7 +430,7 @@ const BattleOnline = () => {
       <div className="bp bo-screen">
         <div className="bp-stars"></div>
         <div className="bo-lobby">
-          <h2 className="bo-lobby-title">⚔️ Arena en Línea</h2>
+          <h2 className="bo-lobby-title">{battleData?.searching ? '⚔️ Buscando rival' : '⚔️ Arena en Línea'}</h2>
 
           <div className="bo-vs-row">
             <div className="bo-lobby-player bo-me">
@@ -397,7 +449,7 @@ const BattleOnline = () => {
               ) : (
                 <>
                   <div className="bo-waiting-orb"></div>
-                  <span className="bo-lobby-name">Esperando rivales...</span>
+                  <span className="bo-lobby-name">{battleData?.searching ? 'Buscando invocador...' : 'Esperando rival...'}</span>
                 </>
               )}
             </div>
@@ -409,7 +461,7 @@ const BattleOnline = () => {
             </div>
           )}
 
-          <button className="bp-btn bp-btn-exit bo-leave" onClick={() => navigate('/home')}>🚪 Salir</button>
+          <button className="bp-btn bp-btn-exit bo-leave" onClick={battleData?.searching ? cancelMatchmaking : () => navigate('/home')}>{battleData?.searching ? '✕ Cancelar búsqueda' : '🚪 Salir'}</button>
         </div>
       </div>
     );
