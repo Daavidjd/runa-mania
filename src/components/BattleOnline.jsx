@@ -44,10 +44,14 @@ const buildHandFromIds = (runeIds, owner) => {
     .map(id => RUNES_DB.find(r => r.id === id))
     .filter(Boolean)
     .map(r => ({ ...r, owner }));
-  if (runes.length >= 2) return runes;
-  // Fallback si el rival no tiene mazo guardado: runas aleatorias
-  const shuffled = [...RUNES_DB].sort(() => 0.5 - Math.random());
-  return shuffled.slice(0, 8).map(r => ({ ...r, owner }));
+  // Completar mazos antiguos o incompletos hasta ocho runas sin duplicados.
+  const existingIds = new Set(runes.map(r => r.id));
+  const missingRunes = [...RUNES_DB]
+    .filter(r => !existingIds.has(r.id))
+    .sort(() => 0.5 - Math.random())
+    .slice(0, 8 - runes.length)
+    .map(r => ({ ...r, owner }));
+  return [...runes, ...missingRunes].slice(0, 8);
 };
 
 const getRoomSnapshot = async (roomId) => {
