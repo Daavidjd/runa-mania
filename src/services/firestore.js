@@ -69,7 +69,7 @@ export const getPlayerDecks = async (userId) => {
     const legacyNpc = decks.find(d => d.type === 'npc' || d.id === 'npc');
     const legacy = [legacyOnline, legacyNpc].filter(Boolean)
       .sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0))[0];
-    const selected = shared || legacy || decks
+    const selected = shared || (legacyOnline?.runes?.length >= 8 ? legacyOnline : legacy) || decks
       .slice()
       .sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0))[0];
     const runes = (selected?.runes || []).slice(0, 8);
