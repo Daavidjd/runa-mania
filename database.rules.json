@@ -1,11 +1,9 @@
 {
   "rules": {
-    "matchmaking": {
-      "queue": {
-        ".read": "auth != null",
-        "$uid": {
-          ".write": "auth != null && (auth.uid === $uid || (data.child('status').val() === 'waiting' && newData.child('status').val() === 'matched' && newData.child('opponentUid').val() === auth.uid))"
-        }
+    "queue": {
+      ".read": "auth != null",
+      "$uid": {
+        ".write": "auth != null && (auth.uid === $uid || (data.child('status').val() === 'waiting' && newData.child('status').val() === 'matched' && newData.child('opponentUid').val() === auth.uid))"
       }
     },
     "onlineRooms": {
