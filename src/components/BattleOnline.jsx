@@ -448,7 +448,7 @@ const BattleOnline = () => {
                 </>
               ) : (
                 <>
-                  <div className="bo-waiting-orb"></div>
+                  <div className="bo-search-avatar-reel" aria-label="Buscando posibles rivales">{AVATAR_OPTIONS.slice(0, 4).map((avatar) => <img key={avatar.id} src={avatar.src} alt="" />)}</div>
                   <span className="bo-lobby-name">{battleData?.searching ? 'Buscando invocador...' : 'Esperando rival...'}</span>
                 </>
               )}
