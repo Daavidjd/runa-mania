@@ -469,18 +469,25 @@ export const joinOnlineRoom = async (roomId, myUid, displayName) => {
     // blueUid == creador). El rojo que llega después solo hace UPDATE
     // (permitido porque ya está incluido en players.keys()).
     if (!snap.exists()) {
-      // ⚠️ No se incluyen campos con valor null: las reglas de create validan
-      // que todos los valores estén definidos (starterUid se añade luego por merge)
-      await setDoc(ref, {
-        roomId,
-        blueUid: myUid,
-        createdAt: now,
-        [`players.${myUid}`]: { name: displayName, ready: true, joinedAt: now },
-        board: Array(16).fill(null),
-        deckSizes: {},
-        finished: false
-      });
-      return { success: true };
+      // Ambos jugadores pueden consultar la sala antes de que exista. El primero
+      // la crea; si el segundo pierde esa carrera, vuelve a leerla y se une
+      // mediante UPDATE en vez de intentar crearla también.
+      try {
+        await setDoc(ref, {
+          roomId,
+          blueUid: myUid,
+          createdAt: now,
+          [`players.${myUid}`]: { name: displayName, ready: true, joinedAt: now },
+          board: Array(16).fill(null),
+          deckSizes: {},
+          finished: false
+        });
+        return { success: true };
+      } catch (createError) {
+        const latestSnap = await getDoc(ref);
+        if (!latestSnap.exists()) throw createError;
+        data = latestSnap.data();
+      }
     }
 
     const updates = {
