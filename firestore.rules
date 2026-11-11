@@ -50,9 +50,17 @@ service cloud.firestore {
 
       // Solo se permite cambiar el estado y la marca de resolución.
       allow update: if signedIn()
-        && (resource.data.from == request.auth.uid || resource.data.to == request.auth.uid)
         && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'resolvedAt'])
-        && request.resource.data.status in ['accepted', 'declined', 'cancelled'];
+        && (
+          (
+            resource.data.to == request.auth.uid
+            && request.resource.data.status in ['accepted', 'declined']
+          )
+          || (
+            resource.data.from == request.auth.uid
+            && request.resource.data.status == 'cancelled'
+          )
+        );
 
       allow delete: if signedIn()
         && (resource.data.from == request.auth.uid || resource.data.to == request.auth.uid);
