@@ -153,9 +153,14 @@ const Battle = () => {
           .slice(0, 8)
           .map(r => ({ ...r, owner: 'player' }));
       }
-      if (playerRunes.length < 2) {
-        const shuffled = [...RUNES_DB].sort(() => 0.5 - Math.random());
-        playerRunes = shuffled.slice(0, 8).map(r => ({ ...r, owner: 'player' }));
+      if (playerRunes.length < 8) {
+        const existingIds = new Set(playerRunes.map(r => r.id));
+        const missingRunes = [...RUNES_DB]
+          .filter(r => !existingIds.has(r.id))
+          .sort(() => 0.5 - Math.random())
+          .slice(0, 8 - playerRunes.length)
+          .map(r => ({ ...r, owner: 'player' }));
+        playerRunes = [...playerRunes, ...missingRunes];
       }
 
       // ✅ Usamos el mazo generado dinámicamente según la dificultad
