@@ -117,12 +117,30 @@ service cloud.firestore {
     }
 
     match /queues/{queueId} {
+      // Los jugadores autenticados pueden consultar la cola para encontrar rivales.
       allow read: if signedIn();
-      allow create, delete: if isUser(queueId);
 
-      // El usuario gestiona su propia ficha. Un rival solo puede marcar como
-      // emparejada una ficha que estaba buscando y apuntar el match hacia sí.
-      allow update: if isUser(queueId)
+      // Cada jugador solo puede crear o borrar su propia ficha de búsqueda.
+      allow create: if isUser(queueId)
+        && request.resource.data.status in ['searching', 'waiting']
+        && request.resource.data.keys().hasOnly([
+          'status', 'name', 'avatarId', 'searchedAt'
+        ]);
+
+      allow delete: if isUser(queueId);
+
+      // El propietario puede actualizar su ficha durante la búsqueda/cancelación
+      // y registrar el emparejamiento que ha encontrado.
+      allow update: if (
+          isUser(queueId)
+          && request.resource.data.status in ['searching', 'waiting', 'matched', 'cancelled']
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+            'status', 'name', 'avatarId', 'searchedAt', 'cancelledAt',
+            'opponentUid', 'opponentName', 'opponentAvatarId', 'roomId'
+          ])
+        )
+        // Otro jugador solo puede emparejar una ficha que siga esperando,
+        // y debe quedar identificado como el rival de esa ficha.
         || (
           signedIn()
           && resource.data.status in ['waiting', 'searching']
