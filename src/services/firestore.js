@@ -48,41 +48,35 @@ export const getUserDecks = async (userId) => {
   return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 };
 
-// Guardado con ID determinista por tipo de mazo ('npc' -> 5 runas, 'online' -> 8 runas)
-// Evita duplicados y reemplaza el mazo anterior del mismo tipo.
+// Un único mazo compartido de 8 runas para batallas NPC y online.
 export const saveDeck = async (userId, deck) => {
-  const deckType = deck.type || 'npc';
-  await setDoc(doc(db, `users/${userId}/decks`, deckType), {
+  await setDoc(doc(db, `users/${userId}/decks`, 'shared'), {
     ...deck,
-    type: deckType,
+    name: 'Mazo de batalla',
+    type: 'shared',
+    runes: (deck.runes || []).slice(0, 8),
     createdAt: new Date().toISOString()
   }, { merge: true });
 };
 
-// Obtiene los mazos separados por tipo con fallback a datos heredados
+// Lee el mazo compartido; si aún no existe, migra en memoria el mazo legado
+// online o NPC más reciente para que el usuario pueda completarlo hasta 8.
 export const getPlayerDecks = async (userId) => {
   try {
     const decks = await getUserDecks(userId);
-    let npc = decks.find(d => d.type === 'npc') || null;
-    let online = decks.find(d => d.type === 'online') || null;
-
-    // Compatibilidad con mazos antiguos sin campo 'type':
-    // >5 runas se considera mazo online, <=5 mazo NPC
-    if (!npc && !online) {
-      const legacy = decks.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))[0];
-      if (legacy) {
-        if ((legacy.runes || []).length > 5) online = legacy;
-        else npc = legacy;
-      }
-    }
-
-    return {
-      npc: npc?.runes || [],
-      online: online?.runes || []
-    };
+    const shared = decks.find(d => d.type === 'shared' || d.id === 'shared');
+    const legacyOnline = decks.find(d => d.type === 'online' || d.id === 'online');
+    const legacyNpc = decks.find(d => d.type === 'npc' || d.id === 'npc');
+    const legacy = [legacyOnline, legacyNpc].filter(Boolean)
+      .sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0))[0];
+    const selected = shared || legacy || decks
+      .slice()
+      .sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0))[0];
+    const runes = (selected?.runes || []).slice(0, 8);
+    return { npc: runes, online: runes, shared: runes };
   } catch (error) {
-    console.error('Error obteniendo mazos:', error);
-    return { npc: [], online: [] };
+    console.error('Error obteniendo mazo:', error);
+    return { npc: [], online: [], shared: [] };
   }
 };
 
@@ -648,24 +642,23 @@ export const recordOnlineBattleResult = async (userId, won) => {
 };
 
 
-// Mazo activo de un jugador para batallas EN LÍNEA (mazo de 8 runas).
+// Mazo compartido para batallas NPC y online (8 runas).
 // Fallback: último mazo guardado de cualquier tipo.
 export const getUserActiveDeck = async (userId) => {
   try {
     const { online, npc } = await getPlayerDecks(userId);
-    return online.length ? online : npc;
+    return (online.length ? online : npc).slice(0, 8);
   } catch (error) {
     console.error('Error obteniendo mazo activo:', error);
     return [];
   }
 };
 
-// Mazo activo para batallas NPC (mazo de 5 runas).
-// Fallback: mazo online recortado a 5.
+// Alias compatible: el modo NPC utiliza el mismo mazo compartido de 8 runas.
 export const getUserNpcDeck = async (userId) => {
   try {
     const { npc, online } = await getPlayerDecks(userId);
-    return npc.length ? npc : online.slice(0, 5);
+    return (online.length ? online : npc).slice(0, 8);
   } catch (error) {
     console.error('Error obteniendo mazo NPC:', error);
     return [];
