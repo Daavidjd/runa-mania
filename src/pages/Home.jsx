@@ -5,7 +5,7 @@ import {
   getUserProfile,
   getPlayerDecks,
 } from '../services/firestore';
-import { findRandomMatch, watchMyQueueEntry, leaveQueue } from '../services/realtime';
+
 import { RUNES_DB } from '../data/runes';
 import { AVATAR_OPTIONS } from '../data/avatars'; // ✅ IMPORTACIÓN CENTRALIZADA
 
