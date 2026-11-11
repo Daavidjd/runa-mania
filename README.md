@@ -17,3 +17,19 @@ You can also try [the experimental native React Compiler support in plugin-react
 ## Expanding the ESLint configuration
 
 If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+
+## Firebase Realtime Database (batallas online)
+
+El matchmaking y las salas online utilizan Realtime Database. Configura
+`VITE_FIREBASE_DATABASE_URL` en el entorno local y en las variables del
+proveedor de despliegue con la URL de la instancia mostrada en Firebase
+Console → Realtime Database. Mantén las demás variables `VITE_FIREBASE_*`
+que ya utiliza la aplicación.
+
+Las reglas están en `database.rules.json`. Para publicarlas:
+
+```bash
+firebase deploy --only database
+```
+
+Firestore sigue almacenando perfiles, colección, mazos, amigos y retos.
