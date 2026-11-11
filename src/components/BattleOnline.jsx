@@ -199,7 +199,7 @@ const BattleOnline = () => {
 
   // ---------- SINCRONIZACIÓN DEL TABLERO ----------
   useEffect(() => {
-    if (phase === 'error' || phase === 'playing') return;
+    if (phase === 'error') return;
     const remoteBoard = room.board;
     if (!Array.isArray(remoteBoard) || remoteBoard.length !== 9) {
       // Ambos dentro y con colores asignados → mostrar volteo de moneda 50/50
