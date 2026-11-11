@@ -7,7 +7,7 @@ import cucakarcha from '../assets/runes/Cucakarcha.png';
 import elfo from '../assets/runes/Elfo.png';
 import golcan from '../assets/runes/Golcan.png';
 import perry from '../assets/runes/Perry.png';
-import tigreoso from '../assets/runes/Tigreoso.png';
+import tigreoso from '../assets/runes/tigreoso.png';
 import trompi from '../assets/runes/Trompi.png';
 import escorpedo from '../assets/runes/escorpedo.png';
 import infernalSpider from '../assets/runes/InfernalSpider.png';
