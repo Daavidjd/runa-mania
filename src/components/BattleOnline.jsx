@@ -595,15 +595,13 @@ const BattleOnline = () => {
           <div
             className={`bo-coin ${myColor === "blue" ? "bo-coin-show-blue" : "bo-coin-show-red bo-coin-red-first"}`}
             role="img"
-            aria-label="Moneda de dos caras: azul con símbolo de agua y roja con símbolo de fuego"
+            aria-label="Moneda azul con ola y roja con fuego"
           >
             <div className="bo-coin-face bo-coin-blue">
               <span aria-hidden="true">🌊</span>
-              <small>AGUA · AZUL</small>
             </div>
             <div className="bo-coin-face bo-coin-red">
               <span aria-hidden="true">🔥</span>
-              <small>FUEGO · ROJO</small>
             </div>
           </div>
           <div className="bo-vs-row bo-coinflip-names">
