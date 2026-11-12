@@ -49,7 +49,7 @@ const RuneCard = React.memo(({
         
         {/* Área interior (sin nombre en batalla) */}
         <div className="battle-inner">
-          <img src={rune.image} alt={rune.name} className="battle-image rune-art-protected" loading="lazy" draggable="false" onContextMenu={e => e.preventDefault()} onDragStart={e => e.preventDefault()} />
+          <img src={rune.image} alt={rune.name} className="battle-image rune-art-protected" loading="lazy" decoding="async" fetchPriority="low" draggable="false" onContextMenu={e => e.preventDefault()} onDragStart={e => e.preventDefault()} />
         </div>
       </div>
     );
@@ -61,7 +61,7 @@ const RuneCard = React.memo(({
       <div className="rune-inner">
         {owned ? (
           <>
-            <img src={rune.image} alt={rune.name} className="rune-image rune-art-protected" loading="lazy" draggable="false" onContextMenu={e => e.preventDefault()} onDragStart={e => e.preventDefault()} />
+            <img src={rune.image} alt={rune.name} className="rune-image rune-art-protected" loading="lazy" decoding="async" fetchPriority="low" draggable="false" onContextMenu={e => e.preventDefault()} onDragStart={e => e.preventDefault()} />
             <h3 className="rune-name">{rune.name}</h3>
           </>
         ) : (
