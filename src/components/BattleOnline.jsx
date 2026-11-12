@@ -465,9 +465,10 @@ const BattleOnline = () => {
 
   // ---------- REPORTAR RESULTADO UNA SOLA VEZ ----------
   useEffect(() => {
-    if (showEndModal && !reportedRef.current && user && iWon !== null) {
+    if (showEndModal && !reportedRef.current && user && roomIdRef.current) {
       reportedRef.current = true;
-      recordOnlineBattleResult(user.uid, iWon);
+      const outcome = iWon === true ? 'win' : iWon === false ? 'loss' : 'draw';
+      recordOnlineBattleResult(user.uid, outcome, roomIdRef.current);
     }
   }, [showEndModal, iWon, user]);
 
@@ -728,7 +729,7 @@ const BattleOnline = () => {
 
             <div className="bp-modal-reward">
               <span className="bp-reward-coin">🪙</span>
-              <span className="bp-reward-val">{iWon ? '+30 Monedas y +25 XP' : iWon === null ? '+10 Monedas' : '+5 Monedas de consolación'}</span>
+              <span className="bp-reward-val">{iWon ? '+35 Monedas y +25 XP' : iWon === null ? '+20 Monedas y +12 XP' : '+10 Monedas y +5 XP de consolación'}</span>
             </div>
 
             <div className="bp-modal-actions">
