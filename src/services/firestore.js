@@ -11,7 +11,8 @@ import {
   where,
   limit as fsLimit,
   serverTimestamp,
-  onSnapshot
+  onSnapshot,
+  writeBatch
 } from 'firebase/firestore';
 import { db } from './firebase';
 
@@ -308,26 +309,35 @@ export const sendFriendRequest = async (fromUid, toUid) => {
 // Aceptar solicitud (se añade a la lista friendIds de ambos)
 export const acceptFriendRequest = async (requestId, myUid, otherUidParam = null) => {
   try {
-    const ref = doc(db, 'friendRequests', requestId);
-    const snap = await getDoc(ref);
-    if (!snap.exists()) return { success: false, message: 'Solicitud no encontrada' };
+    const requestRef = doc(db, 'friendRequests', requestId);
+    const requestSnap = await getDoc(requestRef);
+    if (!requestSnap.exists()) return { success: false, message: 'Solicitud no encontrada' };
 
-    const { from, to } = snap.data();
-    const me = myUid;
-    const other = otherUidParam || (me === from ? to : from);
-
-    await updateDoc(ref, { status: 'accepted', resolvedAt: serverTimestamp() });
-
-    for (const uid of [me, other]) {
-      const uRef = doc(db, 'users', uid);
-      const uSnap = await getDoc(uRef);
-      if (!uSnap.exists()) continue;
-      const ids = uSnap.data().friendIds || [];
-      if (!ids.includes(other)) {
-        await updateDoc(uRef, { friendIds: [...ids, other] });
-      }
+    const { from, to, status } = requestSnap.data();
+    if (status !== 'pending' || ![from, to].includes(myUid)) {
+      return { success: false, message: 'La solicitud ya no está disponible' };
     }
-    return { success: true, message: 'Invocador añadido a amigos 🎉' };
+    const otherUid = otherUidParam || (myUid === from ? to : from);
+    const [mySnap, otherSnap] = await Promise.all([
+      getDoc(doc(db, 'users', myUid)),
+      getDoc(doc(db, 'users', otherUid))
+    ]);
+    if (!mySnap.exists() || !otherSnap.exists()) {
+      return { success: false, message: 'No se ha encontrado uno de los perfiles' };
+    }
+
+    const batch = writeBatch(db);
+    batch.update(requestRef, { status: 'accepted', resolvedAt: serverTimestamp() });
+    const myFriends = mySnap.data().friendIds || [];
+    const otherFriends = otherSnap.data().friendIds || [];
+    if (!myFriends.includes(otherUid)) {
+      batch.update(doc(db, 'users', myUid), { friendIds: [...myFriends, otherUid] });
+    }
+    if (!otherFriends.includes(myUid)) {
+      batch.update(doc(db, 'users', otherUid), { friendIds: [...otherFriends, myUid] });
+    }
+    await batch.commit();
+    return { success: true, message: '¡Invocador añadido a amigos! 🎉' };
   } catch (error) {
     console.error('Error aceptando solicitud:', error);
     return { success: false, message: 'Error al aceptar la solicitud' };
@@ -348,17 +358,21 @@ export const declineFriendRequest = async (requestId) => {
 // Eliminar amigo (quita la entrada de ambas listas)
 export const removeFriend = async (myUid, friendUid) => {
   try {
-    for (const uid of [myUid, friendUid]) {
-      const uRef = doc(db, 'users', uid);
-      const uSnap = await getDoc(uRef);
-      if (!uSnap.exists()) continue;
-      const ids = (uSnap.data().friendIds || []).filter(id => id !== (uid === myUid ? friendUid : myUid));
-      await updateDoc(uRef, { friendIds: ids });
+    const myRef = doc(db, 'users', myUid);
+    const friendRef = doc(db, 'users', friendUid);
+    const [mySnap, friendSnap] = await Promise.all([getDoc(myRef), getDoc(friendRef)]);
+    if (!mySnap.exists()) return { success: false, message: 'Tu perfil no está disponible' };
+
+    const batch = writeBatch(db);
+    batch.update(myRef, { friendIds: (mySnap.data().friendIds || []).filter(id => id !== friendUid) });
+    if (friendSnap.exists()) {
+      batch.update(friendRef, { friendIds: (friendSnap.data().friendIds || []).filter(id => id !== myUid) });
     }
-    return { success: true, message: 'Amigo eliminado' };
+    await batch.commit();
+    return { success: true, message: 'Amigo eliminado de tu lista' };
   } catch (error) {
     console.error('Error eliminando amigo:', error);
-    return { success: false, message: 'Error al eliminar al amigo' };
+    return { success: false, message: 'No se pudo eliminar al amigo' };
   }
 };
 
