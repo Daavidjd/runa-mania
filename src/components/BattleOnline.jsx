@@ -163,7 +163,11 @@ const BattleOnline = () => {
       cancelled = true;
       unsubscribe?.();
       if (heartbeat) clearInterval(heartbeat);
-      leaveMatchmakingQueue(user.uid).catch(error => console.error('Error saliendo de la cola:', error));
+      // Al aceptar un match, no ejecutar la limpieza de "waiting":
+      // el documento ya pertenece a una reserva matched que el otro cliente escucha.
+      if (!accepted) {
+        leaveMatchmakingQueue(user.uid).catch(error => console.error('Error saliendo de la cola:', error));
+      }
     };
   }, [user, battleData?.searching]);
 
