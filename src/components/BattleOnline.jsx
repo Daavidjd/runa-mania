@@ -11,7 +11,7 @@ import {
   completeMatchmaking,
   leaveMatchmakingQueue
 } from '../services/firestore';
-import { joinOnlineRoom, watchRoom, leaveOnlineRoom, updateOnlineRoom, playOnlineMove } from '../services/realtime';
+import { joinOnlineRoom, watchRoom, leaveOnlineRoom, updateOnlineRoom, playOnlineMove, claimOnlineTimeout, claimOnlineForfeit, forfeitOnlineRoom } from '../services/realtime';
 
 import { RUNES_DB } from '../data/runes';
 import { AVATAR_OPTIONS } from '../data/avatars';
@@ -107,6 +107,8 @@ const BattleOnline = () => {
   const [attackDirs, setAttackDirs] = useState({});
   const [shakeHand, setShakeHand] = useState(false);
   const [countdown, setCountdown] = useState(3); // ⏳ cuenta regresiva del volteo de moneda
+  const [timerRemaining, setTimerRemaining] = useState(30);
+  const timeoutClaimRef = useRef(false);
 
   const roomUnsubRef = useRef(null);
   const challengeUnsubRef = useRef(null);
@@ -556,7 +558,7 @@ const BattleOnline = () => {
             {starterIsMe ? '¡Empiezas tú!' : 'Empieza el rival'}
           </div>
           <p className="bo-coinflip-countdown">La batalla comienza en {countdown}...</p>
-          <button className="bp-btn bp-btn-exit bo-leave" onClick={() => navigate('/home')}>🚪 Salir</button>
+          <button className="bp-btn bp-btn-exit bo-leave" onClick={handleLeaveBattle}>🚪 Abandonar</button>
         </div>
       </div>
     );
@@ -568,7 +570,7 @@ const BattleOnline = () => {
       <div className="bp-stars bp-stars-2"></div>
 
       {/* HUD RIVAL */}
-      <div className="bp-player-strip bp-enemy-strip">
+      <div className={`bp-player-strip bp-enemy-strip bp-color-${oppColor || "blue"}`}>
         <div className="bp-user-meta">
           <img
             src={avatarSrcOf(oppProfile)}
@@ -583,9 +585,14 @@ const BattleOnline = () => {
             </span>
           </div>
         </div>
-        <div className="bp-score-badge-box bp-score-ai-box">
-          <span className="bp-score-badge-label">PUNTOS</span>
-          <span className="bp-score-badge-value">{scores.opp}</span>
+        <div className="bo-score-cluster">
+          <div className="bo-turn-timer" style={{ '--timer-progress': (timerRemaining / 30) * 100 + '%' }}>
+            <span>{timerRemaining}</span>
+          </div>
+          <div className="bp-score-badge-box bp-score-ai-box">
+            <span className="bp-score-badge-label">PUNTOS</span>
+            <span className="bp-score-badge-value">{scores.opp}</span>
+          </div>
         </div>
       </div>
 
@@ -614,7 +621,7 @@ const BattleOnline = () => {
               >
                 {cell ? (
                   <RuneCard
-                    rune={cell}
+                    rune={{ ...cell, image: RUNES_DB.find(r => r.id === cell.id)?.image || cell.image }}
                     visualOwner={visualOwner}
                     owned={true}
                     battleMode={true}
@@ -648,7 +655,7 @@ const BattleOnline = () => {
       </section>
 
       {/* MI HUD */}
-      <div className="bp-player-strip bp-self-strip">
+      <div className={`bp-player-strip bp-self-strip bp-color-${myColor || "blue"}`}>
         <div className="bp-user-meta">
           <img
             src={avatarSrcOf(myProfile)}
@@ -663,9 +670,14 @@ const BattleOnline = () => {
             </span>
           </div>
         </div>
-        <div className="bp-score-badge-box bp-score-self-box">
-          <span className="bp-score-badge-label">TUS PUNTOS</span>
-          <span className="bp-score-badge-value">{scores.me}</span>
+        <div className="bo-score-cluster">
+          <div className="bo-turn-timer" style={{ '--timer-progress': (timerRemaining / 30) * 100 + '%' }}>
+            <span>{timerRemaining}</span>
+          </div>
+          <div className="bp-score-badge-box bp-score-self-box">
+            <span className="bp-score-badge-label">TUS PUNTOS</span>
+            <span className="bp-score-badge-value">{scores.me}</span>
+          </div>
         </div>
       </div>
 
