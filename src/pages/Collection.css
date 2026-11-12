@@ -423,3 +423,18 @@
 
 .deck-full-notice .deck-confirm-actions { margin-top: 2px; }
 .deck-full-notice .deck-confirm-actions button { width: 100%; }
+
+
+/* Rendimiento de la colección: diferir el renderizado fuera de pantalla y evitar
+   animaciones continuas en las flechas de las fichas que no están en combate. */
+.compact-item-wrapper {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 112px;
+}
+.collection-screen .rune-card .arrow {
+  animation: none;
+}
+.collection-screen .rune-image,
+.collection-screen .battle-image {
+  backface-visibility: hidden;
+}
