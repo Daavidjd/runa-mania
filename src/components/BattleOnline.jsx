@@ -80,6 +80,7 @@ const BattleOnline = () => {
   const [iWon, setIWon] = useState(null);
   const [showEndModal, setShowEndModal] = useState(false);
   const [flippingCells, setFlippingCells] = useState([]);
+  const [captureOwnerOverrides, setCaptureOwnerOverrides] = useState({});
   const [lastPlaced, setLastPlaced] = useState(null);
   const [attackDirs, setAttackDirs] = useState({});
   const [shakeHand, setShakeHand] = useState(false);
@@ -90,6 +91,8 @@ const BattleOnline = () => {
   const phaseRef = useRef(phase);
   useEffect(() => { phaseRef.current = phase; }, [phase]);
   const appliedRemoteMovesRef = useRef(new Set());
+  const boardRef = useRef(board);
+  boardRef.current = board;
   const myUidRef = useRef(user?.uid || null);
   const reportedRef = useRef(false);
   const roomIdRef = useRef(null);
@@ -265,8 +268,18 @@ const BattleOnline = () => {
 
     const lastMove = room.lastMove;
 
-    // El tablero compartido ya trae colores reales blue/red
+    // El tablero compartido ya trae colores reales blue/red.
+    // Conservamos el color anterior localmente mientras dura el giro.
     const colored = remoteBoard.map(cell => (cell ? { ...cell } : null));
+    if (lastMove?.captured?.length && !appliedRemoteMovesRef.current.has(lastMove.moveId)) {
+      const previousBoard = boardRef.current;
+      const overrides = {};
+      lastMove.captured.forEach(index => {
+        const previousOwner = previousBoard[index]?.owner;
+        if (previousOwner) overrides[index] = previousOwner === 'red' ? 'ai' : 'player';
+      });
+      if (Object.keys(overrides).length) setCaptureOwnerOverrides(overrides);
+    }
     setBoard(colored);
 
     // Cartas restantes del rival (su mazo inicial menos las jugadas)
@@ -284,6 +297,8 @@ const BattleOnline = () => {
         setTimeout(() => {
           setFlippingCells(lastMove.captured);
           setAttackDirs({});
+          // Cambiar el color justo a mitad de la animación de giro (300 de 600 ms).
+          setTimeout(() => setCaptureOwnerOverrides({}), 300);
           setTimeout(() => { setFlippingCells([]); }, 600);
         }, 400);
       } else {
@@ -540,15 +555,18 @@ const BattleOnline = () => {
 
         <div className="bp-board-container">
           <div className="bp-grid-4x4">
-            {board.map((cell, i) => (
+            {board.map((cell, i) => {
+              const visualOwner = captureOwnerOverrides[i] || (cell?.owner === 'red' ? 'ai' : 'player');
+              return (
               <div
                 key={i}
-                className={`bp-cell ${cell ? `bp-cell-${cell.owner === 'red' ? 'ai' : 'player'}` : 'bp-cell-empty'} ${flippingCells.includes(i) ? 'bp-cell-flip' : ''} ${lastPlaced === i ? 'bp-cell-placed' : ''}`}
+                className={`bp-cell ${cell ? `bp-cell-${visualOwner}` : 'bp-cell-empty'} ${flippingCells.includes(i) ? 'bp-cell-flip' : ''} ${lastPlaced === i ? 'bp-cell-placed' : ''}`}
                 onClick={() => handleCellClick(i)}
               >
                 {cell ? (
                   <RuneCard
                     rune={cell}
+                    visualOwner={visualOwner}
                     owned={true}
                     battleMode={true}
                     isFlipping={flippingCells.includes(i)}
@@ -559,7 +577,8 @@ const BattleOnline = () => {
                   <div className="bp-cell-slot-dot">᛭</div>
                 )}
               </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       </main>
