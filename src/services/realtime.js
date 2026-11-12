@@ -33,6 +33,9 @@ export const findRandomMatch = async (uid, name, avatarId) => {
       };
     }
 
+    if (existing?.status === 'waiting' && Number.isFinite(Number(existing.searchedAt))) {
+      entry.searchedAt = Number(existing.searchedAt);
+    }
     await onDisconnect(myRef).remove();
     await set(myRef, entry);
 
@@ -73,15 +76,6 @@ export const findRandomMatch = async (uid, name, avatarId) => {
 
       if (!claim.committed) continue;
 
-      const matchedEntry = {
-        ...entry,
-        status: 'matched',
-        opponentUid: opponent.uid,
-        opponentName: opponent.name || 'Rival',
-        opponentAvatarId: opponent.avatarId || 'mago',
-        roomId,
-        matchOrder
-      };
       const ownClaim = await runTransaction(myRef, current => {
         if (!current || current.uid !== uid || current.status !== 'waiting') return;
         return { ...current, status: 'matched', opponentUid: opponent.uid,
