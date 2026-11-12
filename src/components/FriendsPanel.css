@@ -41,8 +41,8 @@
 .fp-header {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  margin-bottom: 10px;
+  gap: 9px;
+  margin-bottom: 14px;
 }
 
 .fp-header-actions {
@@ -95,15 +95,27 @@
 /* --- Mi código --- */
 .fp-my-code {
   display: flex;
+  flex: 1;
+  min-width: 0;
   align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  background: #090d18;
-  border: 2px dashed #3b4f7a;
+  justify-content: center;
+  gap: 9px;
+  min-height: 42px;
+  padding: 7px 10px;
+  background: linear-gradient(135deg, #101d34, #0b1425);
+  border: 1px solid #30466c;
   border-radius: 12px;
-  padding: 8px 12px;
-  margin-bottom: 12px;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.05), 0 3px 10px rgba(0,0,0,.18);
+  cursor: pointer;
+  transition: border-color .2s ease, background .2s ease, transform .2s ease;
 }
+.fp-my-code:hover:not(:disabled) {
+  border-color: #00d4ff;
+  background: linear-gradient(135deg, #142744, #0d1a30);
+  transform: translateY(-1px);
+}
+.fp-my-code:disabled { opacity: .55; cursor: not-allowed; }
+.fp-copy-icon { color: #00d4ff; font-size: 15px; line-height: 1; }
 
 .fp-my-code-label {
   font-size: 9px;
@@ -113,14 +125,17 @@
 }
 
 .fp-my-code-value {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   font-size: 14px;
-  font-weight: 900;
+  font-weight: 1000;
   color: #ffd54a;
-  cursor: pointer;
+  letter-spacing: .35px;
   user-select: all;
 }
 
-.fp-my-code-value:hover { color: #ffe98a; }
+.fp-my-code:hover .fp-my-code-value { color: #ffe98a; }
 
 /* --- Pestañas --- */
 .fp-tabs {
@@ -338,7 +353,15 @@
 }
 
 .fp-subtitle { margin: -4px 0 0; color: #8fa0be; font-size: 10px; font-weight: 600; }
-.fp-my-code { width: 100%; cursor: pointer; text-align: left; }
+.fp-my-code { width: auto; text-align: center; }
+.fp-header-compact .fp-refresh,
+.fp-header-compact .fp-close { flex: 0 0 40px; width: 40px; height: 40px; }
+@media (max-width: 360px) {
+  .fp-header { gap: 6px; }
+  .fp-header-compact .fp-refresh,
+  .fp-header-compact .fp-close { flex-basis: 36px; width: 36px; height: 36px; }
+  .fp-my-code-value { font-size: 12px; }
+}
 .fp-my-code:focus-visible, .fp-btn:focus-visible, .fp-tab:focus-visible { outline: 2px solid #00d4ff; outline-offset: 2px; }
 .fp-list-heading { display: flex; justify-content: space-between; align-items: center; color: #8fa0be; font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; padding: 2px 3px; }
 .fp-empty-state { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 8px; padding: 26px 16px; background: #0d1729; border: 1px dashed #304365; border-radius: 14px; }
