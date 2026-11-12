@@ -11,7 +11,7 @@ import {
   completeMatchmaking,
   leaveMatchmakingQueue
 } from '../services/firestore';
-import { joinOnlineRoom, watchRoom, leaveOnlineRoom, updateOnlineRoom, playOnlineMove, claimOnlineTimeout, claimOnlineForfeit, forfeitOnlineRoom } from '../services/realtime';
+import { joinOnlineRoom, watchRoom, leaveOnlineRoom, updateOnlineRoom, playOnlineMove, claimOnlineTimeout, claimOnlineForfeit, forfeitOnlineRoom, startOnlineTurnClock } from '../services/realtime';
 
 import { RUNES_DB } from '../data/runes';
 import { AVATAR_OPTIONS } from '../data/avatars';
@@ -462,11 +462,16 @@ const BattleOnline = () => {
   // ---------- ⏳ CUENTA REGRESIVA DEL VOLTEO → INICIO AUTOMÁTICO ----------
   useEffect(() => {
     if (phase !== 'coinflip') return undefined;
-    const id = setInterval(() => {
-      setCountdown(c => {
-        if (c <= 1) { clearInterval(id); setPhase('playing'); return 0; }
-        return c - 1;
-      });
+    let remaining = 3;
+    const id = setInterval(async () => {
+      remaining -= 1;
+      setCountdown(remaining);
+      if (remaining <= 0) {
+        clearInterval(id);
+        try { await startOnlineTurnClock(roomIdRef.current); }
+        catch (error) { console.error('Error iniciando el reloj de turno:', error); }
+        setPhase('playing');
+      }
     }, 1000);
     return () => clearInterval(id);
   }, [phase]);
