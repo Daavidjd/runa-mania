@@ -3,7 +3,8 @@ import {
 } from 'firebase/database';
 import { rtdb } from './firebase';
 
-const QUEUE_PATH = 'queue';
+const QUEUE_PATH = 'matchmaking/queue';
+const MAX_QUEUE_SILENCE_MS = 45000;
 const ROOM_PATH = 'onlineRooms';
 
 export const findRandomMatch = async (uid, name, avatarId) => {
@@ -12,7 +13,8 @@ export const findRandomMatch = async (uid, name, avatarId) => {
   const entry = {
     uid, name, avatarId: avatarId || 'mago',
     status: 'waiting',
-    searchedAt: now
+    searchedAt: now,
+    lastSeenAt: now
   };
 
   try {
@@ -31,15 +33,16 @@ export const findRandomMatch = async (uid, name, avatarId) => {
       };
     }
 
-    await set(myRef, entry);
     await onDisconnect(myRef).remove();
+    await set(myRef, entry);
 
     const queueSnap = await get(ref(rtdb, QUEUE_PATH));
     const candidates = Object.values(queueSnap.val() || {})
       .filter(p => {
         if (!p || p.uid === uid || p.status !== 'waiting') return false;
         const searchedAt = Number(p.searchedAt);
-        if (!Number.isFinite(searchedAt) || now - searchedAt >= 60000) return false;
+        const lastSeenAt = Number(p.lastSeenAt ?? searchedAt);
+        if (!Number.isFinite(lastSeenAt) || now - lastSeenAt > MAX_QUEUE_SILENCE_MS) return false;
         // Solo el jugador que llegó DESPUÉS puede reclamar al anterior.
         // El desempate por UID define un orden total incluso en el mismo ms.
         return searchedAt < now || (searchedAt === now && String(p.uid) < String(uid));
@@ -54,7 +57,8 @@ export const findRandomMatch = async (uid, name, avatarId) => {
       const claim = await runTransaction(opponentRef, current => {
         if (!current || current.uid !== opponent.uid || current.status !== 'waiting') return;
         const searchedAt = Number(current.searchedAt);
-        if (!Number.isFinite(searchedAt) || now - searchedAt >= 60000) return;
+        const lastSeenAt = Number(current.lastSeenAt ?? searchedAt);
+        if (!Number.isFinite(lastSeenAt) || now - lastSeenAt > MAX_QUEUE_SILENCE_MS) return;
         if (!(searchedAt < now || (searchedAt === now && String(current.uid) < String(uid)))) return;
         return {
           ...current,
@@ -78,17 +82,20 @@ export const findRandomMatch = async (uid, name, avatarId) => {
         roomId,
         matchOrder
       };
-      try {
-        await set(myRef, matchedEntry);
-      } catch (writeError) {
-        // Si el segundo registro falla, liberar al rival solo si aún conserva
-        // esta reserva; no tocar un match posterior.
+      const ownClaim = await runTransaction(myRef, current => {
+        if (!current || current.uid !== uid || current.status !== 'waiting') return;
+        return { ...current, status: 'matched', opponentUid: opponent.uid,
+          opponentName: opponent.name || 'Rival', opponentAvatarId: opponent.avatarId || 'mago',
+          roomId, matchOrder };
+      }, { applyLocally: false });
+
+      if (!ownClaim.committed) {
         await runTransaction(opponentRef, current => {
           if (!current || current.status !== 'matched' || current.opponentUid !== uid || current.roomId !== roomId) return;
           const { status, opponentUid, opponentName, opponentAvatarId, roomId: _roomId, matchOrder: _matchOrder, ...waiting } = current;
           return { ...waiting, status: 'waiting' };
         }, { applyLocally: false });
-        throw writeError;
+        continue;
       }
 
       return {
@@ -107,8 +114,28 @@ export const findRandomMatch = async (uid, name, avatarId) => {
   }
 };
 
-export const watchMyQueueEntry = (uid, callback) =>
-  onValue(ref(rtdb, `${QUEUE_PATH}/${uid}`), snap => callback(snap.val() ? { uid, ...snap.val() } : null));
+export const watchMyQueueEntry = (uid, callback, onError) =>
+  onValue(ref(rtdb, `${QUEUE_PATH}/${uid}`),
+    snap => callback(snap.val() ? { uid, ...snap.val() } : null),
+    error => {
+      console.error('Error escuchando la cola de matchmaking:', error);
+      onError?.(error);
+    });
+
+export const refreshQueueEntry = async uid => {
+  const queueRef = ref(rtdb, `${QUEUE_PATH}/${uid}`);
+  await runTransaction(queueRef, current => {
+    if (!current || current.status !== 'waiting') return;
+    return { ...current, lastSeenAt: Date.now() };
+  }, { applyLocally: false });
+};
+
+export const completeQueueMatch = async (uid, roomId) => {
+  const queueRef = ref(rtdb, `${QUEUE_PATH}/${uid}`);
+  const snap = await get(queueRef);
+  const entry = snap.val();
+  if (entry?.status === 'matched' && entry.roomId === roomId) await remove(queueRef);
+};
 
 export const leaveQueue = async uid => {
   const queueRef = ref(rtdb, `${QUEUE_PATH}/${uid}`);
