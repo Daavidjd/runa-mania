@@ -16,6 +16,7 @@ const Collection = () => {
   const [selectedDeckRune, setSelectedDeckRune] = useState(null);
   const [loading, setLoading] = useState(true);
   const [pendingDeckAction, setPendingDeckAction] = useState(null);
+  const [showDeckFullNotice, setShowDeckFullNotice] = useState(false);
 
   const loadData = async () => {
     if (!user) return;
@@ -56,7 +57,7 @@ const Collection = () => {
   const handleAddToDeck = async (rune) => {
     if (deck.some(r => r.id === rune.id)) return;
     if (deck.length >= DECK_SIZE) {
-      alert('El mazo ya está completo (8 runas máximo)');
+      setShowDeckFullNotice(true);
       return;
     }
     await persistDeck([...deck, rune]);
@@ -154,6 +155,25 @@ const Collection = () => {
           })}
         </div>
       </main>
+
+      {showDeckFullNotice && (
+        <div className="deck-confirm-overlay" role="presentation" onClick={() => setShowDeckFullNotice(false)}>
+          <section
+            className="deck-confirm-modal deck-full-notice"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="deck-full-title"
+            onClick={event => event.stopPropagation()}
+          >
+            <div className="deck-confirm-icon">🛡️</div>
+            <h3 id="deck-full-title">¡MAZO COMPLETO!</h3>
+            <p>Tu mazo ya tiene las 8 runas permitidas. Quita una runa antes de añadir otra.</p>
+            <div className="deck-confirm-actions">
+              <button type="button" className="deck-confirm-accept" onClick={() => setShowDeckFullNotice(false)}>Aceptar</button>
+            </div>
+          </section>
+        </div>
+      )}
 
       {pendingDeckAction && (
         <div className="deck-confirm-overlay" role="presentation" onClick={() => setPendingDeckAction(null)}>
