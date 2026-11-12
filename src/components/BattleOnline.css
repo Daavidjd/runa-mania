@@ -198,9 +198,14 @@
 
 /* ============ 🎲 VOLTEO DE MONEDA 50/50 (rojo vs azul) ============ */
 .bo-coin {
-  font-size: 64px;
-  margin: 10px auto;
-  animation: bo-coin-flip 1s ease-in-out infinite;
+  position: relative;
+  width: 132px;
+  height: 132px;
+  margin: 18px auto;
+  border-radius: 50%;
+  transform-style: preserve-3d;
+  perspective: 700px;
+  filter: drop-shadow(0 12px 16px rgba(0,0,0,.55));
 }
 
 @keyframes bo-coin-flip {
@@ -278,17 +283,18 @@
 }
 .bo-coin {
   position: relative;
-  width: 112px;
-  height: 112px;
-  margin: 10px auto;
+  width: 132px;
+  height: 132px;
+  margin: 18px auto;
   border-radius: 50%;
   transform-style: preserve-3d;
-  filter: drop-shadow(0 9px 13px rgba(0,0,0,.55));
+  perspective: 700px;
+  filter: drop-shadow(0 12px 16px rgba(0,0,0,.55));
 }
 .bo-coin-face {
   position: absolute;
   inset: 0;
-  border: 5px solid #d9dce5;
+  border: 6px solid #f4d889;
   border-radius: 50%;
   backface-visibility: hidden;
   -webkit-backface-visibility: hidden;
@@ -296,15 +302,32 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 3px;
+  gap: 5px;
   color: white;
   text-shadow: 0 2px 5px rgba(0,0,0,.55);
-  box-shadow: inset 0 0 0 3px rgba(255,255,255,.18), inset 0 0 18px rgba(0,0,0,.22);
+  box-shadow: inset 0 0 0 3px rgba(255,255,255,.24), inset 0 0 20px rgba(0,0,0,.28), 0 0 0 2px rgba(91,61,20,.7);
 }
-.bo-coin-face span { font-size: 46px; font-weight: 900; line-height: 1; }
-.bo-coin-face small { font-size: 8px; font-weight: 1000; letter-spacing: 1px; }
-.bo-coin-blue { background: radial-gradient(circle at 32% 25%, #52caff, #0875c7 55%, #063b83); transform: rotateY(0deg) translateZ(1px); }
-.bo-coin-red { background: radial-gradient(circle at 32% 25%, #ff9861, #df342e 55%, #811522); transform: rotateY(180deg) translateZ(1px); }
+.bo-coin-face span {
+  display: block;
+  font-family: system-ui, sans-serif;
+  font-size: 54px;
+  line-height: 1;
+  filter: drop-shadow(0 3px 3px rgba(0,0,0,.38));
+}
+.bo-coin-face small {
+  font-size: 9px;
+  font-weight: 1000;
+  letter-spacing: 1.15px;
+  text-shadow: 0 2px 4px rgba(0,0,0,.7);
+}
+.bo-coin-blue {
+  background: radial-gradient(circle at 30% 22%, #8be7ff 0%, #25a9ed 30%, #0875c7 62%, #063b83 100%);
+  transform: rotateY(0deg) translateZ(1px);
+}
+.bo-coin-red {
+  background: radial-gradient(circle at 30% 22%, #ffd08b 0%, #ff754b 30%, #df342e 62%, #811522 100%);
+  transform: rotateY(180deg) translateZ(1px);
+}
 .bo-coin-show-blue { animation: bo-coin-land-blue 1.35s cubic-bezier(.18,.72,.25,1) both; }
 .bo-coin-show-red { animation: bo-coin-land-red 1.35s cubic-bezier(.18,.72,.25,1) both; }
 @keyframes bo-coin-land-blue {

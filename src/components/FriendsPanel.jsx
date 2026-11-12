@@ -153,28 +153,35 @@ const FriendsPanel = ({ profile, open = true, onClose }) => {
     <div className="fp-backdrop" onClick={onClose}>
       <section className="fp-panel" onClick={(event) => event.stopPropagation()} role="dialog" aria-modal="true" aria-label="Gestión de amigos">
         <header className="fp-header fp-header-compact">
-          <div className="fp-header-actions">
-            <button className="fp-refresh" onClick={() => refreshAll(true)} title="Actualizar" disabled={refreshing}>{refreshing ? '…' : '⟳'}</button>
-            <button className="fp-close" onClick={onClose} title="Cerrar" aria-label="Cerrar">✕</button>
-          </div>
+          <button
+            className="fp-refresh"
+            onClick={() => refreshAll(true)}
+            title="Actualizar"
+            aria-label="Actualizar amigos"
+            disabled={refreshing}
+          >
+            {refreshing ? '…' : '⟳'}
+          </button>
+          <button
+            className="fp-my-code"
+            onClick={async () => {
+              const code = profile?.playerCode || profile?.userId || user?.uid || '';
+              try {
+                await navigator.clipboard.writeText(String(code));
+                showToast('Código de invocador copiado');
+              } catch {
+                showToast('No se pudo copiar el código', false);
+              }
+            }}
+            disabled={!profile?.playerCode && !profile?.userId && !user?.uid}
+            title="Copiar código de invocador"
+            aria-label={`Copiar código de invocador ${profile?.playerCode || profile?.userId || user?.uid || ''}`}
+          >
+            <span className="fp-my-code-value">#{profile?.playerCode || profile?.userId || user?.uid || '—'}</span>
+            <span className="fp-copy-icon" aria-hidden="true">▣</span>
+          </button>
+          <button className="fp-close" onClick={onClose} title="Cerrar" aria-label="Cerrar">✕</button>
         </header>
-        <button
-          className="fp-my-code"
-          onClick={async () => {
-            const code = profile?.playerCode || profile?.userId || user?.uid || '';
-            try {
-              await navigator.clipboard.writeText(String(code));
-              showToast('Código de invocador copiado');
-            } catch {
-              showToast('No se pudo copiar el código', false);
-            }
-          }}
-          disabled={!profile?.playerCode && !profile?.userId && !user?.uid}
-          title="Copiar código de invocador"
-        >
-          <span className="fp-my-code-label">TU CÓDIGO DE INVOCADOR</span>
-          <span className="fp-my-code-value">#{profile?.playerCode || profile?.userId || user?.uid || '—'} 📋</span>
-        </button>
 
         <nav className="fp-tabs" aria-label="Secciones de amigos">
           {TABS.map(item => (
