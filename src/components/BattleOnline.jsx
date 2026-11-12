@@ -11,7 +11,7 @@ import {
   completeMatchmaking,
   leaveMatchmakingQueue
 } from '../services/firestore';
-import { joinOnlineRoom, watchRoom, leaveOnlineRoom, updateOnlineRoom } from '../services/realtime';
+import { joinOnlineRoom, watchRoom, leaveOnlineRoom, playOnlineMove } from '../services/realtime';
 
 import { RUNES_DB } from '../data/runes';
 import { AVATAR_OPTIONS } from '../data/avatars';
@@ -79,6 +79,7 @@ const BattleOnline = () => {
   const [myHand, setMyHand] = useState([]);
   const [oppHandCount, setOppHandCount] = useState(8);
   const [selectedCard, setSelectedCard] = useState(null);
+  const [movePending, setMovePending] = useState(false);
   const [scores, setScores] = useState({ me: 0, opp: 0 });
   const [gameOver, setGameOver] = useState(false);
   const [iWon, setIWon] = useState(null);
@@ -351,87 +352,50 @@ const BattleOnline = () => {
   const myTurn = phase === 'playing' && !gameOver &&
     (starterIsMe ? placedCount % 2 === 0 : placedCount % 2 === 1);
 
-  // Escritura en la sala (merge directo sobre el doc de la sala).
-  // El tablero compartido guarda colores REALES ('blue'/'red') según quien posea la carta.
-  const updateRoomState = useCallback(async (rawBoardWithUids, capturedIdxs, lastMove) => {
-    try {
-      const myBoardColor = iAmFirst ? 'blue' : 'red';
-      const enemyBoardColor = iAmFirst ? 'red' : 'blue';
-      const shared = rawBoardWithUids.map(c => c ? {
-        id: c.id, name: c.name, image: c.image, tier: c.tier, arrows: c.arrows,
-        owner: c.owner === myUidRef.current ? myBoardColor : (c.owner === 'blue' || c.owner === 'red' ? c.owner : enemyBoardColor),
-        flipped: false
-      } : null);
-      // Aplicar capturas del movimiento actual al color del jugador que acaba de mover.
-      capturedIdxs.forEach(ci => { shared[ci] = { ...shared[ci], owner: myBoardColor, flipped: true }; });
-      await updateOnlineRoom(roomIdRef.current, { board: shared, lastMove, updatedAt: Date.now() });
-    } catch (err) {
-      console.error('Error sincronizando sala:', err);
-    }
-  }, [iAmFirst]);
-
-  const handleCellClick = useCallback((index) => {
-    if (gameOver || phase !== 'playing' || !myTurn || board[index]) return;
+  const handleCellClick = useCallback(async (index) => {
+    if (gameOver || phase !== 'playing' || !myTurn || movePending || board[index]) return;
     if (selectedCard === null) {
       setShakeHand(true);
       setTimeout(() => setShakeHand(false), 500);
       return;
     }
-
     const card = myHand[selectedCard];
-    const newBoard = [...board];
-    newBoard[index] = { ...card, owner: user.uid };
-
-    // Resolver capturas por flechas (misma lógica que la batalla NPC)
-    const row = Math.floor(index / 4), col = index % 4;
-    const dirs = [
-      { dr: -1, dc: 0, s: 'top', o: 'bottom' },
-      { dr: 0, dc: 1, s: 'right', o: 'left' },
-      { dr: 1, dc: 0, s: 'bottom', o: 'top' },
-      { dr: 0, dc: -1, s: 'left', o: 'right' }
-    ];
-    const captured = [];
-    for (const { dr, dc, s, o } of dirs) {
-      const nr = row + dr, nc = col + dc;
-      if (nr >= 0 && nr < 4 && nc >= 0 && nc < 4) {
-        const idx = nr * 4 + nc;
-        const adj = newBoard[idx];
-        if (adj && adj.owner !== user.uid) {
-          const atk = card.arrows?.[s] || 0;
-          const def = adj.arrows?.[o] || 0;
-          if (atk > def) captured.push(idx);
-        }
-      }
-    }
-
+    if (!card) return;
     const moveId = `${user.uid}-${Date.now()}`;
-    appliedRemoteMovesRef.current.add(moveId); // no re-animar la jugada desde la suscripción
-
-    // Mantener visualmente el dueño anterior hasta alcanzar los 90 grados del giro.
-    if (captured.length > 0) {
-      setCaptureOwnerOverrides(Object.fromEntries(
-        captured.map(ci => [ci, board[ci]?.owner === 'red' ? 'ai' : 'player'])
-      ));
+    appliedRemoteMovesRef.current.add(moveId);
+    setMovePending(true);
+    try {
+      const result = await playOnlineMove(roomIdRef.current, user.uid, card, index, moveId);
+      if (!result.committed) {
+        appliedRemoteMovesRef.current.delete(moveId);
+        console.warn('Jugada online rechazada:', result.reason || 'El tablero ha cambiado');
+        return;
+      }
+      setMyHand(prev => prev.filter((_, i) => i !== selectedCard));
+      setSelectedCard(null);
+      setLastPlaced(index);
+      const captured = result.captured || [];
+      if (captured.length) {
+        setCaptureOwnerOverrides(Object.fromEntries(
+          captured.map(ci => [ci, board[ci]?.owner === 'red' ? 'ai' : 'player'])
+        ));
+        setAttackDirs({ [index]: getAttackDirections(index, captured) });
+        setTimeout(() => {
+          setFlippingCells(captured);
+          setAttackDirs({});
+          setTimeout(() => setCaptureOwnerOverrides({}), 300);
+          setTimeout(() => setFlippingCells([]), 600);
+        }, 400);
+      } else {
+        setTimeout(() => setLastPlaced(null), 600);
+      }
+    } catch (error) {
+      appliedRemoteMovesRef.current.delete(moveId);
+      console.error('No se pudo registrar la jugada online:', error);
+    } finally {
+      setMovePending(false);
     }
-
-    // Publicar estado en la sala compartida (tablero + jugada para animar en el otro cliente)
-    updateRoomState(newBoard, captured, { by: user.uid, index, captured, moveId });
-
-    setMyHand(prev => prev.filter((_, i) => i !== selectedCard));
-    setSelectedCard(null);
-    setLastPlaced(index);
-    if (captured.length > 0) {
-      setAttackDirs({ [index]: getAttackDirections(index, captured) });
-      setTimeout(() => {
-        setFlippingCells(captured);
-        setAttackDirs({});
-        setTimeout(() => setCaptureOwnerOverrides({}), 300);
-        setTimeout(() => { setFlippingCells([]); }, 600);
-      }, 1500);
-    } else {
-      setTimeout(() => setLastPlaced(null), 600);
-    }
-  }, [gameOver, phase, myTurn, board, selectedCard, myHand, user]);
+  }, [gameOver, phase, myTurn, movePending, board, selectedCard, myHand, user]);
 
 
   // ---------- REPORTAR RESULTADO UNA SOLA VEZ ----------
@@ -483,8 +447,8 @@ const BattleOnline = () => {
 
           <div className="bo-vs-row">
             <div className="bo-lobby-player bo-me">
-              <img src={avatarSrcOf(myProfile)} alt="yo" className="bp-avatar-frame" style={{ borderColor: myColor === 'red' ? '#f44336' : myColor === 'blue' ? '#2196f3' : '#888' }} />
-              <span className="bo-lobby-name">{myProfile?.username || 'Tú'}</span>
+              <img src={avatarSrcOf(myProfile)} alt="yo" className="bp-avatar-frame bo-match-avatar" style={{ borderColor: myColor === 'red' ? '#f44336' : myColor === 'blue' ? '#2196f3' : '#888' }} />
+              <span className="bo-lobby-name bo-match-name">{myProfile?.username || 'Tú'}</span>
               {colorsAssigned && <span className="bo-lobby-tag" style={{ color: myColor === 'red' ? '#ff8a80' : '#4fc3f7' }}>{myColor === 'red' ? '🔴 Rojo' : '🔵 Azul'}</span>}
             </div>
             <span className="bo-vs-bolt">VS</span>
@@ -492,7 +456,7 @@ const BattleOnline = () => {
               {oppJoined ? (
                 <>
                   <img src={avatarSrcOf(oppProfile)} alt="rival" className="bp-avatar-frame" style={{ borderColor: oppColor === 'red' ? '#f44336' : oppColor === 'blue' ? '#2196f3' : '#888' }} />
-                  <span className="bo-lobby-name">{battleData?.opponentName || 'Rival'}</span>
+                  <span className="bo-lobby-name bo-match-name">{battleData?.opponentName || 'Rival'}</span>
                   {colorsAssigned && <span className="bo-lobby-tag" style={{ color: oppColor === 'red' ? '#ff8a80' : '#4fc3f7' }}>{oppColor === 'red' ? '🔴 Rojo' : '🔵 Azul'}</span>}
                 </>
               ) : (
@@ -523,7 +487,7 @@ const BattleOnline = () => {
         <div className="bp-stars"></div>
         <div className="bo-lobby">
           <h2 className="bo-lobby-title">🎲 Volteo de moneda</h2>
-          <div className="bo-coin">🪙</div>
+          <div className="bo-coin" aria-label="Moneda de agua y fuego"><span className="bo-coin-water">≈</span><span className="bo-coin-fire">♨</span></div>
           <div className="bo-vs-row bo-coinflip-names">
             <div className="bo-lobby-player bo-me">
               <img src={avatarSrcOf(myProfile)} alt="yo" className="bp-avatar-frame" style={{ borderColor: myColor === 'red' ? '#f44336' : '#2196f3' }} />
