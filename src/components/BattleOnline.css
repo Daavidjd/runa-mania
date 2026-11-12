@@ -145,6 +145,16 @@
 
 .bo-leave { width: 100%; }
 
+.bo-leave.bo-cancel-search {
+  background: linear-gradient(180deg, #f05252 0%, #c62828 100%);
+  border: 3px solid #05070c;
+  color: #fff;
+  box-shadow: 0 5px 0 #05070c, inset 0 1px 0 rgba(255,255,255,.22);
+  text-shadow: 0 1px 2px rgba(0,0,0,.35);
+}
+.bo-leave.bo-cancel-search:hover { filter: brightness(1.08); }
+.bo-leave.bo-cancel-search:active { transform: translateY(4px); box-shadow: 0 1px 0 #05070c; }
+
 /* Cartas boca abajo del rival */
 .bo-card-back {
   width: 100%;
