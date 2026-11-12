@@ -7,7 +7,7 @@ import {
   watchChallenge,
   recordOnlineBattleResult
 } from '../services/firestore';
-import { findRandomMatch, watchMyQueueEntry, leaveQueue, joinOnlineRoom, watchRoom, leaveOnlineRoom, updateOnlineRoom } from '../services/realtime';
+import { findRandomMatch, watchMyQueueEntry, refreshQueueEntry, completeQueueMatch, leaveQueue, joinOnlineRoom, watchRoom, leaveOnlineRoom, updateOnlineRoom } from '../services/realtime';
 
 import { RUNES_DB } from '../data/runes';
 import { AVATAR_OPTIONS } from '../data/avatars';
@@ -104,6 +104,7 @@ const BattleOnline = () => {
     if (!user || !battleData?.searching) return undefined;
     let cancelled = false;
     let unsubscribe = null;
+    let heartbeat = null;
     const acceptMatch = (entry) => {
       if (cancelled || !entry?.roomId || !entry?.opponentUid) return;
       const next = {
@@ -116,6 +117,7 @@ const BattleOnline = () => {
         searching: false
       };
       localStorage.setItem('onlineBattle', JSON.stringify(next));
+      completeQueueMatch(user.uid, entry.roomId).catch(error => console.error('Error limpiando la cola tras emparejar:', error));
       setBattleData(next);
     };
     (async () => {
@@ -131,7 +133,10 @@ const BattleOnline = () => {
           acceptMatch(result);
           return;
         }
-        unsubscribe = watchMyQueueEntry(user.uid, acceptMatch);
+        unsubscribe = watchMyQueueEntry(user.uid, acceptMatch, () => { if (!cancelled) setPhase('error'); });
+        heartbeat = setInterval(() => {
+          refreshQueueEntry(user.uid).catch(error => console.error('Error renovando presencia en matchmaking:', error));
+        }, 15000);
       } catch (error) {
         console.error('Error buscando rival:', error);
         if (!cancelled) setPhase('error');
@@ -140,7 +145,8 @@ const BattleOnline = () => {
     return () => {
       cancelled = true;
       unsubscribe?.();
-      leaveQueue(user.uid);
+      if (heartbeat) clearInterval(heartbeat);
+      leaveQueue(user.uid).catch(error => console.error('Error saliendo de la cola:', error));
     };
   }, [user, battleData?.searching]);
 
@@ -220,15 +226,8 @@ const BattleOnline = () => {
             const roomSnap = await waitForBoth();
             if (!roomSnap || cancelled) return;
             const updates = {};
-            // Colores: el primero en unirse es AZUL (ya quedó registrado por joinOnlineRoom)
-            // Volteo: quien llega primero lo resuelve una sola vez
-            if (!roomSnap.starterUid) {
-              const order = Object.entries(roomSnap.players || {})
-                .filter(([, p]) => p && p.joinedAt)
-                .sort((a, b) => a[1].joinedAt - b[1].joinedAt);
-              const starter = Math.random() < 0.5 ? order[0][0] : (order[1]?.[0] || order[0][0]);
-              updates.starterUid = starter;
-            }
+            // joinOnlineRoom asigna colores y starterUid una única vez mediante transacción.
+            // Aquí solo se publican los tamaños de mazo de ambos jugadores.
             updates[`deckSizes.${user.uid}`] = hand.length;
             updates[`deckSizes.${battleData.opponentUid}`] = oppHand.length;
             await updateOnlineRoom(roomId, updates);
@@ -342,13 +341,15 @@ const BattleOnline = () => {
   // El tablero compartido guarda colores REALES ('blue'/'red') según quien posea la carta.
   const updateRoomState = useCallback(async (rawBoardWithUids, capturedIdxs, lastMove) => {
     try {
+      const myBoardColor = iAmFirst ? 'blue' : 'red';
+      const enemyBoardColor = iAmFirst ? 'red' : 'blue';
       const shared = rawBoardWithUids.map(c => c ? {
         id: c.id, name: c.name, image: c.image, tier: c.tier, arrows: c.arrows,
-        owner: c.owner === myUidRef.current ? (iAmFirst ? 'blue' : 'red') : (iAmFirst ? 'red' : 'blue'),
+        owner: c.owner === myUidRef.current ? myBoardColor : (c.owner === 'blue' || c.owner === 'red' ? c.owner : enemyBoardColor),
         flipped: false
       } : null);
-      // Aplicar capturas del movimiento actual
-      capturedIdxs.forEach(ci => { shared[ci] = { ...shared[ci], owner: lastMove.by === myUidRef.current ? (iAmFirst ? 'blue' : 'red') : (iAmFirst ? 'red' : 'blue'), flipped: true }; });
+      // Aplicar capturas del movimiento actual al color del jugador que acaba de mover.
+      capturedIdxs.forEach(ci => { shared[ci] = { ...shared[ci], owner: myBoardColor, flipped: true }; });
       await updateOnlineRoom(roomIdRef.current, { board: shared, lastMove, updatedAt: Date.now() });
     } catch (err) {
       console.error('Error sincronizando sala:', err);
