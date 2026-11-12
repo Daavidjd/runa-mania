@@ -206,6 +206,9 @@ const BattleOnline = () => {
     }
     roomUnsubRef.current?.();
     challengeUnsubRef.current?.();
+    if (roomIdRef.current && user?.uid) {
+      leaveOnlineRoom(roomIdRef.current, user.uid).catch(error => console.error('Error saliendo de la batalla anterior:', error));
+    }
     roomIdRef.current = null;
     reportedRef.current = false;
     timeoutClaimRef.current = false;
