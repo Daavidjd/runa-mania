@@ -406,47 +406,54 @@ export const getOutgoingRequests = async (userId) => {
   }
 };
 
-// Enviar solicitud de amistad
+// Enviar solicitud de amistad. Basta con que una persona envíe la invitación;
+// si ya existe una invitación inversa, se acepta automáticamente para ambos.
 export const sendFriendRequest = async (fromUid, toUid) => {
-  if (fromUid === toUid) return { success: false, message: 'No puedes añadirte a ti mismo' };
+  try {
+    if (!fromUid || !toUid || fromUid === toUid) return { success: false, message: 'No puedes añadirte a ti mismo' };
+    const [targetSnap, mySnap] = await Promise.all([
+      getDoc(doc(db, 'users', toUid)),
+      getDoc(doc(db, 'users', fromUid))
+    ]);
+    if (!targetSnap.exists() || !mySnap.exists()) return { success: false, message: 'Jugador no encontrado' };
+    if ((mySnap.data().friendIds || []).includes(toUid) || (targetSnap.data().friendIds || []).includes(fromUid)) {
+      return { success: true, message: 'Ya son amigos' };
+    }
 
-  const targetSnap = await getDoc(doc(db, 'users', toUid));
-  if (!targetSnap.exists()) return { success: false, message: 'Jugador no encontrado' };
+    // Comprobar primero la solicitud inversa: no exigimos que ambos se inviten.
+    const reverseQ = query(
+      collection(db, 'friendRequests'),
+      where('from', '==', toUid),
+      where('to', '==', fromUid),
+      where('status', '==', 'pending')
+    );
+    const reverseSnap = await getDocs(reverseQ);
+    if (!reverseSnap.empty) {
+      const accepted = await acceptFriendRequest(reverseSnap.docs[0].id, fromUid, toUid);
+      if (accepted.success) return { success: true, message: '¡Solicitud aceptada automáticamente! Ya son amigos 🤝', autoAccepted: true };
+      return accepted;
+    }
 
-  if ((targetSnap.data().friendIds || []).includes(fromUid)) {
-    return { success: false, message: 'Ya son amigos' };
+    const outgoingQ = query(
+      collection(db, 'friendRequests'),
+      where('from', '==', fromUid),
+      where('to', '==', toUid),
+      where('status', '==', 'pending')
+    );
+    const outgoingSnap = await getDocs(outgoingQ);
+    if (!outgoingSnap.empty) return { success: true, message: 'Solicitud pendiente; el otro jugador puede aceptarla' };
+
+    await addDoc(collection(db, 'friendRequests'), {
+      from: fromUid,
+      to: toUid,
+      status: 'pending',
+      createdAt: serverTimestamp()
+    });
+    return { success: true, message: 'Solicitud enviada. Cuando la reciba, quedarán conectados como amigos ✉️' };
+  } catch (error) {
+    console.error('Error enviando solicitud de amistad:', error);
+    return { success: false, message: 'No se pudo enviar la solicitud' };
   }
-
-  // Evitar duplicados: si ya existe una pendiente entre ambos, reutilizar/eliminar
-  const dupQ = query(
-    collection(db, 'friendRequests'),
-    where('from', '==', fromUid),
-    where('to', '==', toUid),
-    where('status', '==', 'pending')
-  );
-  const dupSnap = await getDocs(dupQ);
-  if (!dupSnap.empty) return { success: false, message: 'Solicitud ya enviada' };
-
-  // Si el otro ya nos envió una solicitud, se aceptan mutuamente al instante
-  const reverseQ = query(
-    collection(db, 'friendRequests'),
-    where('from', '==', toUid),
-    where('to', '==', fromUid),
-    where('status', '==', 'pending')
-  );
-  const reverseSnap = await getDocs(reverseQ);
-  if (!reverseSnap.empty) {
-    await acceptFriendRequest(reverseSnap.docs[0].id, toUid, fromUid);
-    return { success: true, message: '¡Son nuevos amigos! 🤝', autoAccepted: true };
-  }
-
-  await addDoc(collection(db, 'friendRequests'), {
-    from: fromUid,
-    to: toUid,
-    status: 'pending',
-    createdAt: serverTimestamp()
-  });
-  return { success: true, message: 'Solicitud enviada ✉️' };
 };
 
 // Aceptar solicitud (se añade a la lista friendIds de ambos)
@@ -611,21 +618,37 @@ export const watchChallenge = (challengeId, callback) => {
   });
 };
 
-// Guardar resultado de una batalla online (estadísticas del perfil)
-export const recordOnlineBattleResult = async (userId, won) => {
+// Recompensas online equilibradas. El identificador de sala evita pagar dos veces
+// si React vuelve a ejecutar el efecto o ambos clientes reportan el mismo resultado.
+export const ONLINE_BATTLE_REWARDS = {
+  win: { coins: 150, xp: 25 },
+  draw: { coins: 20, xp: 12 },
+  loss: { coins: 10, xp: 5 }
+};
+
+export const recordOnlineBattleResult = async (userId, outcome, matchId) => {
   try {
-    const ref = doc(db, 'users', userId);
-    const snap = await getDoc(ref);
-    if (!snap.exists()) return;
-    const data = snap.data();
-    const wins = data.onlineWins || 0;
-    const losses = data.onlineLosses || 0;
-    const updates = won
-      ? { onlineWins: wins + 1, coins: (data.coins || 0) + 30, xp: (data.xp || 0) + 25 }
-      : { onlineLosses: losses + 1, coins: (data.coins || 0) + 5, xp: (data.xp || 0) + 5 };
-    await updateDoc(ref, updates);
+    if (!userId || !matchId || !['win', 'draw', 'loss'].includes(outcome)) return null;
+    const userRef = doc(db, 'users', userId);
+    return await runTransaction(db, async (transaction) => {
+      const snap = await transaction.get(userRef);
+      if (!snap.exists()) return null;
+      const data = snap.data();
+      if (data.lastOnlineRewardRoomId === matchId) return { alreadyRecorded: true };
+      const reward = ONLINE_BATTLE_REWARDS[outcome];
+      transaction.update(userRef, {
+        coins: (Number(data.coins) || 0) + reward.coins,
+        xp: (Number(data.xp) || 0) + reward.xp,
+        onlineWins: (Number(data.onlineWins) || 0) + (outcome === 'win' ? 1 : 0),
+        onlineLosses: (Number(data.onlineLosses) || 0) + (outcome === 'loss' ? 1 : 0),
+        onlineDraws: (Number(data.onlineDraws) || 0) + (outcome === 'draw' ? 1 : 0),
+        lastOnlineRewardRoomId: matchId
+      });
+      return { ...reward, outcome };
+    });
   } catch (error) {
     console.error('Error guardando resultado online:', error);
+    return null;
   }
 };
 

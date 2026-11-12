@@ -85,7 +85,7 @@ const Shop = () => {
           avatarId: 'arquero',
           playerCode: playerCode,
           userId: playerCode,
-          coins: 100,
+          coins: 1000,
           level: 1,
           xp: 0,
           createdAt: new Date().toISOString()

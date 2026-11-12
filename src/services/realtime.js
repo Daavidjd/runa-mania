@@ -37,6 +37,7 @@ export const joinOnlineRoom = async (roomId, uid, displayName, matchOrder = []) 
         room.starterUid = room.blueUid;
       }
       room.colorsAssignedAt = now;
+      room.turnDeadlineAt = now + 30000;
     }
     return room;
   }, { applyLocally: false });
@@ -54,7 +55,7 @@ export const playOnlineMove = async (roomId, uid, card, index, moveId) => {
   let capturedResult = [];
   let rejectionReason = 'La jugada ya no es válida';
   const result = await runTransaction(roomRef, room => {
-    if (!room || !room.players?.[uid]?.joinedAt || !room.starterUid) {
+    if (!room || room.finished || !room.players?.[uid]?.joinedAt || !room.starterUid) {
       rejectionReason = 'La sala todavía no está preparada';
       return;
     }
@@ -70,6 +71,10 @@ export const playOnlineMove = async (roomId, uid, card, index, moveId) => {
       });
     }
     const occupied = board.filter(Boolean).length;
+    if (room.turnDeadlineAt && Date.now() > Number(room.turnDeadlineAt)) {
+      rejectionReason = 'Se agotó el tiempo de este turno';
+      return;
+    }
     const isBlue = room.blueUid === uid;
     const isRed = room.redUid === uid;
     if (!isBlue && !isRed) { rejectionReason = 'No tienes un color asignado en esta sala'; return; }
@@ -118,6 +123,7 @@ export const playOnlineMove = async (roomId, uid, card, index, moveId) => {
       board.map((cell, i) => cell ? [String(i), cell] : null).filter(Boolean)
     );
     room.lastMove = { by: uid, index, captured, moveId };
+    room.turnDeadlineAt = Date.now() + 30000;
     room.updatedAt = Date.now();
     capturedResult = captured;
     rejectionReason = '';
@@ -131,11 +137,132 @@ export const playOnlineMove = async (roomId, uid, card, index, moveId) => {
   };
 };
 
+// Al agotarse el reloj, el cliente del jugador activo ejecuta una jugada automática.
+// La transacción valida turno y deadline y persiste carta + casilla como una sola operación.
+export const playRandomOnlineMove = async (roomId, uid, hand) => {
+  const roomRef = ref(rtdb, `${ROOM_PATH}/${roomId}`);
+  let playedCard = null;
+  let playedIndex = -1;
+  let capturedResult = [];
+  let rejectionReason = 'No se pudo ejecutar la jugada automática';
+  const result = await runTransaction(roomRef, room => {
+    if (!room || room.finished || !room.players?.[uid]?.joinedAt || !room.blueUid || !room.redUid) return;
+    if (!room.turnDeadlineAt || Date.now() < Number(room.turnDeadlineAt)) { rejectionReason = 'El turno todavía tiene tiempo'; return; }
+    const board = Array(16).fill(null);
+    if (Array.isArray(room.board)) room.board.forEach((cell, i) => { if (i >= 0 && i < 16 && cell) board[i] = cell; });
+    else if (room.board && typeof room.board === 'object') Object.entries(room.board).forEach(([key, cell]) => { const i = Number(key); if (/^(0|[1-9]|1[0-5])$/.test(key) && Number.isInteger(i) && cell) board[i] = cell; });
+    const occupied = board.filter(Boolean).length;
+    const isBlue = room.blueUid === uid;
+    const isRed = room.redUid === uid;
+    if (!isBlue && !isRed) { rejectionReason = 'Jugador no asignado'; return; }
+    if (!(isBlue ? occupied % 2 === 0 : occupied % 2 === 1)) { rejectionReason = 'Ya no es tu turno'; return; }
+    const empty = board.map((cell, index) => cell ? -1 : index).filter(index => index >= 0);
+    const availableCards = Array.isArray(hand) ? hand.filter(card => card?.id && card?.name) : [];
+    if (!empty.length || !availableCards.length) {
+      const blueScore = board.filter(cell => cell?.owner === 'blue').length;
+      const redScore = board.filter(cell => cell?.owner === 'red').length;
+      room.finished = true; room.finishReason = 'no-moves'; room.winnerUid = blueScore === redScore ? null : (blueScore > redScore ? room.blueUid : room.redUid);
+      room.loserUid = room.winnerUid ? (room.winnerUid === room.blueUid ? room.redUid : room.blueUid) : null;
+      room.finishedAt = Date.now(); return room;
+    }
+    const card = availableCards[Math.floor(Math.random() * availableCards.length)];
+    const index = empty[Math.floor(Math.random() * empty.length)];
+    const myColor = isBlue ? 'blue' : 'red';
+    const enemyColor = myColor === 'blue' ? 'red' : 'blue';
+    const placed = { id: card.id, name: card.name, image: card.image || '', tier: card.tier || 'comun', arrows: card.arrows || {}, owner: myColor, flipped: false, autoPlayed: true };
+    board[index] = placed;
+    const row = Math.floor(index / 4), col = index % 4;
+    const directions = [
+      { dr: -1, dc: 0, attack: 'top', defend: 'bottom' },
+      { dr: 0, dc: 1, attack: 'right', defend: 'left' },
+      { dr: 1, dc: 0, attack: 'bottom', defend: 'top' },
+      { dr: 0, dc: -1, attack: 'left', defend: 'right' }
+    ];
+    const captured = [];
+    for (const { dr, dc, attack, defend } of directions) {
+      const nr = row + dr, nc = col + dc;
+      if (nr < 0 || nr >= 4 || nc < 0 || nc >= 4) continue;
+      const neighborIndex = nr * 4 + nc;
+      const neighbor = board[neighborIndex];
+      if (neighbor?.owner === enemyColor && (placed.arrows[attack] || 0) > (neighbor.arrows?.[defend] || 0)) captured.push(neighborIndex);
+    }
+    captured.forEach(i => { board[i] = { ...board[i], owner: myColor, flipped: true }; });
+    room.board = Object.fromEntries(board.map((cell, i) => cell ? [String(i), cell] : null).filter(Boolean));
+    const moveId = `${uid}-auto-${Date.now()}`;
+    room.lastMove = { by: uid, index, captured, moveId, autoPlayed: true, runeId: card.id };
+    room.turnDeadlineAt = Date.now() + 30000;
+    room.updatedAt = Date.now();
+    playedCard = card; playedIndex = index; capturedResult = captured; rejectionReason = '';
+    return room;
+  }, { applyLocally: false });
+  return { committed: result.committed, card: result.committed ? playedCard : null, index: result.committed ? playedIndex : -1, captured: result.committed ? capturedResult : [], reason: result.committed ? null : rejectionReason, room: result.snapshot.val() };
+};
+
 export const watchRoom = (roomId, callback) =>
   onValue(ref(rtdb, `${ROOM_PATH}/${roomId}`), snap => callback(snap.val() || {}));
 
 export const updateOnlineRoom = (roomId, updates) =>
   update(ref(rtdb, `${ROOM_PATH}/${roomId}`), updates);
+
+// Ambos clientes pueden llamarla al terminar el volteo: la transacción solo
+// inicia el reloj una vez y concede 30 segundos completos al primer turno.
+export const startOnlineTurnClock = async (roomId) => {
+  const roomRef = ref(rtdb, `${ROOM_PATH}/${roomId}`);
+  const result = await runTransaction(roomRef, room => {
+    if (!room || room.finished || room.firstTurnClockStartedAt) return;
+    const board = Array.isArray(room.board) ? room.board : Object.values(room.board || {});
+    if (board.some(Boolean)) return;
+    const now = Date.now();
+    room.firstTurnClockStartedAt = now;
+    room.turnDeadlineAt = now + 30000;
+    return room;
+  }, { applyLocally: false });
+  return result.snapshot.val();
+};
+
+// Reclama una victoria por tiempo usando la hora límite compartida en RTDB.
+export const claimOnlineTimeout = async (roomId) => {
+  const roomRef = ref(rtdb, `${ROOM_PATH}/${roomId}`);
+  const result = await runTransaction(roomRef, room => {
+    if (!room || room.finished || !room.blueUid || !room.redUid) return;
+    if (!room.turnDeadlineAt || Date.now() < Number(room.turnDeadlineAt)) return;
+    const board = Array.isArray(room.board) ? room.board : Object.values(room.board || {});
+    const occupied = board.filter(Boolean).length;
+    const loserUid = occupied % 2 === 0 ? room.blueUid : room.redUid;
+    room.finished = true; room.finishReason = 'timeout'; room.loserUid = loserUid;
+    room.winnerUid = loserUid === room.blueUid ? room.redUid : room.blueUid;
+    room.finishedAt = Date.now(); return room;
+  }, { applyLocally: false });
+  return result.snapshot.val();
+};
+
+// Si un jugador desaparece tras asignarse ambos colores, gana el restante.
+export const claimOnlineForfeit = async (roomId) => {
+  const roomRef = ref(rtdb, `${ROOM_PATH}/${roomId}`);
+  const result = await runTransaction(roomRef, room => {
+    if (!room || room.finished || !room.blueUid || !room.redUid) return;
+    const bluePresent = !!room.players?.[room.blueUid]?.joinedAt;
+    const redPresent = !!room.players?.[room.redUid]?.joinedAt;
+    if (bluePresent === redPresent) return;
+    const loserUid = bluePresent ? room.redUid : room.blueUid;
+    room.finished = true; room.finishReason = 'forfeit'; room.loserUid = loserUid;
+    room.winnerUid = bluePresent ? room.blueUid : room.redUid;
+    room.finishedAt = Date.now(); return room;
+  }, { applyLocally: false });
+  return result.snapshot.val();
+};
+
+// Salida voluntaria: registra primero la derrota y después elimina al jugador.
+export const forfeitOnlineRoom = async (roomId, uid) => {
+  const roomRef = ref(rtdb, `${ROOM_PATH}/${roomId}`);
+  await runTransaction(roomRef, room => {
+    if (!room || room.finished || !room.blueUid || !room.redUid) return;
+    room.finished = true; room.finishReason = 'forfeit'; room.loserUid = uid;
+    room.winnerUid = uid === room.blueUid ? room.redUid : room.blueUid;
+    room.finishedAt = Date.now(); if (room.players) delete room.players[uid];
+    return room;
+  }, { applyLocally: false });
+};
 
 export const leaveOnlineRoom = (roomId, uid) =>
   remove(ref(rtdb, `${ROOM_PATH}/${roomId}/players/${uid}`)).catch(() => {});

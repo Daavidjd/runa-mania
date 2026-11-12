@@ -11,7 +11,7 @@ import {
   completeMatchmaking,
   leaveMatchmakingQueue
 } from '../services/firestore';
-import { joinOnlineRoom, watchRoom, leaveOnlineRoom, updateOnlineRoom, playOnlineMove } from '../services/realtime';
+import { joinOnlineRoom, watchRoom, leaveOnlineRoom, updateOnlineRoom, playOnlineMove, claimOnlineForfeit, forfeitOnlineRoom, startOnlineTurnClock, playRandomOnlineMove } from '../services/realtime';
 
 import { RUNES_DB } from '../data/runes';
 import { AVATAR_OPTIONS } from '../data/avatars';
@@ -107,6 +107,8 @@ const BattleOnline = () => {
   const [attackDirs, setAttackDirs] = useState({});
   const [shakeHand, setShakeHand] = useState(false);
   const [countdown, setCountdown] = useState(3); // ⏳ cuenta regresiva del volteo de moneda
+  const [timerRemaining, setTimerRemaining] = useState(30);
+  const timeoutClaimRef = useRef(false);
 
   const roomUnsubRef = useRef(null);
   const challengeUnsubRef = useRef(null);
@@ -361,6 +363,54 @@ const BattleOnline = () => {
     }
   }, [room, phase, myColor, oppColor, gameOver]);
 
+  // Detecta abandono cuando un jugador desaparece de la sala.
+  useEffect(() => {
+    if (!roomIdRef.current || !room.blueUid || !room.redUid || room.finished) return;
+    const bluePresent = !!room.players?.[room.blueUid]?.joinedAt;
+    const redPresent = !!room.players?.[room.redUid]?.joinedAt;
+    if (bluePresent !== redPresent) claimOnlineForfeit(roomIdRef.current).catch(error => console.error('Error resolviendo abandono:', error));
+  }, [room]);
+
+  useEffect(() => {
+    if (!room.finished || gameOver) return;
+    setGameOver(true);
+    setIWon(room.winnerUid ? room.winnerUid === myUid : null);
+    setShowEndModal(true);
+  }, [room.finished, room.winnerUid, gameOver, myUid]);
+
+  useEffect(() => {
+    if (phase !== 'playing' || gameOver || !room.turnDeadlineAt) return undefined;
+    timeoutClaimRef.current = false;
+    const tick = () => {
+      const seconds = Math.max(0, Math.ceil((Number(room.turnDeadlineAt) - Date.now()) / 1000));
+      setTimerRemaining(seconds);
+      const occupied = board.filter(Boolean).length;
+      const activeUid = occupied % 2 === 0 ? room.blueUid : room.redUid;
+      if (seconds === 0 && activeUid === myUid && !timeoutClaimRef.current) {
+        timeoutClaimRef.current = true;
+        playRandomOnlineMove(roomIdRef.current, myUid, myHand).then(result => {
+          if (result.committed && result.card) {
+            setMyHand(prev => { const index = prev.findIndex(card => card.id === result.card.id); return index < 0 ? prev : prev.filter((_, i) => i !== index); });
+            setSelectedCard(null); setLastPlaced(result.index);
+          } else if (result.reason) {
+            console.info('Jugada automática:', result.reason);
+            if (result.reason !== 'El turno todavía tiene tiempo' && result.reason !== 'Ya no es tu turno') timeoutClaimRef.current = false;
+          }
+        }).catch(error => { timeoutClaimRef.current = false; console.error('Error en la jugada automática:', error); });
+      }
+    };
+    tick(); const interval = setInterval(tick, 150);
+    return () => clearInterval(interval);
+  }, [phase, gameOver, room.turnDeadlineAt, room.blueUid, room.redUid, board, myUid, myHand]);
+
+  const handleLeaveBattle = async () => {
+    if (roomIdRef.current && user?.uid) {
+      try { await forfeitOnlineRoom(roomIdRef.current, user.uid); }
+      catch (error) { console.error('Error registrando abandono:', error); }
+    }
+    navigate('/home');
+  };
+
   // ---------- MI TURNO ----------
   const placedCount = board.filter(c => c !== null).length;
   // El que empieza coloca las jugadas 1ª, 3ª, 5ª... (índices pares ya colocados = su turno)
@@ -415,20 +465,26 @@ const BattleOnline = () => {
 
   // ---------- REPORTAR RESULTADO UNA SOLA VEZ ----------
   useEffect(() => {
-    if (showEndModal && !reportedRef.current && user && iWon !== null) {
+    if (showEndModal && !reportedRef.current && user && roomIdRef.current) {
       reportedRef.current = true;
-      recordOnlineBattleResult(user.uid, iWon);
+      const outcome = iWon === true ? 'win' : iWon === false ? 'loss' : 'draw';
+      recordOnlineBattleResult(user.uid, outcome, roomIdRef.current);
     }
   }, [showEndModal, iWon, user]);
 
   // ---------- ⏳ CUENTA REGRESIVA DEL VOLTEO → INICIO AUTOMÁTICO ----------
   useEffect(() => {
     if (phase !== 'coinflip') return undefined;
-    const id = setInterval(() => {
-      setCountdown(c => {
-        if (c <= 1) { clearInterval(id); setPhase('playing'); return 0; }
-        return c - 1;
-      });
+    let remaining = 3;
+    const id = setInterval(async () => {
+      remaining -= 1;
+      setCountdown(remaining);
+      if (remaining <= 0) {
+        clearInterval(id);
+        try { await startOnlineTurnClock(roomIdRef.current); }
+        catch (error) { console.error('Error iniciando el reloj de turno:', error); }
+        setPhase('playing');
+      }
     }, 1000);
     return () => clearInterval(id);
   }, [phase]);
@@ -520,7 +576,7 @@ const BattleOnline = () => {
             {starterIsMe ? '¡Empiezas tú!' : 'Empieza el rival'}
           </div>
           <p className="bo-coinflip-countdown">La batalla comienza en {countdown}...</p>
-          <button className="bp-btn bp-btn-exit bo-leave" onClick={() => navigate('/home')}>🚪 Salir</button>
+          <button className="bp-btn bp-btn-exit bo-leave" onClick={handleLeaveBattle}>🚪 Abandonar</button>
         </div>
       </div>
     );
@@ -532,7 +588,7 @@ const BattleOnline = () => {
       <div className="bp-stars bp-stars-2"></div>
 
       {/* HUD RIVAL */}
-      <div className="bp-player-strip bp-enemy-strip">
+      <div className={`bp-player-strip bp-enemy-strip bp-color-${oppColor || "blue"}`}>
         <div className="bp-user-meta">
           <img
             src={avatarSrcOf(oppProfile)}
@@ -547,9 +603,16 @@ const BattleOnline = () => {
             </span>
           </div>
         </div>
-        <div className="bp-score-badge-box bp-score-ai-box">
-          <span className="bp-score-badge-label">PUNTOS</span>
-          <span className="bp-score-badge-value">{scores.opp}</span>
+        <div className="bo-score-cluster">
+          {!myTurn && (
+            <div className="bo-turn-timer" style={{ '--timer-progress': (timerRemaining / 30) * 100 + '%' }}>
+              <span>{timerRemaining}</span>
+            </div>
+          )}
+          <div className="bp-score-badge-box bp-score-ai-box">
+            <span className="bp-score-badge-label">PUNTOS</span>
+            <span className="bp-score-badge-value">{scores.opp}</span>
+          </div>
         </div>
       </div>
 
@@ -564,6 +627,7 @@ const BattleOnline = () => {
                 ? (selectedCard !== null ? '¡Toca una casilla del tablero!' : 'Elige una de tus runas')
                 : `${battleData?.opponentName || 'El rival'} está jugando...`}
           </span>
+          <button className="bo-match-leave" onClick={handleLeaveBattle}>Abandonar</button>
         </div>
 
         <div className="bp-board-container">
@@ -578,7 +642,7 @@ const BattleOnline = () => {
               >
                 {cell ? (
                   <RuneCard
-                    rune={cell}
+                    rune={{ ...cell, image: RUNES_DB.find(r => r.id === cell.id)?.image || cell.image }}
                     visualOwner={visualOwner}
                     owned={true}
                     battleMode={true}
@@ -612,7 +676,7 @@ const BattleOnline = () => {
       </section>
 
       {/* MI HUD */}
-      <div className="bp-player-strip bp-self-strip">
+      <div className={`bp-player-strip bp-self-strip bp-color-${myColor || "blue"}`}>
         <div className="bp-user-meta">
           <img
             src={avatarSrcOf(myProfile)}
@@ -627,9 +691,16 @@ const BattleOnline = () => {
             </span>
           </div>
         </div>
-        <div className="bp-score-badge-box bp-score-self-box">
-          <span className="bp-score-badge-label">TUS PUNTOS</span>
-          <span className="bp-score-badge-value">{scores.me}</span>
+        <div className="bo-score-cluster">
+          {myTurn && (
+            <div className="bo-turn-timer" style={{ '--timer-progress': (timerRemaining / 30) * 100 + '%' }}>
+              <span>{timerRemaining}</span>
+            </div>
+          )}
+          <div className="bp-score-badge-box bp-score-self-box">
+            <span className="bp-score-badge-label">TUS PUNTOS</span>
+            <span className="bp-score-badge-value">{scores.me}</span>
+          </div>
         </div>
       </div>
 
@@ -658,7 +729,7 @@ const BattleOnline = () => {
 
             <div className="bp-modal-reward">
               <span className="bp-reward-coin">🪙</span>
-              <span className="bp-reward-val">{iWon ? '+30 Monedas y +25 XP' : iWon === null ? '+10 Monedas' : '+5 Monedas de consolación'}</span>
+              <span className="bp-reward-val">{iWon ? '+150 Monedas y +25 XP' : iWon === null ? '+20 Monedas y +12 XP' : '+10 Monedas y +5 XP de consolación'}</span>
             </div>
 
             <div className="bp-modal-actions">
