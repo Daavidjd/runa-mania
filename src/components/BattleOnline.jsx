@@ -568,7 +568,6 @@ const BattleOnline = () => {
             {starterIsMe ? '¡Empiezas tú!' : 'Empieza el rival'}
           </div>
           <p className="bo-coinflip-countdown">La batalla comienza en {countdown}...</p>
-          <button className="bp-btn bp-btn-exit bo-leave" onClick={handleLeaveBattle}>🚪 Abandonar</button>
         </div>
       </div>
     );
