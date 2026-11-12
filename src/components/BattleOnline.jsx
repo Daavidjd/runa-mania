@@ -11,7 +11,7 @@ import {
   completeMatchmaking,
   leaveMatchmakingQueue
 } from '../services/firestore';
-import { joinOnlineRoom, watchRoom, leaveOnlineRoom, updateOnlineRoom, playOnlineMove, claimOnlineForfeit, forfeitOnlineRoom, startOnlineTurnClock, playRandomOnlineMove } from '../services/realtime';
+import { joinOnlineRoom, watchRoom, leaveOnlineRoom, updateOnlineRoom, playOnlineMove, claimOnlineForfeit, startOnlineTurnClock, playRandomOnlineMove } from '../services/realtime';
 
 import { RUNES_DB } from '../data/runes';
 import { AVATAR_OPTIONS } from '../data/avatars';
@@ -403,14 +403,6 @@ const BattleOnline = () => {
     return () => clearInterval(interval);
   }, [phase, gameOver, room.turnDeadlineAt, room.blueUid, room.redUid, board, myUid, myHand]);
 
-  const handleLeaveBattle = async () => {
-    if (roomIdRef.current && user?.uid) {
-      try { await forfeitOnlineRoom(roomIdRef.current, user.uid); }
-      catch (error) { console.error('Error registrando abandono:', error); }
-    }
-    navigate('/home');
-  };
-
   // ---------- MI TURNO ----------
   const placedCount = board.filter(c => c !== null).length;
   // El que empieza coloca las jugadas 1ª, 3ª, 5ª... (índices pares ya colocados = su turno)
@@ -627,7 +619,6 @@ const BattleOnline = () => {
                 ? (selectedCard !== null ? '¡Toca una casilla del tablero!' : 'Elige una de tus runas')
                 : `${battleData?.opponentName || 'El rival'} está jugando...`}
           </span>
-          <button className="bo-match-leave" onClick={handleLeaveBattle}>Abandonar</button>
         </div>
 
         <div className="bp-board-container">
