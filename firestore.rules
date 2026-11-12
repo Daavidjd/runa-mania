@@ -89,6 +89,24 @@ service cloud.firestore {
       allow delete: if false;
     }
 
+    // Cola del matchmaking aleatorio. Solo el propietario crea/abandona;
+    // cualquier jugador autenticado puede reclamar una entrada waiting para sí.
+    match /matchmakingQueue/{uid} {
+      allow read: if signedIn();
+      allow create: if isUser(uid)
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.status == 'waiting';
+      allow update: if isUser(uid)
+        || (
+          signedIn()
+          && resource.data.status == 'waiting'
+          && request.resource.data.status == 'matched'
+          && request.resource.data.opponentUid == request.auth.uid
+          && request.resource.data.uid == uid
+        );
+      allow delete: if isUser(uid);
+    }
+
     match /matches/{matchId} {
       allow read: if signedIn()
         && (resource.data.player1 == request.auth.uid || resource.data.player2 == request.auth.uid);
