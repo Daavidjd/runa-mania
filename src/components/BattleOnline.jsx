@@ -729,7 +729,7 @@ const BattleOnline = () => {
 
             <div className="bp-modal-reward">
               <span className="bp-reward-coin">🪙</span>
-              <span className="bp-reward-val">{iWon ? '+35 Monedas y +25 XP' : iWon === null ? '+20 Monedas y +12 XP' : '+10 Monedas y +5 XP de consolación'}</span>
+              <span className="bp-reward-val">{iWon ? '+150 Monedas y +25 XP' : iWon === null ? '+20 Monedas y +12 XP' : '+10 Monedas y +5 XP de consolación'}</span>
             </div>
 
             <div className="bp-modal-actions">
