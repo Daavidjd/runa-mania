@@ -234,9 +234,15 @@
 }
 
 .bp-modal {
-  width: 100%; max-width: 320px; background: #0f172a; border-radius: 22px;
-  border: 4px solid #334155; padding: 24px 20px; box-shadow: 0 10px 0 #020617;
-  text-align: center; animation: bp-modal-pop 0.3s cubic-bezier(0.18, 0.89, 0.32, 1.28);
+  width: 100%;
+  max-width: 340px;
+  background: linear-gradient(155deg, #1b2943 0%, #101a2e 58%, #0b1324 100%);
+  border: 4px solid #05070c;
+  border-radius: 20px;
+  padding: 24px 20px;
+  box-shadow: 0 9px 0 #05070c, 0 14px 24px rgba(0,0,0,.48), inset 0 0 0 2px rgba(255,255,255,.08);
+  text-align: center;
+  animation: bp-modal-pop 0.3s cubic-bezier(0.18, 0.89, 0.32, 1.28);
 }
 
 @keyframes bp-modal-pop {
@@ -244,17 +250,18 @@
   100% { transform: scale(1); opacity: 1; }
 }
 
-.win-modal { border-color: #f59e0b; box-shadow: 0 10px 0 #b45309; }
-.lose-modal { border-color: #ef4444; box-shadow: 0 10px 0 #991b1b; }
-.draw-modal { border-color: #64748b; box-shadow: 0 10px 0 #334155; }
+/* Los tres resultados comparten contorno negro tipo cartoon; cambia solo el brillo interior. */
+.win-modal { box-shadow: 0 9px 0 #05070c, 0 14px 24px rgba(0,0,0,.48), inset 0 0 0 2px rgba(255,190,55,.28); }
+.lose-modal { box-shadow: 0 9px 0 #05070c, 0 14px 24px rgba(0,0,0,.48), inset 0 0 0 2px rgba(255,75,75,.25); }
+.draw-modal { box-shadow: 0 9px 0 #05070c, 0 14px 24px rgba(0,0,0,.48), inset 0 0 0 2px rgba(150,180,220,.22); }
 
 .bp-modal-banner { margin-bottom: 14px; }
 .bp-modal-icon { font-size: 3rem; line-height: 1; display: block; margin-bottom: 4px; }
-.bp-modal-title { margin: 0; font-size: 1.8rem; font-weight: 900; color: #ffffff; }
+ .bp-modal-title { margin: 0; font-size: 1.8rem; font-weight: 1000; color: #ffffff; letter-spacing: .5px; -webkit-text-stroke: .5px #05070c; text-shadow: 0 3px 0 #05070c, 0 5px 8px rgba(0,0,0,.45); }
 
 .bp-modal-scoreboard {
   display: flex; align-items: center; justify-content: center; gap: 16px;
-  background: #1e293b; border-radius: 14px; padding: 10px 14px; margin-bottom: 14px;
+  background: linear-gradient(180deg, #263750, #17243a); border: 3px solid #05070c; border-radius: 13px; padding: 10px 14px; margin-bottom: 14px; box-shadow: 0 4px 0 #05070c, inset 0 1px 0 rgba(255,255,255,.08);
 }
 
 .bp-modal-score-col { display: flex; flex-direction: column; align-items: center; }
@@ -264,8 +271,8 @@
 
 .bp-modal-reward {
   display: inline-flex; align-items: center; gap: 8px;
-  background: #14281f; border: 2px solid #10b981; border-radius: 999px;
-  padding: 6px 16px; margin-bottom: 18px;
+  background: linear-gradient(180deg, #17432f, #103321); border: 3px solid #05070c; border-radius: 12px;
+  padding: 7px 16px; margin-bottom: 18px; box-shadow: 0 4px 0 #05070c, inset 0 1px 0 rgba(255,255,255,.12);
 }
 
 .bp-reward-coin { font-size: 1.2rem; }
@@ -275,11 +282,13 @@
 
 .bp-btn {
   width: 100%; padding: 13px; border-radius: 12px; font-size: 1rem;
-  font-weight: 900; cursor: pointer; border: 2px solid;
-  transition: transform 0.1s ease;
+  font-weight: 1000; cursor: pointer; border: 3px solid #05070c;
+  border-radius: 12px; text-shadow: 0 1px 1px rgba(0,0,0,.35);
+  box-shadow: 0 5px 0 #05070c, inset 0 1px 0 rgba(255,255,255,.22);
+  transition: transform 0.1s ease, filter 0.1s ease;
 }
 
-.bp-btn:active { transform: translateY(2px); }
+.bp-btn:active { transform: translateY(4px); box-shadow: 0 1px 0 #05070c, inset 0 1px 0 rgba(255,255,255,.18); filter: brightness(.96); }
 
 .bp-btn-repeat {
   background: #0284c7; border-color: #38bdf8; box-shadow: 0 4px 0 #0369a1; color: #ffffff;
