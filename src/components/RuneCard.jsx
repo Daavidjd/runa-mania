@@ -9,7 +9,8 @@ const RuneCard = React.memo(({
   battleMode = false, 
   isFlipping = false, 
   isPlaced = false,
-  attackDirs = {} // ✅ Nueva prop para animación de ataque
+  attackDirs = {},
+  visualOwner = null // Mantiene el dueño visual anterior hasta la mitad del giro
 }) => {
   if (!rune) return null;
 
@@ -19,7 +20,7 @@ const RuneCard = React.memo(({
 
   // MODO BATALLA
   if (battleMode) {
-    const ownerClass = rune.owner === 'ai' ? 'battle-ai' : 'battle-player';
+    const ownerClass = (visualOwner || rune.owner) === 'ai' ? 'battle-ai' : 'battle-player';
     const animClass = isFlipping ? 'br-flip' : isPlaced ? 'br-placed' : '';
     
     return (
