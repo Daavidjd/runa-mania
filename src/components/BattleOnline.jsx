@@ -462,7 +462,7 @@ const BattleOnline = () => {
               ) : (
                 <>
                   <div className="bo-search-avatar-reel" aria-label="Buscando posibles rivales">{AVATAR_OPTIONS.slice(0, 4).map((avatar) => <img key={avatar.id} src={avatar.src} alt="" />)}</div>
-                  <span className="bo-lobby-name">{battleData?.searching ? 'Buscando invocador...' : 'Esperando rival...'}</span>
+                  <span className="bo-lobby-name bo-match-name">{battleData?.searching ? 'Buscando invocador...' : 'Esperando rival...'}</span>
                 </>
               )}
             </div>
@@ -491,7 +491,7 @@ const BattleOnline = () => {
           <div className="bo-vs-row bo-coinflip-names">
             <div className="bo-lobby-player bo-me">
               <img src={avatarSrcOf(myProfile)} alt="yo" className="bp-avatar-frame bo-match-avatar" style={{ borderColor: myColor === 'red' ? '#f44336' : '#2196f3' }} />
-              <span className="bo-lobby-name">{myProfile?.username || 'Tú'}</span>
+              <span className="bo-lobby-name bo-match-name">{myProfile?.username || 'Tú'}</span>
               <span className="bo-lobby-tag" style={{ color: myColor === 'red' ? '#ff8a80' : '#4fc3f7' }}>{myColor === 'red' ? '🔴 Rojo' : '🔵 Azul'}</span>
             </div>
             <span className="bo-vs-bolt">VS</span>
