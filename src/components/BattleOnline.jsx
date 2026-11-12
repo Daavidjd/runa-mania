@@ -40,6 +40,23 @@ const getAttackDirections = (placedIdx, capturedIdxs) => {
   return dirs;
 };
 
+const normalizeOnlineBoard = (value) => {
+  const board = Array(16).fill(null);
+  if (Array.isArray(value)) {
+    value.forEach((cell, index) => {
+      if (index >= 0 && index < 16 && cell) board[index] = cell;
+    });
+  } else if (value && typeof value === 'object') {
+    Object.entries(value).forEach(([key, cell]) => {
+      const index = Number(key);
+      if (/^(0|[1-9]|1[0-5])$/.test(key) && Number.isInteger(index) && cell) {
+        board[index] = cell;
+      }
+    });
+  }
+  return board;
+};
+
 const buildHandFromIds = (runeIds, owner) => {
   const runes = (runeIds || [])
     .map(id => RUNES_DB.find(r => r.id === id))
@@ -280,20 +297,13 @@ const BattleOnline = () => {
   // ---------- SINCRONIZACIÓN DEL TABLERO ----------
   useEffect(() => {
     if (phase === 'error') return;
-    const remoteBoard = room.board;
-    if (!Array.isArray(remoteBoard) || remoteBoard.length !== 16) {
-      // Ambos dentro y con colores asignados → mostrar volteo de moneda 50/50
-      if (bothJoined && room.starterUid && phaseRef.current === 'connecting') {
-        setPhase('coinflip');
-      }
-      return;
-    }
-
+    // Firebase RTDB devuelve los tableros indexados como objeto, no siempre
+    // como Array. Convertimos ambos formatos a las 16 casillas locales.
+    const colored = normalizeOnlineBoard(room.board);
     const lastMove = room.lastMove;
 
     // El tablero compartido ya trae colores reales blue/red.
     // Conservamos el color anterior localmente mientras dura el giro.
-    const colored = remoteBoard.map(cell => (cell ? { ...cell } : null));
     if (lastMove?.captured?.length && !appliedRemoteMovesRef.current.has(lastMove.moveId)) {
       const previousBoard = boardRef.current;
       const overrides = {};
