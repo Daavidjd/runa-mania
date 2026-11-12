@@ -621,7 +621,7 @@ export const watchChallenge = (challengeId, callback) => {
 // Recompensas online equilibradas. El identificador de sala evita pagar dos veces
 // si React vuelve a ejecutar el efecto o ambos clientes reportan el mismo resultado.
 export const ONLINE_BATTLE_REWARDS = {
-  win: { coins: 35, xp: 25 },
+  win: { coins: 150, xp: 25 },
   draw: { coins: 20, xp: 12 },
   loss: { coins: 10, xp: 5 }
 };
