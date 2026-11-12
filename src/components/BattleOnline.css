@@ -367,7 +367,6 @@
 .bo-turn-timer::before { content: ''; position: absolute; inset: 4px; border-radius: 50%; background: #101a2d; }
 .bo-turn-timer span { position: relative; z-index: 1; color: #fff; font-size: 15px; font-weight: 1000; font-variant-numeric: tabular-nums; }
 /* El progreso del reloj nunca se sustituye por un círculo rojo completo. */
-.bo-turn-timer[style*="0"] { background: conic-gradient(#ff4545 0%, rgba(255,255,255,.14) 0); }
 .bo-match-leave { border: 1px solid rgba(255,110,110,.45); border-radius: 9px; padding: 6px 10px; color: #ffaaaa; background: rgba(130,25,35,.25); font-size: 10px; font-weight: 900; cursor: pointer; }
 .bo-match-leave:hover { background: rgba(180,35,45,.45); }
 
