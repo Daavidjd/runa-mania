@@ -108,6 +108,7 @@ const BattleOnline = () => {
   const [shakeHand, setShakeHand] = useState(false);
   const [countdown, setCountdown] = useState(3); // ⏳ cuenta regresiva del volteo de moneda
   const [timerRemaining, setTimerRemaining] = useState(30);
+  const [turnReady, setTurnReady] = useState(true);
   const timeoutClaimRef = useRef(false);
 
   const roomUnsubRef = useRef(null);
@@ -419,7 +420,11 @@ const BattleOnline = () => {
     if (phase !== 'playing' || gameOver || !room.turnDeadlineAt) return undefined;
     timeoutClaimRef.current = false;
     const tick = () => {
-      const seconds = Math.max(0, Math.ceil((Number(room.turnDeadlineAt) - Date.now()) / 1000));
+      const now = Date.now();
+      const turnStartsAt = Number(room.turnStartsAt || 0);
+      const ready = now >= turnStartsAt;
+      setTurnReady(ready);
+      const seconds = ready ? Math.max(0, Math.ceil((Number(room.turnDeadlineAt) - now) / 1000)) : 30;
       setTimerRemaining(seconds);
       const occupied = board.filter(Boolean).length;
       const activeUid = occupied % 2 === 0 ? room.blueUid : room.redUid;
@@ -438,12 +443,12 @@ const BattleOnline = () => {
     };
     tick(); const interval = setInterval(tick, 150);
     return () => clearInterval(interval);
-  }, [phase, gameOver, room.turnDeadlineAt, room.blueUid, room.redUid, board, myUid, myHand]);
+  }, [phase, gameOver, room.turnStartsAt, room.turnDeadlineAt, room.blueUid, room.redUid, board, myUid, myHand]);
 
   // ---------- MI TURNO ----------
   const placedCount = board.filter(c => c !== null).length;
   // El que empieza coloca las jugadas 1ª, 3ª, 5ª... (índices pares ya colocados = su turno)
-  const myTurn = phase === 'playing' && !gameOver &&
+  const myTurn = phase === 'playing' && turnReady && !gameOver &&
     (myColor === 'blue' ? placedCount % 2 === 0 : myColor === 'red' ? placedCount % 2 === 1 : false);
 
   const handleCellClick = useCallback(async (index) => {
@@ -645,7 +650,7 @@ const BattleOnline = () => {
         </div>
         <div className="bo-score-cluster">
           {!myTurn && (
-            <div className="bo-turn-timer" style={{ '--timer-progress': (timerRemaining / 30) * 100 + '%' }}>
+            <div className="bo-turn-timer" style={{ '--timer-progress': (timerRemaining / 30) * 100 }}>
               <span>{timerRemaining}</span>
             </div>
           )}
