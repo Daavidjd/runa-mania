@@ -246,8 +246,10 @@ const BattleOnline = () => {
             const updates = {};
             // joinOnlineRoom asigna colores y starterUid una única vez mediante transacción.
             // Aquí solo se publican los tamaños de mazo de ambos jugadores.
-            updates[`deckSizes.${user.uid}`] = hand.length;
-            updates[`deckSizes.${battleData.opponentUid}`] = oppHand.length;
+            // Realtime Database interpreta las claves de update() como rutas: usar /,
+            // nunca puntos, porque los puntos no están permitidos en las claves.
+            updates[`deckSizes/${user.uid}`] = hand.length;
+            updates[`deckSizes/${battleData.opponentUid}`] = oppHand.length;
             await updateOnlineRoom(roomId, updates);
           } catch (err) { console.error('Error preparando duelo online:', err); }
         })();
