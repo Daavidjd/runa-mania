@@ -33,11 +33,25 @@ export const findRandomMatch = async (uid, name, avatarId) => {
       };
     }
 
-    if (existing?.status === 'waiting' && Number.isFinite(Number(existing.searchedAt))) {
-      entry.searchedAt = Number(existing.searchedAt);
-    }
     await onDisconnect(myRef).remove();
-    await set(myRef, entry);
+    if (existing?.status === 'waiting') {
+      const touch = await runTransaction(myRef, current => {
+        if (!current || current.uid !== uid || current.status !== 'waiting') return;
+        return { ...current, lastSeenAt: now };
+      }, { applyLocally: false });
+      if (!touch.committed) {
+        const latest = touch.snapshot.val();
+        if (latest?.status === 'matched' && latest.roomId && latest.opponentUid) {
+          return { success: true, matched: true, roomId: latest.roomId,
+            opponentUid: latest.opponentUid, opponentName: latest.opponentName || 'Rival',
+            opponentAvatarId: latest.opponentAvatarId || 'mago',
+            matchOrder: latest.matchOrder || [latest.opponentUid, uid] };
+        }
+        return { success: true, matched: false };
+      }
+    } else {
+      await set(myRef, entry);
+    }
 
     const queueSnap = await get(ref(rtdb, QUEUE_PATH));
     const candidates = Object.values(queueSnap.val() || {})
