@@ -178,7 +178,7 @@ const FriendsPanel = ({ profile, open = true, onClose }) => {
             aria-label={`Copiar código de invocador ${profile?.playerCode || profile?.userId || user?.uid || ''}`}
           >
             <span className="fp-my-code-value">#{profile?.playerCode || profile?.userId || user?.uid || '—'}</span>
-            <span className="fp-copy-icon" aria-hidden="true">▣</span>
+            <span className="fp-copy-icon" aria-hidden="true">📔</span>
           </button>
           <button className="fp-close" onClick={onClose} title="Cerrar" aria-label="Cerrar">✕</button>
         </header>
