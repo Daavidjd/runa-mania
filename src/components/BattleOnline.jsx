@@ -365,11 +365,11 @@ const BattleOnline = () => {
 
   // Detecta abandono cuando un jugador desaparece de la sala.
   useEffect(() => {
-    if (!roomIdRef.current || !colorsAssigned || room.finished) return;
+    if (!roomIdRef.current || !room.blueUid || !room.redUid || room.finished) return;
     const bluePresent = !!room.players?.[room.blueUid]?.joinedAt;
     const redPresent = !!room.players?.[room.redUid]?.joinedAt;
     if (bluePresent !== redPresent) claimOnlineForfeit(roomIdRef.current).catch(error => console.error('Error resolviendo abandono:', error));
-  }, [room, colorsAssigned]);
+  }, [room]);
 
   useEffect(() => {
     if (!room.finished || !room.winnerUid || gameOver) return;
