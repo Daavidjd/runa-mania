@@ -37,6 +37,7 @@ export const joinOnlineRoom = async (roomId, uid, displayName, matchOrder = []) 
         room.starterUid = room.blueUid;
       }
       room.colorsAssignedAt = now;
+      room.turnDeadlineAt = now + 30000;
     }
     return room;
   }, { applyLocally: false });
@@ -118,6 +119,7 @@ export const playOnlineMove = async (roomId, uid, card, index, moveId) => {
       board.map((cell, i) => cell ? [String(i), cell] : null).filter(Boolean)
     );
     room.lastMove = { by: uid, index, captured, moveId };
+    room.turnDeadlineAt = Date.now() + 30000;
     room.updatedAt = Date.now();
     capturedResult = captured;
     rejectionReason = '';
@@ -136,6 +138,50 @@ export const watchRoom = (roomId, callback) =>
 
 export const updateOnlineRoom = (roomId, updates) =>
   update(ref(rtdb, `${ROOM_PATH}/${roomId}`), updates);
+
+// Reclama una victoria por tiempo usando la hora límite compartida en RTDB.
+export const claimOnlineTimeout = async (roomId) => {
+  const roomRef = ref(rtdb, `${ROOM_PATH}/${roomId}`);
+  const result = await runTransaction(roomRef, room => {
+    if (!room || room.finished || !room.blueUid || !room.redUid) return;
+    if (!room.turnDeadlineAt || Date.now() < Number(room.turnDeadlineAt)) return;
+    const board = Array.isArray(room.board) ? room.board : Object.values(room.board || {});
+    const occupied = board.filter(Boolean).length;
+    const loserUid = occupied % 2 === 0 ? room.blueUid : room.redUid;
+    room.finished = true; room.finishReason = 'timeout'; room.loserUid = loserUid;
+    room.winnerUid = loserUid === room.blueUid ? room.redUid : room.blueUid;
+    room.finishedAt = Date.now(); return room;
+  }, { applyLocally: false });
+  return result.snapshot.val();
+};
+
+// Si un jugador desaparece tras asignarse ambos colores, gana el restante.
+export const claimOnlineForfeit = async (roomId) => {
+  const roomRef = ref(rtdb, `${ROOM_PATH}/${roomId}`);
+  const result = await runTransaction(roomRef, room => {
+    if (!room || room.finished || !room.blueUid || !room.redUid) return;
+    const bluePresent = !!room.players?.[room.blueUid]?.joinedAt;
+    const redPresent = !!room.players?.[room.redUid]?.joinedAt;
+    if (bluePresent === redPresent) return;
+    const loserUid = bluePresent ? room.redUid : room.blueUid;
+    room.finished = true; room.finishReason = 'forfeit'; room.loserUid = loserUid;
+    room.winnerUid = bluePresent ? room.blueUid : room.redUid;
+    room.finishedAt = Date.now(); return room;
+  }, { applyLocally: false });
+  return result.snapshot.val();
+};
+
+// Salida voluntaria: registra primero la derrota y después elimina al jugador.
+export const forfeitOnlineRoom = async (roomId, uid) => {
+  const roomRef = ref(rtdb, `${ROOM_PATH}/${roomId}`);
+  await runTransaction(roomRef, room => {
+    if (!room || room.finished || !room.blueUid || !room.redUid) return;
+    room.finished = true; room.finishReason = 'forfeit'; room.loserUid = uid;
+    room.winnerUid = uid === room.blueUid ? room.redUid : room.blueUid;
+    room.finishedAt = Date.now(); if (room.players) delete room.players[uid];
+    return room;
+  }, { applyLocally: false });
+};
 
 export const leaveOnlineRoom = (roomId, uid) =>
   remove(ref(rtdb, `${ROOM_PATH}/${roomId}/players/${uid}`)).catch(() => {});
