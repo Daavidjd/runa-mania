@@ -137,6 +137,67 @@ export const playOnlineMove = async (roomId, uid, card, index, moveId) => {
   };
 };
 
+// Al agotarse el reloj, el cliente del jugador activo ejecuta una jugada automática.
+// La transacción valida turno y deadline y persiste carta + casilla como una sola operación.
+export const playRandomOnlineMove = async (roomId, uid, hand) => {
+  const roomRef = ref(rtdb, `${ROOM_PATH}/${roomId}`);
+  let playedCard = null;
+  let playedIndex = -1;
+  let capturedResult = [];
+  let rejectionReason = 'No se pudo ejecutar la jugada automática';
+  const result = await runTransaction(roomRef, room => {
+    if (!room || room.finished || !room.players?.[uid]?.joinedAt || !room.blueUid || !room.redUid) return;
+    if (!room.turnDeadlineAt || Date.now() < Number(room.turnDeadlineAt)) { rejectionReason = 'El turno todavía tiene tiempo'; return; }
+    const board = Array(16).fill(null);
+    if (Array.isArray(room.board)) room.board.forEach((cell, i) => { if (i >= 0 && i < 16 && cell) board[i] = cell; });
+    else if (room.board && typeof room.board === 'object') Object.entries(room.board).forEach(([key, cell]) => { const i = Number(key); if (/^(0|[1-9]|1[0-5])$/.test(key) && Number.isInteger(i) && cell) board[i] = cell; });
+    const occupied = board.filter(Boolean).length;
+    const isBlue = room.blueUid === uid;
+    const isRed = room.redUid === uid;
+    if (!isBlue && !isRed) { rejectionReason = 'Jugador no asignado'; return; }
+    if (!(isBlue ? occupied % 2 === 0 : occupied % 2 === 1)) { rejectionReason = 'Ya no es tu turno'; return; }
+    const empty = board.map((cell, index) => cell ? -1 : index).filter(index => index >= 0);
+    const availableCards = Array.isArray(hand) ? hand.filter(card => card?.id && card?.name) : [];
+    if (!empty.length || !availableCards.length) {
+      const blueScore = board.filter(cell => cell?.owner === 'blue').length;
+      const redScore = board.filter(cell => cell?.owner === 'red').length;
+      room.finished = true; room.finishReason = 'no-moves'; room.winnerUid = blueScore === redScore ? null : (blueScore > redScore ? room.blueUid : room.redUid);
+      room.loserUid = room.winnerUid ? (room.winnerUid === room.blueUid ? room.redUid : room.blueUid) : null;
+      room.finishedAt = Date.now(); return room;
+    }
+    const card = availableCards[Math.floor(Math.random() * availableCards.length)];
+    const index = empty[Math.floor(Math.random() * empty.length)];
+    const myColor = isBlue ? 'blue' : 'red';
+    const enemyColor = myColor === 'blue' ? 'red' : 'blue';
+    const placed = { id: card.id, name: card.name, image: card.image || '', tier: card.tier || 'comun', arrows: card.arrows || {}, owner: myColor, flipped: false, autoPlayed: true };
+    board[index] = placed;
+    const row = Math.floor(index / 4), col = index % 4;
+    const directions = [
+      { dr: -1, dc: 0, attack: 'top', defend: 'bottom' },
+      { dr: 0, dc: 1, attack: 'right', defend: 'left' },
+      { dr: 1, dc: 0, attack: 'bottom', defend: 'top' },
+      { dr: 0, dc: -1, attack: 'left', defend: 'right' }
+    ];
+    const captured = [];
+    for (const { dr, dc, attack, defend } of directions) {
+      const nr = row + dr, nc = col + dc;
+      if (nr < 0 || nr >= 4 || nc < 0 || nc >= 4) continue;
+      const neighborIndex = nr * 4 + nc;
+      const neighbor = board[neighborIndex];
+      if (neighbor?.owner === enemyColor && (placed.arrows[attack] || 0) > (neighbor.arrows?.[defend] || 0)) captured.push(neighborIndex);
+    }
+    captured.forEach(i => { board[i] = { ...board[i], owner: myColor, flipped: true }; });
+    room.board = Object.fromEntries(board.map((cell, i) => cell ? [String(i), cell] : null).filter(Boolean));
+    const moveId = `${uid}-auto-${Date.now()}`;
+    room.lastMove = { by: uid, index, captured, moveId, autoPlayed: true, runeId: card.id };
+    room.turnDeadlineAt = Date.now() + 30000;
+    room.updatedAt = Date.now();
+    playedCard = card; playedIndex = index; capturedResult = captured; rejectionReason = '';
+    return room;
+  }, { applyLocally: false });
+  return { committed: result.committed, card: result.committed ? playedCard : null, index: result.committed ? playedIndex : -1, captured: result.committed ? capturedResult : [], reason: result.committed ? null : rejectionReason, room: result.snapshot.val() };
+};
+
 export const watchRoom = (roomId, callback) =>
   onValue(ref(rtdb, `${ROOM_PATH}/${roomId}`), snap => callback(snap.val() || {}));
 
