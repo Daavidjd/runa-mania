@@ -53,7 +53,7 @@ const AI_OPPONENTS = [
     avatar: Bruja,
     difficulty: 'Fácil',
     difficultyColor: '#10b981',
-    reward: 20,
+    reward: 25,
     deck: generateAIDeck('Fácil') // ✅ Mazo dinámico
   },
   {
@@ -62,7 +62,7 @@ const AI_OPPONENTS = [
     avatar: Elfo,
     difficulty: 'Medio',
     difficultyColor: '#f59e0b',
-    reward: 50,
+    reward: 40,
     deck: generateAIDeck('Medio') // ✅ Mazo dinámico
   },
   {
@@ -71,7 +71,7 @@ const AI_OPPONENTS = [
     avatar: Caballero,
     difficulty: 'Difícil',
     difficultyColor: '#ef4444',
-    reward: 150,
+    reward: 60,
     deck: generateAIDeck('Difícil') // ✅ Mazo dinámico
   }
 ];
@@ -123,10 +123,12 @@ const Battle = () => {
   const [shakeHand, setShakeHand] = useState(false);
 
   const aiIsPlayingRef = useRef(false);
+  const npcRewardClaimedRef = useRef(false);
 
   const loadDeck = useCallback(async () => {
     setLoading(true);
     setShowEndModal(false);
+    npcRewardClaimedRef.current = false;
     try {
       if (user) {
         const profile = await getUserProfile(user.uid);
@@ -376,21 +378,28 @@ const Battle = () => {
     return () => { clearTimeout(timer); };
   }, [turn, gameOver, board, aiHand, playerHand, resolveCaptures, applyCaptures, calcScores]);
 
+  const npcBattleReward = winner === 'player'
+    ? selectedOpponent.reward
+    : winner === 'draw'
+      ? Math.round(selectedOpponent.reward * 0.5)
+      : Math.max(8, Math.round(selectedOpponent.reward * 0.2));
+
   useEffect(() => {
-    if (showEndModal && winner === 'player' && user) {
-      const claimReward = async () => {
-        try {
-          const profile = await getUserProfile(user.uid);
-          if (profile) {
-            await updateUserProfile(user.uid, { coins: (profile.coins || 0) + selectedOpponent.reward });
-          }
-        } catch (err) {
-          console.error('Error reclamando recompensa:', err);
+    if (!showEndModal || !winner || !user || npcRewardClaimedRef.current) return;
+    npcRewardClaimedRef.current = true;
+    const claimReward = async () => {
+      try {
+        const profile = await getUserProfile(user.uid);
+        if (profile) {
+          await updateUserProfile(user.uid, { coins: (Number(profile.coins) || 0) + npcBattleReward });
         }
-      };
-      claimReward();
-    }
-  }, [showEndModal, winner, user, selectedOpponent.reward]);
+      } catch (err) {
+        npcRewardClaimedRef.current = false;
+        console.error('Error reclamando recompensa NPC:', err);
+      }
+    };
+    claimReward();
+  }, [showEndModal, winner, user, npcBattleReward]);
 
   const getPlayerAvatar = useCallback(() => {
     const found = AVATAR_OPTIONS.find(a => a.id === playerProfile?.avatarId);
@@ -531,12 +540,10 @@ const Battle = () => {
               </div>
             </div>
 
-            {winner === 'player' && (
-              <div className="bp-modal-reward">
-                <span className="bp-reward-coin">🪙</span>
-                <span className="bp-reward-val">+{selectedOpponent.reward} Monedas</span>
-              </div>
-            )}
+            <div className="bp-modal-reward">
+              <span className="bp-reward-coin">🪙</span>
+              <span className="bp-reward-val">+{npcBattleReward} Monedas {winner === 'player' ? 'por victoria' : winner === 'draw' ? 'por empate' : 'de consolación'}</span>
+            </div>
 
             <div className="bp-modal-actions">
               <button className="bp-btn bp-btn-repeat" onClick={() => { setShowEndModal(false); loadDeck(); }}>
