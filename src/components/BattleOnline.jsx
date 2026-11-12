@@ -607,6 +607,7 @@ const BattleOnline = () => {
                 ? (selectedCard !== null ? '¡Toca una casilla del tablero!' : 'Elige una de tus runas')
                 : `${battleData?.opponentName || 'El rival'} está jugando...`}
           </span>
+          <button className="bo-match-leave" onClick={handleLeaveBattle}>Abandonar</button>
         </div>
 
         <div className="bp-board-container">
