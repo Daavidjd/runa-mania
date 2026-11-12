@@ -406,47 +406,54 @@ export const getOutgoingRequests = async (userId) => {
   }
 };
 
-// Enviar solicitud de amistad
+// Enviar solicitud de amistad. Basta con que una persona envíe la invitación;
+// si ya existe una invitación inversa, se acepta automáticamente para ambos.
 export const sendFriendRequest = async (fromUid, toUid) => {
-  if (fromUid === toUid) return { success: false, message: 'No puedes añadirte a ti mismo' };
+  try {
+    if (!fromUid || !toUid || fromUid === toUid) return { success: false, message: 'No puedes añadirte a ti mismo' };
+    const [targetSnap, mySnap] = await Promise.all([
+      getDoc(doc(db, 'users', toUid)),
+      getDoc(doc(db, 'users', fromUid))
+    ]);
+    if (!targetSnap.exists() || !mySnap.exists()) return { success: false, message: 'Jugador no encontrado' };
+    if ((mySnap.data().friendIds || []).includes(toUid) || (targetSnap.data().friendIds || []).includes(fromUid)) {
+      return { success: true, message: 'Ya son amigos' };
+    }
 
-  const targetSnap = await getDoc(doc(db, 'users', toUid));
-  if (!targetSnap.exists()) return { success: false, message: 'Jugador no encontrado' };
+    // Comprobar primero la solicitud inversa: no exigimos que ambos se inviten.
+    const reverseQ = query(
+      collection(db, 'friendRequests'),
+      where('from', '==', toUid),
+      where('to', '==', fromUid),
+      where('status', '==', 'pending')
+    );
+    const reverseSnap = await getDocs(reverseQ);
+    if (!reverseSnap.empty) {
+      const accepted = await acceptFriendRequest(reverseSnap.docs[0].id, fromUid, toUid);
+      if (accepted.success) return { success: true, message: '¡Solicitud aceptada automáticamente! Ya son amigos 🤝', autoAccepted: true };
+      return accepted;
+    }
 
-  if ((targetSnap.data().friendIds || []).includes(fromUid)) {
-    return { success: false, message: 'Ya son amigos' };
+    const outgoingQ = query(
+      collection(db, 'friendRequests'),
+      where('from', '==', fromUid),
+      where('to', '==', toUid),
+      where('status', '==', 'pending')
+    );
+    const outgoingSnap = await getDocs(outgoingQ);
+    if (!outgoingSnap.empty) return { success: true, message: 'Solicitud pendiente; el otro jugador puede aceptarla' };
+
+    await addDoc(collection(db, 'friendRequests'), {
+      from: fromUid,
+      to: toUid,
+      status: 'pending',
+      createdAt: serverTimestamp()
+    });
+    return { success: true, message: 'Solicitud enviada. Cuando la reciba, quedarán conectados como amigos ✉️' };
+  } catch (error) {
+    console.error('Error enviando solicitud de amistad:', error);
+    return { success: false, message: 'No se pudo enviar la solicitud' };
   }
-
-  // Evitar duplicados: si ya existe una pendiente entre ambos, reutilizar/eliminar
-  const dupQ = query(
-    collection(db, 'friendRequests'),
-    where('from', '==', fromUid),
-    where('to', '==', toUid),
-    where('status', '==', 'pending')
-  );
-  const dupSnap = await getDocs(dupQ);
-  if (!dupSnap.empty) return { success: false, message: 'Solicitud ya enviada' };
-
-  // Si el otro ya nos envió una solicitud, se aceptan mutuamente al instante
-  const reverseQ = query(
-    collection(db, 'friendRequests'),
-    where('from', '==', toUid),
-    where('to', '==', fromUid),
-    where('status', '==', 'pending')
-  );
-  const reverseSnap = await getDocs(reverseQ);
-  if (!reverseSnap.empty) {
-    await acceptFriendRequest(reverseSnap.docs[0].id, toUid, fromUid);
-    return { success: true, message: '¡Son nuevos amigos! 🤝', autoAccepted: true };
-  }
-
-  await addDoc(collection(db, 'friendRequests'), {
-    from: fromUid,
-    to: toUid,
-    status: 'pending',
-    createdAt: serverTimestamp()
-  });
-  return { success: true, message: 'Solicitud enviada ✉️' };
 };
 
 // Aceptar solicitud (se añade a la lista friendIds de ambos)
