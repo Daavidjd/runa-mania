@@ -537,7 +537,7 @@ const BattleOnline = () => {
             </div>
           )}
 
-          <button className="bp-btn bp-btn-exit bo-leave" onClick={battleData?.searching ? cancelMatchmaking : () => navigate('/home')}>{battleData?.searching ? '✕ Cancelar búsqueda' : '🚪 Salir'}</button>
+          <button className={`bp-btn bp-btn-exit bo-leave ${battleData?.searching ? 'bo-cancel-search' : ''}`} onClick={battleData?.searching ? cancelMatchmaking : () => navigate('/home')}>{battleData?.searching ? 'Cancelar' : '🚪 Salir'}</button>
         </div>
       </div>
     );
