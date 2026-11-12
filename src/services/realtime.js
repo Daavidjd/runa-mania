@@ -37,6 +37,7 @@ export const joinOnlineRoom = async (roomId, uid, displayName, matchOrder = []) 
         room.starterUid = room.blueUid;
       }
       room.colorsAssignedAt = now;
+      room.turnStartsAt = now;
       room.turnDeadlineAt = now + 30000;
     }
     return room;
@@ -71,6 +72,10 @@ export const playOnlineMove = async (roomId, uid, card, index, moveId) => {
       });
     }
     const occupied = board.filter(Boolean).length;
+    if (room.turnStartsAt && Date.now() < Number(room.turnStartsAt)) {
+      rejectionReason = 'La animación de captura todavía está en curso';
+      return;
+    }
     if (room.turnDeadlineAt && Date.now() > Number(room.turnDeadlineAt)) {
       rejectionReason = 'Se agotó el tiempo de este turno';
       return;
@@ -123,7 +128,9 @@ export const playOnlineMove = async (roomId, uid, card, index, moveId) => {
       board.map((cell, i) => cell ? [String(i), cell] : null).filter(Boolean)
     );
     room.lastMove = { by: uid, index, captured, moveId };
-    room.turnDeadlineAt = Date.now() + 30000;
+    const nextTurnStartsAt = Date.now() + (captured.length ? 1100 : 0);
+    room.turnStartsAt = nextTurnStartsAt;
+    room.turnDeadlineAt = nextTurnStartsAt + 30000;
     room.updatedAt = Date.now();
     capturedResult = captured;
     rejectionReason = '';
@@ -147,6 +154,7 @@ export const playRandomOnlineMove = async (roomId, uid, hand) => {
   let rejectionReason = 'No se pudo ejecutar la jugada automática';
   const result = await runTransaction(roomRef, room => {
     if (!room || room.finished || !room.players?.[uid]?.joinedAt || !room.blueUid || !room.redUid) return;
+    if (room.turnStartsAt && Date.now() < Number(room.turnStartsAt)) { rejectionReason = 'La animación de captura todavía está en curso'; return; }
     if (!room.turnDeadlineAt || Date.now() < Number(room.turnDeadlineAt)) { rejectionReason = 'El turno todavía tiene tiempo'; return; }
     const board = Array(16).fill(null);
     if (Array.isArray(room.board)) room.board.forEach((cell, i) => { if (i >= 0 && i < 16 && cell) board[i] = cell; });
@@ -190,7 +198,9 @@ export const playRandomOnlineMove = async (roomId, uid, hand) => {
     room.board = Object.fromEntries(board.map((cell, i) => cell ? [String(i), cell] : null).filter(Boolean));
     const moveId = `${uid}-auto-${Date.now()}`;
     room.lastMove = { by: uid, index, captured, moveId, autoPlayed: true, runeId: card.id };
-    room.turnDeadlineAt = Date.now() + 30000;
+    const nextTurnStartsAt = Date.now() + (captured.length ? 1100 : 0);
+    room.turnStartsAt = nextTurnStartsAt;
+    room.turnDeadlineAt = nextTurnStartsAt + 30000;
     room.updatedAt = Date.now();
     playedCard = card; playedIndex = index; capturedResult = captured; rejectionReason = '';
     return room;
@@ -214,6 +224,7 @@ export const startOnlineTurnClock = async (roomId) => {
     if (board.some(Boolean)) return;
     const now = Date.now();
     room.firstTurnClockStartedAt = now;
+    room.turnStartsAt = now;
     room.turnDeadlineAt = now + 30000;
     return room;
   }, { applyLocally: false });
