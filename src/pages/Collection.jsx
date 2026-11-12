@@ -96,21 +96,21 @@ const Collection = () => {
         <div className="deck-hero-header">
           <button
             type="button"
-            className="deck-tool-button deck-random-button"
-            onClick={() => setPendingDeckAction('random')}
-            disabled={unlockedCount === 0}
-            title="Crear mazo aleatorio"
-            aria-label="Crear mazo aleatorio con mis runas"
-          >🎲</button>
-          <h2 className="deck-hero-title">⚔️ MAZO DE BATALLA</h2>
-          <button
-            type="button"
             className="deck-tool-button deck-clear-button"
             onClick={() => setPendingDeckAction('clear')}
             disabled={deck.length === 0}
             title="Vaciar mazo"
             aria-label="Vaciar todo el mazo"
           >🗑️</button>
+          <h2 className="deck-hero-title">⚔️ MAZO DE BATALLA</h2>
+          <button
+            type="button"
+            className="deck-tool-button deck-random-button"
+            onClick={() => setPendingDeckAction('random')}
+            disabled={unlockedCount === 0}
+            title="Crear mazo aleatorio"
+            aria-label="Crear mazo aleatorio con mis runas"
+          >🎲</button>
         </div>
         <div className="deck-hero-grid deck-grid-online">
           {Array.from({ length: DECK_SIZE }).map((_, index) => {
