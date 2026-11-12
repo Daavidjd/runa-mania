@@ -233,6 +233,39 @@
 
 .rune-battle.br-flip {
   animation: tileFlip 0.6s ease-in-out;
+  transform-style: preserve-3d;
+}
+
+/* Durante una captura se mantiene el color anterior hasta el punto medio
+   del giro. Al quedar la carta de canto aparece el color del nuevo dueño. */
+.rune-battle.br-flip::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  z-index: 1;
+  pointer-events: none;
+  animation: tileFlipColorReveal 0.6s ease-in-out forwards;
+}
+
+/* La carta azul estaba en manos del rival rojo. */
+.rune-battle.br-flip.battle-player::before {
+  background: #ff2d52;
+}
+
+/* La carta roja estaba en manos del jugador azul. */
+.rune-battle.br-flip.battle-ai::before {
+  background: #009dff;
+}
+
+/* El marco interior y las flechas permanecen visibles sobre la capa de color. */
+.rune-battle .battle-inner {
+  z-index: 2;
+}
+
+@keyframes tileFlipColorReveal {
+  0%, 44% { opacity: 1; }
+  50%, 100% { opacity: 0; }
 }
 
 @keyframes tileFlip {
