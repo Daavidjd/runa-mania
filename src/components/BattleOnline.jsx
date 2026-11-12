@@ -325,7 +325,7 @@ const BattleOnline = () => {
     // Cartas restantes del rival (su mazo inicial menos las jugadas)
     const oppUid = Object.keys(room.players || {}).find(k => k !== myUidRef.current && room.players[k]);
     const oppDeckSize = room.deckSizes?.[oppUid] || 8;
-    const playedByOpp = remoteBoard.filter(c => c && c.owner === oppColor).length;
+    const playedByOpp = colored.filter(c => c && c.owner === oppColor).length;
     setOppHandCount(Math.max(0, oppDeckSize - playedByOpp));
 
     // Animación del último movimiento remoto
