@@ -11,7 +11,7 @@ import {
   completeMatchmaking,
   leaveMatchmakingQueue
 } from '../services/firestore';
-import { joinOnlineRoom, watchRoom, leaveOnlineRoom, updateOnlineRoom, playOnlineMove, claimOnlineTimeout, claimOnlineForfeit, forfeitOnlineRoom, startOnlineTurnClock } from '../services/realtime';
+import { joinOnlineRoom, watchRoom, leaveOnlineRoom, updateOnlineRoom, playOnlineMove, claimOnlineForfeit, forfeitOnlineRoom, startOnlineTurnClock, playRandomOnlineMove } from '../services/realtime';
 
 import { RUNES_DB } from '../data/runes';
 import { AVATAR_OPTIONS } from '../data/avatars';
@@ -382,14 +382,24 @@ const BattleOnline = () => {
     const tick = () => {
       const seconds = Math.max(0, Math.ceil((Number(room.turnDeadlineAt) - Date.now()) / 1000));
       setTimerRemaining(seconds);
-      if (seconds === 0 && !timeoutClaimRef.current) {
+      const occupied = board.filter(Boolean).length;
+      const activeUid = occupied % 2 === 0 ? room.blueUid : room.redUid;
+      if (seconds === 0 && activeUid === myUid && !timeoutClaimRef.current) {
         timeoutClaimRef.current = true;
-        claimOnlineTimeout(roomIdRef.current).catch(error => { timeoutClaimRef.current = false; console.error('Error reclamando turno por tiempo:', error); });
+        playRandomOnlineMove(roomIdRef.current, myUid, myHand).then(result => {
+          if (result.committed && result.card) {
+            setMyHand(prev => { const index = prev.findIndex(card => card.id === result.card.id); return index < 0 ? prev : prev.filter((_, i) => i !== index); });
+            setSelectedCard(null); setLastPlaced(result.index);
+          } else if (result.reason) {
+            console.info('Jugada automática:', result.reason);
+            if (result.reason !== 'El turno todavía tiene tiempo' && result.reason !== 'Ya no es tu turno') timeoutClaimRef.current = false;
+          }
+        }).catch(error => { timeoutClaimRef.current = false; console.error('Error en la jugada automática:', error); });
       }
     };
     tick(); const interval = setInterval(tick, 150);
     return () => clearInterval(interval);
-  }, [phase, gameOver, room.turnDeadlineAt]);
+  }, [phase, gameOver, room.turnDeadlineAt, room.blueUid, room.redUid, board, myUid, myHand]);
 
   const handleLeaveBattle = async () => {
     if (roomIdRef.current && user?.uid) {
@@ -592,11 +602,9 @@ const BattleOnline = () => {
         </div>
         <div className="bo-score-cluster">
           {!myTurn && (
-          {myTurn && (
-          <div className="bo-turn-timer" style={{ '--timer-progress': (timerRemaining / 30) * 100 + '%' }}>
-            <span>{timerRemaining}</span>
-          </div>
-          )}
+            <div className="bo-turn-timer" style={{ '--timer-progress': (timerRemaining / 30) * 100 + '%' }}>
+              <span>{timerRemaining}</span>
+            </div>
           )}
           <div className="bp-score-badge-box bp-score-ai-box">
             <span className="bp-score-badge-label">PUNTOS</span>
@@ -681,9 +689,11 @@ const BattleOnline = () => {
           </div>
         </div>
         <div className="bo-score-cluster">
-          <div className="bo-turn-timer" style={{ '--timer-progress': (timerRemaining / 30) * 100 + '%' }}>
-            <span>{timerRemaining}</span>
-          </div>
+          {myTurn && (
+            <div className="bo-turn-timer" style={{ '--timer-progress': (timerRemaining / 30) * 100 + '%' }}>
+              <span>{timerRemaining}</span>
+            </div>
+          )}
           <div className="bp-score-badge-box bp-score-self-box">
             <span className="bp-score-badge-label">TUS PUNTOS</span>
             <span className="bp-score-badge-value">{scores.me}</span>
