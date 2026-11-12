@@ -1,5 +1,4 @@
 import { useState, useEffect, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { AVATAR_OPTIONS } from '../data/avatars';
 import {
@@ -10,13 +9,7 @@ import {
   sendFriendRequest,
   acceptFriendRequest,
   declineFriendRequest,
-  removeFriend,
-  createBattleChallenge,
-  getPendingChallengesFor,
-  getOutgoingPendingChallenges,
-  acceptChallenge,
-  declineChallenge,
-  watchChallenge
+  removeFriend
 } from '../services/firestore';
 import './FriendsPanel.css';
 
@@ -28,372 +21,265 @@ const avatarSrc = (avatarId) => {
 const TABS = [
   { id: 'friends', label: '👥 Amigos' },
   { id: 'requests', label: '✉️ Solicitudes' },
-  { id: 'add', label: '➕ Añadir' },
-  { id: 'challenges', label: '⚔️ Retos' }
+  { id: 'add', label: '➕ Añadir' }
 ];
 
 const FriendsPanel = ({ profile, open = true, onClose }) => {
-  const navigate = useNavigate();
   const { user } = useAuth();
-
-  // =========================================================================
-  // 1. TODOS LOS HOOKS DE ESTADO (Siempre en la parte superior)
-  // =========================================================================
   const [tab, setTab] = useState('friends');
   const [friends, setFriends] = useState([]);
   const [incoming, setIncoming] = useState([]);
   const [outgoing, setOutgoing] = useState([]);
-  const [challenges, setChallenges] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [toast, setToast] = useState(null);
-
   const [searchCode, setSearchCode] = useState('');
   const [searchResults, setSearchResults] = useState([]);
   const [searching, setSearching] = useState(false);
-  const [sentRequests, setSentRequests] = useState({});
+  const [busyUid, setBusyUid] = useState('');
 
-  // =========================================================================
-  // 2. TODOS LOS HOOKS DE EFECTO Y CALLBACK (Siempre en la parte superior)
-  // =========================================================================
   const showToast = useCallback((msg, ok = true) => {
     setToast({ msg, ok });
-    setTimeout(() => setToast(null), 2600);
+    window.setTimeout(() => setToast(null), 2800);
   }, []);
 
-  const refreshAll = useCallback(async () => {
+  const refreshAll = useCallback(async (quiet = false) => {
     if (!user) return;
-    setLoading(true);
+    quiet ? setRefreshing(true) : setLoading(true);
     try {
-      const [f, inc, out, ch] = await Promise.all([
+      const [friendList, received, sent] = await Promise.all([
         getFriends(user.uid),
         getIncomingRequests(user.uid),
-        getOutgoingRequests(user.uid),
-        getPendingChallengesFor(user.uid)
+        getOutgoingRequests(user.uid)
       ]);
-      setFriends(f);
-      setIncoming(inc);
-      setOutgoing(out);
-      setChallenges(ch);
-    } catch (err) {
-      console.error('Error cargando datos sociales:', err);
+      setFriends(friendList.sort((a, b) => (a.username || '').localeCompare(b.username || '', 'es')));
+      setIncoming(received);
+      setOutgoing(sent);
+    } catch (error) {
+      console.error('Error cargando amigos:', error);
+      showToast('No se pudo actualizar tu lista social', false);
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
-  }, [user]);
+  }, [user, showToast]);
 
   useEffect(() => {
-    if (open !== false) refreshAll();
+    if (open) refreshAll();
   }, [open, refreshAll]);
 
   useEffect(() => {
-    if (!open) return;
-    const onKey = (e) => { if (e.key === 'Escape' && onClose) onClose(); };
+    if (!open) return undefined;
+    const onKey = (event) => {
+      if (event.key === 'Escape') onClose?.();
+    };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, [open, onClose]);
 
-  // ✅ MOVIDOS ARRIBA: Estos son useCallback (Hooks) y deben estar antes del return
-  const isFriend = useCallback((uid) => friends.some(f => f.uid === uid), [friends]);
-  const isRequested = useCallback((uid) => outgoing.some(o => o.to === uid) || sentRequests[uid], [outgoing, sentRequests]);
+  const isFriend = useCallback((uid) => friends.some(friend => friend.uid === uid), [friends]);
+  const isRequested = useCallback((uid) => outgoing.some(request => request.to === uid), [outgoing]);
 
-  // ⚔️ Si el rival ACEPTA un reto que nosotros enviamos, entramos directo a la arena
-  useEffect(() => {
-    if (!open || !user) return undefined;
-    let cancelled = false;
-    let unsubs = [];
-    const setupWatchers = async () => {
-      const outgoing = await getOutgoingPendingChallenges(user.uid);
-      if (cancelled || outgoing.length === 0) return;
-      unsubs = outgoing.map(ch => watchChallenge(ch.id, (data) => {
-        if (cancelled || !data) return;
-        if (data.status === 'accepted') {
-          unsubs.forEach(u => u());
-          localStorage.setItem('onlineBattle', JSON.stringify({
-            challengeId: ch.id,
-            roomId: data.roomId || ch.id,
-            opponentUid: data.to,
-            opponentName: (friends.find(f => f.uid === data.to)?.username) || 'Rival',
-            opponentAvatarId: (friends.find(f => f.uid === data.to)?.avatarId) || 'mago',
-            role: 'challenger'
-          }));
-          localStorage.removeItem('pendingOutgoingChallenge');
-          showToast('⚔️ ¡Tu rival aceptó el reto! Entrando a la arena...');
-          setTimeout(() => navigate('/battle-online'), 900);
-          cancelled = true;
-        } else if (data.status === 'declined') {
-          showToast(`${data.toName || 'El rival'} rechazó tu reto`, false);
-          refreshAll();
-        }
-      }));
-    };
-    setupWatchers();
-    return () => { cancelled = true; unsubs.forEach(u => u()); };
-  }, [open, user, friends, navigate, showToast, refreshAll]);
-
-  // =========================================================================
-  // 3. EARLY RETURN (Ahora sí, después de TODOS los hooks)
-  // =========================================================================
   if (!open) return null;
 
-  // =========================================================================
-  // 4. FUNCIONES DE LÓGICA (No son hooks, pueden ir aquí)
-  // =========================================================================
-  const handleSearch = async (e) => {
-    e?.preventDefault();
-    const code = searchCode.trim();
+  const handleSearch = async (event) => {
+    event?.preventDefault();
+    const code = searchCode.trim().toUpperCase().replace(/^#/, '');
     if (code.length < 3) {
-      showToast('El ID debe tener al menos 3 caracteres', false);
+      showToast('Introduce al menos 3 caracteres del código', false);
       return;
     }
     setSearching(true);
-    const results = await searchUserByCode(code);
-    setSearchResults(results.filter(r => r.uid !== user.uid));
-    setSearching(false);
-    if (results.filter(r => r.uid !== user.uid).length === 0) {
-      showToast('No se encontró ningún invocador con ese ID', false);
+    try {
+      const results = await searchUserByCode(code);
+      setSearchResults(results.filter(result => result.uid !== user.uid));
+      if (!results.some(result => result.uid !== user.uid)) {
+        showToast('No encontramos ningún invocador con ese código', false);
+      }
+    } catch (error) {
+      console.error('Error buscando invocadores:', error);
+      showToast('No se pudo realizar la búsqueda', false);
+    } finally {
+      setSearching(false);
     }
   };
 
   const handleSendRequest = async (targetUid) => {
-    const res = await sendFriendRequest(user.uid, targetUid);
-    showToast(res.message, res.success);
-    if (res.success) {
-      setSentRequests(prev => ({ ...prev, [targetUid]: true }));
-      refreshAll();
+    setBusyUid(targetUid);
+    try {
+      const result = await sendFriendRequest(user.uid, targetUid);
+      showToast(result.message, result.success);
+      if (result.success) await refreshAll(true);
+    } finally {
+      setBusyUid('');
     }
   };
 
-  const handleAcceptRequest = async (req) => {
-    const res = await acceptFriendRequest(req.id, user.uid);
-    showToast(res.message, res.success);
-    refreshAll();
+  const handleAcceptRequest = async (request) => {
+    setBusyUid(request.id);
+    try {
+      const result = await acceptFriendRequest(request.id, user.uid);
+      showToast(result.message, result.success);
+      if (result.success) await refreshAll(true);
+    } finally {
+      setBusyUid('');
+    }
   };
 
-  const handleDeclineRequest = async (req) => {
-    const res = await declineFriendRequest(req.id);
-    showToast(res.message, res.success);
-    refreshAll();
+  const handleDeleteRequest = async (request) => {
+    setBusyUid(request.id);
+    try {
+      const result = await declineFriendRequest(request.id);
+      showToast(result.success ? 'Solicitud eliminada' : result.message, result.success);
+      if (result.success) await refreshAll(true);
+    } finally {
+      setBusyUid('');
+    }
   };
 
   const handleRemoveFriend = async (friend) => {
     if (!window.confirm(`¿Eliminar a ${friend.username || 'este invocador'} de tu lista de amigos?`)) return;
-    const res = await removeFriend(user.uid, friend.uid);
-    showToast(res.message, res.success);
-    refreshAll();
-  };
-
-  const handleChallenge = async (friend) => {
-    const res = await createBattleChallenge(user.uid, friend.uid);
-    showToast(`${res.message}${res.success ? ` Esperando a ${friend.username}...` : ''}`, res.success);
-    if (res.success) {
-      localStorage.setItem('pendingOutgoingChallenge', JSON.stringify({
-        challengeId: res.challengeId,
-        opponentUid: friend.uid,
-        opponentName: friend.username || 'Rival',
-        opponentAvatarId: friend.avatarId || 'mago'
-      }));
+    setBusyUid(friend.uid);
+    try {
+      const result = await removeFriend(user.uid, friend.uid);
+      showToast(result.message, result.success);
+      if (result.success) await refreshAll(true);
+    } finally {
+      setBusyUid('');
     }
   };
 
-  const handleAcceptChallenge = async (ch) => {
-    const res = await acceptChallenge(ch.id, user.uid);
-    showToast(res.message, res.success);
-    if (res.success) {
-      localStorage.setItem('onlineBattle', JSON.stringify({
-        challengeId: ch.id,
-        roomId: ch.roomId || ch.id, // la sala comparte id con el reto (creada en cliente)
-        opponentUid: ch.from,
-        opponentName: ch.fromName || 'Rival',
-        opponentAvatarId: ch.fromAvatarId || 'mago',
-        role: 'defender'
-      }));
-      navigate('/battle-online');
-    } else {
-      refreshAll();
+  const copyPlayerCode = async () => {
+    const code = profile?.playerCode || profile?.userId || '';
+    try {
+      await navigator.clipboard.writeText(code);
+      showToast('Código copiado. ¡Compártelo con tus amigos!');
+    } catch {
+      showToast(`Tu código es #${code}`, false);
     }
   };
 
-  const handleDeclineChallenge = async (ch) => {
-    const res = await declineChallenge(ch.id);
-    showToast(res.message, res.success);
-    refreshAll();
-  };
-
-  const totalBadges = incoming.length + challenges.length;
-
-  // =========================================================================
-  // 5. RENDERIZADO (JSX)
-  // =========================================================================
   return (
     <div className="fp-backdrop" onClick={onClose}>
-      <section className="fp-panel" onClick={(e) => e.stopPropagation()}>
+      <section className="fp-panel" onClick={(event) => event.stopPropagation()} role="dialog" aria-modal="true" aria-label="Gestión de amigos">
         <header className="fp-header">
-          <h3 className="fp-title">🌐 Zona Social</h3>
+          <div>
+            <h3 className="fp-title">👥 Amigos</h3>
+            <p className="fp-subtitle">Tu comunidad de invocadores</p>
+          </div>
           <div className="fp-header-actions">
-            <button className="fp-refresh" onClick={refreshAll} title="Actualizar">⟳</button>
-            <button className="fp-close" onClick={onClose} title="Cerrar">✕</button>
+            <button className="fp-refresh" onClick={() => refreshAll(true)} title="Actualizar" disabled={refreshing}>{refreshing ? '…' : '⟳'}</button>
+            <button className="fp-close" onClick={onClose} title="Cerrar" aria-label="Cerrar">✕</button>
           </div>
         </header>
 
-      {/* Mi código de amigo */}
-      <div className="fp-my-code" title="Copia este ID para que te agreguen">
-        <span className="fp-my-code-label">MI ID DE INVOCADOR</span>
-        <span
-          className="fp-my-code-value"
-          onClick={() => {
-            navigator.clipboard?.writeText(profile?.userId || '');
-            showToast('¡ID copiado al portapapeles! 📋');
-          }}
-        >
-          #{profile?.playerCode || profile?.userId || '----'} 📋
-        </span>
-      </div>
+        <button className="fp-my-code" onClick={copyPlayerCode} title="Copiar código de invocador">
+          <span className="fp-my-code-label">TU CÓDIGO DE INVOCADOR</span>
+          <span className="fp-my-code-value">#{profile?.playerCode || profile?.userId || '----'} <span aria-hidden="true">📋</span></span>
+        </button>
 
-      {/* Pestañas */}
-      <nav className="fp-tabs">
-        {TABS.map(t => (
-          <button
-            key={t.id}
-            className={`fp-tab ${tab === t.id ? 'active' : ''}`}
-            onClick={() => setTab(t.id)}
-          >
-            {t.label}
-          </button>
-        ))}
-      </nav>
+        <nav className="fp-tabs" aria-label="Secciones de amigos">
+          {TABS.map(item => (
+            <button key={item.id} className={`fp-tab ${tab === item.id ? 'active' : ''}`} onClick={() => setTab(item.id)}>
+              {item.label}
+              {item.id === 'requests' && incoming.length > 0 && <span className="fp-badge">{incoming.length}</span>}
+            </button>
+          ))}
+        </nav>
 
-      {loading ? (
-        <div className="fp-loading">Conectando con la red de invocadores...</div>
-      ) : (
-        <>
-          {/* ===== LISTA DE AMIGOS ===== */}
-          {tab === 'friends' && (
-            <div className="fp-list">
-              {friends.length === 0 ? (
-                <p className="fp-empty">Aún no tienes amigos. Ve a la pestaña <b>➕ Añadir</b> e invita a otros invocadores con su ID.</p>
-              ) : friends.map(f => (
-                <div key={f.uid} className="fp-row">
-                  <img src={avatarSrc(f.avatarId)} alt={f.username} className="fp-avatar" />
-                  <div className="fp-row-info">
-                    <span className="fp-row-name">{f.username || 'Invocador'}</span>
-                    <span className="fp-row-sub">Nv. {f.level || 1} · #{f.playerCode || f.userId} · 🏆 {f.onlineWins || 0}V / {f.onlineLosses || 0}D</span>
-                  </div>
-                  <div className="fp-row-actions">
-                    <button className="fp-btn fp-btn-challenge" onClick={() => handleChallenge(f)}>⚔️ Retar</button>
-                    <button className="fp-btn fp-btn-remove" onClick={() => handleRemoveFriend(f)}>🗑️</button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-
-          {/* ===== SOLICITUDES ===== */}
-          {tab === 'requests' && (
-            <div className="fp-list">
-              <h4 className="fp-section-label">Recibidas</h4>
-              {incoming.length === 0 && <p className="fp-empty">No tienes solicitudes pendientes.</p>}
-              {incoming.map(r => r.sender && (
-                <div key={r.id} className="fp-row">
-                  <img src={avatarSrc(r.sender.avatarId)} alt={r.sender.username} className="fp-avatar" />
-                  <div className="fp-row-info">
-                    <span className="fp-row-name">{r.sender.username || 'Invocador'}</span>
-                    <span className="fp-row-sub">Nv. {r.sender.level || 1} · #{r.sender.playerCode || r.sender.userId}</span>
-                  </div>
-                  <div className="fp-row-actions">
-                    <button className="fp-btn fp-btn-accept" onClick={() => handleAcceptRequest(r)}>✔️ Aceptar</button>
-                    <button className="fp-btn fp-btn-decline" onClick={() => handleDeclineRequest(r)}>✖️</button>
-                  </div>
-                </div>
-              ))}
-
-              <h4 className="fp-section-label">Enviadas</h4>
-              {outgoing.length === 0 && <p className="fp-empty">No has enviado solicitudes.</p>}
-              {outgoing.map(r => r.target && (
-                <div key={r.id} className="fp-row fp-row-muted">
-                  <img src={avatarSrc(r.target.avatarId)} alt={r.target.username} className="fp-avatar" />
-                  <div className="fp-row-info">
-                    <span className="fp-row-name">{r.target.username || 'Invocador'}</span>
-                    <span className="fp-row-sub">Esperando respuesta...</span>
-                  </div>
-                  <div className="fp-row-actions">
-                    <button className="fp-btn fp-btn-decline" onClick={() => handleDeclineRequest(r)}>Cancelar</button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-
-          {/* ===== AÑADIR AMIGOS ===== */}
-          {tab === 'add' && (
-            <div className="fp-add-area">
-              <form className="fp-search-form" onSubmit={handleSearch}>
-                <input
-                  type="text"
-                  className="fp-search-input"
-                  placeholder="Código del invocador (ej: K7RM2Q)"
-                  value={searchCode}
-                  onChange={(e) => setSearchCode(e.target.value.toUpperCase())}
-                  maxLength={12}
-                />
-                <button type="submit" className="fp-btn fp-btn-search" disabled={searching}>
-                  {searching ? '...' : '🔍 Buscar'}
-                </button>
-              </form>
-
+        {loading ? (
+          <div className="fp-loading">Cargando tu lista de amigos…</div>
+        ) : (
+          <>
+            {tab === 'friends' && (
               <div className="fp-list">
-                {searchResults.map(r => (
-                  <div key={r.uid} className="fp-row">
-                    <img src={avatarSrc(r.avatarId)} alt={r.username} className="fp-avatar" />
+                <div className="fp-list-heading"><span>{friends.length} {friends.length === 1 ? 'amigo' : 'amigos'}</span><span>Invocadores</span></div>
+                {friends.length === 0 ? (
+                  <div className="fp-empty-state">
+                    <span className="fp-empty-icon">🫂</span>
+                    <p className="fp-empty">Todavía no tienes amigos.</p>
+                    <p className="fp-hint">Busca a otros jugadores por su código para empezar a crear tu comunidad.</p>
+                    <button className="fp-btn fp-btn-add" onClick={() => setTab('add')}>➕ Buscar amigos</button>
+                  </div>
+                ) : friends.map(friend => (
+                  <div key={friend.uid} className="fp-row">
+                    <img src={avatarSrc(friend.avatarId)} alt="" className="fp-avatar" />
                     <div className="fp-row-info">
-                      <span className="fp-row-name">{r.username || 'Invocador'}</span>
-                      <span className="fp-row-sub">Nv. {r.level || 1} · #{r.userId}</span>
+                      <span className="fp-row-name">{friend.username || 'Invocador'}</span>
+                      <span className="fp-row-sub">Nv. {friend.level || 1} · #{friend.playerCode || friend.userId || '—'}</span>
                     </div>
                     <div className="fp-row-actions">
-                      {isFriend(r.uid) ? (
-                        <span className="fp-tag-friend">Ya es amigo ✔️</span>
-                      ) : isRequested(r.uid) ? (
-                        <span className="fp-tag-pending">Pendiente ✉️</span>
-                      ) : (
-                        <button className="fp-btn fp-btn-add" onClick={() => handleSendRequest(r.uid)}>➕ Agregar</button>
-                      )}
+                      <button className="fp-btn fp-btn-remove" onClick={() => handleRemoveFriend(friend)} disabled={busyUid === friend.uid} title="Eliminar amigo">Eliminar</button>
                     </div>
                   </div>
                 ))}
-                {searchResults.length === 0 && (
-                  <p className="fp-empty">
-                    Comparte tu <b>#{profile?.playerCode || profile?.userId}</b> con otros invocadores. Ellos deben buscarte por ese ID y viceversa. 💡 Si ambos se envían solicitud, se aceptan automáticamente.
-                  </p>
-                )}
               </div>
-            </div>
-          )}
+            )}
 
-          {/* ===== RETOS ===== */}
-          {tab === 'challenges' && (
-            <div className="fp-list">
-              {totalBadges === 0 && challenges.length === 0 && (
-                <p className="fp-empty">No tienes retos pendientes. ¡Reta a un amigo desde la pestaña <b>👥 Amigos</b>!</p>
-              )}
-              {challenges.map(ch => (
-                <div key={ch.id} className="fp-row fp-row-challenge">
-                  <img src={avatarSrc(ch.fromAvatarId)} alt={ch.fromName} className="fp-avatar fp-avatar-red" />
-                  <div className="fp-row-info">
-                    <span className="fp-row-name">⚔️ {ch.fromName || 'Rival'} te reta</span>
-                    <span className="fp-row-sub">Batalla en línea · Recompensa: 🪙 30 monedas</span>
+            {tab === 'requests' && (
+              <div className="fp-list">
+                <h4 className="fp-section-label">Recibidas · {incoming.length}</h4>
+                {incoming.length === 0 && <p className="fp-empty">No tienes solicitudes pendientes.</p>}
+                {incoming.map(request => request.sender && (
+                  <div key={request.id} className="fp-row">
+                    <img src={avatarSrc(request.sender.avatarId)} alt="" className="fp-avatar" />
+                    <div className="fp-row-info">
+                      <span className="fp-row-name">{request.sender.username || 'Invocador'}</span>
+                      <span className="fp-row-sub">Nv. {request.sender.level || 1} · #{request.sender.playerCode || request.sender.userId || '—'}</span>
+                    </div>
+                    <div className="fp-row-actions">
+                      <button className="fp-btn fp-btn-accept" onClick={() => handleAcceptRequest(request)} disabled={busyUid === request.id}>Aceptar</button>
+                      <button className="fp-btn fp-btn-decline" onClick={() => handleDeleteRequest(request)} disabled={busyUid === request.id}>✕</button>
+                    </div>
                   </div>
-                  <div className="fp-row-actions">
-                    <button className="fp-btn fp-btn-accept" onClick={() => handleAcceptChallenge(ch)}>🛡️ Aceptar</button>
-                    <button className="fp-btn fp-btn-decline" onClick={() => handleDeclineChallenge(ch)}>🏳️ Rechazar</button>
+                ))}
+
+                <h4 className="fp-section-label">Enviadas · {outgoing.length}</h4>
+                {outgoing.length === 0 && <p className="fp-empty">No has enviado solicitudes pendientes.</p>}
+                {outgoing.map(request => request.target && (
+                  <div key={request.id} className="fp-row fp-row-muted">
+                    <img src={avatarSrc(request.target.avatarId)} alt="" className="fp-avatar" />
+                    <div className="fp-row-info">
+                      <span className="fp-row-name">{request.target.username || 'Invocador'}</span>
+                      <span className="fp-row-sub">Solicitud pendiente</span>
+                    </div>
+                    <div className="fp-row-actions">
+                      <button className="fp-btn fp-btn-decline" onClick={() => handleDeleteRequest(request)} disabled={busyUid === request.id}>Cancelar</button>
+                    </div>
                   </div>
+                ))}
+              </div>
+            )}
+
+            {tab === 'add' && (
+              <div className="fp-add-area">
+                <p className="fp-hint">Introduce el código de otro invocador para encontrarlo y enviarle una solicitud.</p>
+                <form className="fp-search-form" onSubmit={handleSearch}>
+                  <input type="text" className="fp-search-input" placeholder="Código de invocador (ej. K7RM2Q)" value={searchCode} onChange={event => setSearchCode(event.target.value.toUpperCase())} maxLength={13} autoComplete="off" />
+                  <button type="submit" className="fp-btn fp-btn-search" disabled={searching || searchCode.trim().length < 3}>{searching ? 'Buscando…' : '🔍 Buscar'}</button>
+                </form>
+                <div className="fp-list">
+                  {searchResults.map(result => (
+                    <div key={result.uid} className="fp-row">
+                      <img src={avatarSrc(result.avatarId)} alt="" className="fp-avatar" />
+                      <div className="fp-row-info">
+                        <span className="fp-row-name">{result.username || 'Invocador'}</span>
+                        <span className="fp-row-sub">Nv. {result.level || 1} · #{result.playerCode || result.userId || '—'}</span>
+                      </div>
+                      <div className="fp-row-actions">
+                        {isFriend(result.uid) ? <span className="fp-tag-friend">Amigo ✓</span> :
+                          isRequested(result.uid) ? <span className="fp-tag-pending">Pendiente ✉️</span> :
+                          <button className="fp-btn fp-btn-add" onClick={() => handleSendRequest(result.uid)} disabled={busyUid === result.uid}>{busyUid === result.uid ? '…' : '➕ Añadir'}</button>}
+                      </div>
+                    </div>
+                  ))}
+                  {searchResults.length === 0 && <p className="fp-empty">Los resultados aparecerán aquí. Tu código está arriba: compártelo para que también puedan encontrarte.</p>}
                 </div>
-              ))}
-            </div>
-          )}
-        </>
-      )}
-        {toast && (
-          <div className={`fp-toast ${toast.ok ? 'ok' : 'err'}`}>{toast.msg}</div>
+              </div>
+            )}
+          </>
         )}
+        {toast && <div className={`fp-toast ${toast.ok ? 'ok' : 'err'}`} role="status">{toast.msg}</div>}
       </section>
     </div>
   );
