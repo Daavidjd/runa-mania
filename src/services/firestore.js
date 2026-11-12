@@ -611,21 +611,37 @@ export const watchChallenge = (challengeId, callback) => {
   });
 };
 
-// Guardar resultado de una batalla online (estadísticas del perfil)
-export const recordOnlineBattleResult = async (userId, won) => {
+// Recompensas online equilibradas. El identificador de sala evita pagar dos veces
+// si React vuelve a ejecutar el efecto o ambos clientes reportan el mismo resultado.
+export const ONLINE_BATTLE_REWARDS = {
+  win: { coins: 35, xp: 25 },
+  draw: { coins: 20, xp: 12 },
+  loss: { coins: 10, xp: 5 }
+};
+
+export const recordOnlineBattleResult = async (userId, outcome, matchId) => {
   try {
-    const ref = doc(db, 'users', userId);
-    const snap = await getDoc(ref);
-    if (!snap.exists()) return;
-    const data = snap.data();
-    const wins = data.onlineWins || 0;
-    const losses = data.onlineLosses || 0;
-    const updates = won
-      ? { onlineWins: wins + 1, coins: (data.coins || 0) + 30, xp: (data.xp || 0) + 25 }
-      : { onlineLosses: losses + 1, coins: (data.coins || 0) + 5, xp: (data.xp || 0) + 5 };
-    await updateDoc(ref, updates);
+    if (!userId || !matchId || !['win', 'draw', 'loss'].includes(outcome)) return null;
+    const userRef = doc(db, 'users', userId);
+    return await runTransaction(db, async (transaction) => {
+      const snap = await transaction.get(userRef);
+      if (!snap.exists()) return null;
+      const data = snap.data();
+      if (data.lastOnlineRewardRoomId === matchId) return { alreadyRecorded: true };
+      const reward = ONLINE_BATTLE_REWARDS[outcome];
+      transaction.update(userRef, {
+        coins: (Number(data.coins) || 0) + reward.coins,
+        xp: (Number(data.xp) || 0) + reward.xp,
+        onlineWins: (Number(data.onlineWins) || 0) + (outcome === 'win' ? 1 : 0),
+        onlineLosses: (Number(data.onlineLosses) || 0) + (outcome === 'loss' ? 1 : 0),
+        onlineDraws: (Number(data.onlineDraws) || 0) + (outcome === 'draw' ? 1 : 0),
+        lastOnlineRewardRoomId: matchId
+      });
+      return { ...reward, outcome };
+    });
   } catch (error) {
     console.error('Error guardando resultado online:', error);
+    return null;
   }
 };
 
