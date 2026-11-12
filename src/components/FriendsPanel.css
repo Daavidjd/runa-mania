@@ -125,7 +125,7 @@
 /* --- Pestañas --- */
 .fp-tabs {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(3, 1fr);
   gap: 6px;
   margin-bottom: 12px;
 }
@@ -335,4 +335,23 @@
 @keyframes fp-toast-in {
   from { opacity: 0; transform: translateX(-50%) translateY(12px); }
   to { opacity: 1; transform: translateX(-50%) translateY(0); }
+}
+
+.fp-subtitle { margin: -4px 0 0; color: #8fa0be; font-size: 10px; font-weight: 600; }
+.fp-my-code { width: 100%; cursor: pointer; text-align: left; }
+.fp-my-code:focus-visible, .fp-btn:focus-visible, .fp-tab:focus-visible { outline: 2px solid #00d4ff; outline-offset: 2px; }
+.fp-list-heading { display: flex; justify-content: space-between; align-items: center; color: #8fa0be; font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; padding: 2px 3px; }
+.fp-empty-state { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 8px; padding: 26px 16px; background: #0d1729; border: 1px dashed #304365; border-radius: 14px; }
+.fp-empty-icon { font-size: 32px; }
+.fp-hint { color: #8fa0be; font-size: 11px; line-height: 1.5; margin: 0 0 10px; }
+.fp-btn-remove { background: #26334a; color: #c4d0e4; box-shadow: 0 3px 0 #172236; }
+.fp-btn:disabled, .fp-refresh:disabled { opacity: .55; cursor: wait; transform: none; }
+@media (max-width: 420px) {
+  .fp-panel { padding: 12px; }
+  .fp-tabs { gap: 4px; }
+  .fp-tab { font-size: 9px; padding: 8px 2px; }
+  .fp-row { gap: 7px; padding: 7px; }
+  .fp-avatar { width: 36px; height: 36px; }
+  .fp-row-actions { gap: 4px; }
+  .fp-btn { padding: 6px 7px; font-size: 9px; }
 }
