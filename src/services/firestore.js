@@ -36,21 +36,24 @@ export const findRandomMatch = async (uid, name, avatarId) => {
   const ownRef = doc(db, MATCH_QUEUE, uid);
   const now = Date.now();
   try {
-    const ownSnap = await getDoc(ownRef);
-    const own = ownSnap.exists() ? ownSnap.data() : null;
-    if (own?.status === 'matched' && own.roomId && own.opponentUid) {
-      return matchedResult(uid, own);
-    }
-
-    const isFresh = own?.status === 'waiting'
-      && Number.isFinite(Number(own.lastSeenAt))
-      && now - Number(own.lastSeenAt) <= MATCH_QUEUE_STALE_MS;
-    const searchedAt = isFresh ? Number(own.searchedAt) : now;
-    const entry = {
-      uid, name: name || 'Invocador', avatarId: avatarId || 'mago',
-      status: 'waiting', searchedAt, lastSeenAt: now
-    };
-    await setDoc(ownRef, entry);
+    const registration = await runTransaction(db, async transaction => {
+      const ownSnap = await transaction.get(ownRef);
+      const own = ownSnap.exists() ? ownSnap.data() : null;
+      if (own?.status === 'matched' && own.roomId && own.opponentUid) {
+        return { matched: true, entry: own };
+      }
+      const isFresh = own?.status === 'waiting'
+        && Number.isFinite(Number(own.lastSeenAt))
+        && now - Number(own.lastSeenAt) <= MATCH_QUEUE_STALE_MS;
+      const searchedAt = isFresh ? Number(own.searchedAt) : now;
+      transaction.set(ownRef, {
+        uid, name: name || 'Invocador', avatarId: avatarId || 'mago',
+        status: 'waiting', searchedAt, lastSeenAt: now
+      });
+      return { matched: false, searchedAt };
+    });
+    if (registration.matched) return matchedResult(uid, registration.entry);
+    const searchedAt = registration.searchedAt;
 
     const queueSnap = await getDocs(query(
       collection(db, MATCH_QUEUE),
