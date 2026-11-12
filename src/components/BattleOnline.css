@@ -145,6 +145,16 @@
 
 .bo-leave { width: 100%; }
 
+.bo-leave.bo-cancel-search {
+  background: linear-gradient(180deg, #f05252 0%, #c62828 100%);
+  border: 3px solid #05070c;
+  color: #fff;
+  box-shadow: 0 5px 0 #05070c, inset 0 1px 0 rgba(255,255,255,.22);
+  text-shadow: 0 1px 2px rgba(0,0,0,.35);
+}
+.bo-leave.bo-cancel-search:hover { filter: brightness(1.08); }
+.bo-leave.bo-cancel-search:active { transform: translateY(4px); box-shadow: 0 1px 0 #05070c; }
+
 /* Cartas boca abajo del rival */
 .bo-card-back {
   width: 100%;
@@ -378,4 +388,35 @@
   .bo-turn-timer { width: 36px; height: 36px; flex-basis: 36px; }
   .bo-turn-timer span { font-size: 13px; }
   .bo-match-leave { padding: 5px 7px; }
+}
+
+
+/* La selección y los perfiles online respetan el color real de cada bando. */
+.bp-slot-player.bp-selected-red {
+  box-shadow: 0 8px 20px rgba(244, 67, 54, .62), 0 0 0 3px rgba(244, 67, 54, .9) !important;
+  filter: drop-shadow(0 0 8px rgba(244, 67, 54, .5));
+}
+.bo-avatar-red {
+  border-color: #f44336 !important;
+  box-shadow: 0 0 12px rgba(244, 67, 54, .4) !important;
+}
+.bo-avatar-blue {
+  border-color: #2196f3 !important;
+  box-shadow: 0 0 12px rgba(33, 150, 243, .35) !important;
+}
+
+/* En la vista roja, el fuego queda en la cara frontal de la moneda. */
+.bo-coin-red-first .bo-coin-blue {
+  transform: rotateY(180deg) translateZ(2px);
+}
+.bo-coin-red-first .bo-coin-red {
+  transform: rotateY(0deg) translateZ(2px);
+}
+.bo-coin-red-first.bo-coin-show-red {
+  animation: bo-coin-land-red-first 1.35s cubic-bezier(.18,.72,.25,1) both !important;
+}
+@keyframes bo-coin-land-red-first {
+  0% { transform: rotateY(-720deg) scale(.72); }
+  75% { transform: rotateY(-35deg) scale(1.08); }
+  100% { transform: rotateY(0deg) scale(1); }
 }
