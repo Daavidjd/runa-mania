@@ -361,6 +361,42 @@ const BattleOnline = () => {
     }
   }, [room, phase, myColor, oppColor, gameOver]);
 
+  // Detecta abandono cuando un jugador desaparece de la sala.
+  useEffect(() => {
+    if (!roomIdRef.current || !colorsAssigned || room.finished) return;
+    const bluePresent = !!room.players?.[room.blueUid]?.joinedAt;
+    const redPresent = !!room.players?.[room.redUid]?.joinedAt;
+    if (bluePresent !== redPresent) claimOnlineForfeit(roomIdRef.current).catch(error => console.error('Error resolviendo abandono:', error));
+  }, [room, colorsAssigned]);
+
+  useEffect(() => {
+    if (!room.finished || !room.winnerUid || gameOver) return;
+    setGameOver(true); setIWon(room.winnerUid === myUid); setShowEndModal(true);
+  }, [room.finished, room.winnerUid, gameOver, myUid]);
+
+  useEffect(() => {
+    if (phase !== 'playing' || gameOver || !room.turnDeadlineAt) return undefined;
+    timeoutClaimRef.current = false;
+    const tick = () => {
+      const seconds = Math.max(0, Math.ceil((Number(room.turnDeadlineAt) - Date.now()) / 1000));
+      setTimerRemaining(seconds);
+      if (seconds === 0 && !timeoutClaimRef.current) {
+        timeoutClaimRef.current = true;
+        claimOnlineTimeout(roomIdRef.current).catch(error => { timeoutClaimRef.current = false; console.error('Error reclamando turno por tiempo:', error); });
+      }
+    };
+    tick(); const interval = setInterval(tick, 150);
+    return () => clearInterval(interval);
+  }, [phase, gameOver, room.turnDeadlineAt]);
+
+  const handleLeaveBattle = async () => {
+    if (roomIdRef.current && user?.uid) {
+      try { await forfeitOnlineRoom(roomIdRef.current, user.uid); }
+      catch (error) { console.error('Error registrando abandono:', error); }
+    }
+    navigate('/home');
+  };
+
   // ---------- MI TURNO ----------
   const placedCount = board.filter(c => c !== null).length;
   // El que empieza coloca las jugadas 1ª, 3ª, 5ª... (índices pares ya colocados = su turno)
