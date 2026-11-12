@@ -149,7 +149,7 @@ const Collection = () => {
             return (
               <div key={rune.id} className="compact-item-wrapper">
                 <RuneCard rune={rune} owned={owned} onClick={() => setSelectedRune(rune)} />
-                {inDeck && <div className="compact-deck-badge" style={{ background: '#a855f7' }}>✓ EN MAZO</div>}
+                {inDeck && <div className="compact-deck-badge">✓ EN MAZO</div>}
               </div>
             );
           })}
