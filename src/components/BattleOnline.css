@@ -320,3 +320,38 @@
 @media (max-width: 360px) {
   .bo-lobby-player .bo-match-avatar { width: 76px; height: 76px; min-width: 76px; }
 }
+
+
+/* HUD online: reloj radial de 30 segundos junto al marcador. */
+.bo-score-cluster { display: flex; align-items: center; gap: 9px; }
+.bo-turn-timer {
+  --timer-progress: 100%;
+  width: 42px; height: 42px; flex: 0 0 42px; border-radius: 50%;
+  display: grid; place-items: center; position: relative;
+  background: conic-gradient(#ffd54a var(--timer-progress), rgba(255,255,255,.14) 0);
+  box-shadow: 0 0 12px rgba(255,213,74,.18);
+}
+.bo-turn-timer::before { content: ''; position: absolute; inset: 4px; border-radius: 50%; background: #101a2d; }
+.bo-turn-timer span { position: relative; z-index: 1; color: #fff; font-size: 15px; font-weight: 1000; font-variant-numeric: tabular-nums; }
+.bo-turn-timer[style*="0%"] { background: conic-gradient(#ff4545 100%, rgba(255,255,255,.14) 0); }
+.bo-match-leave { border: 1px solid rgba(255,110,110,.45); border-radius: 9px; padding: 6px 10px; color: #ffaaaa; background: rgba(130,25,35,.25); font-size: 10px; font-weight: 900; cursor: pointer; }
+.bo-match-leave:hover { background: rgba(180,35,45,.45); }
+
+/* El color de cada perfil y su marco reflejan el bando asignado. */
+.bp-player-strip.bp-color-red { border-color: rgba(244,67,54,.72); box-shadow: 0 0 18px rgba(244,67,54,.14); }
+.bp-player-strip.bp-color-red .bp-avatar-frame { border-color: #f44336 !important; box-shadow: 0 0 12px rgba(244,67,54,.4); }
+.bp-player-strip.bp-color-blue { border-color: rgba(33,150,243,.72); }
+.bp-player-strip.bp-color-blue .bp-avatar-frame { border-color: #2196f3 !important; box-shadow: 0 0 12px rgba(33,150,243,.35); }
+
+/* Perspectiva explícita para que la cara roja sea la cara posterior real. */
+.bo-coin { perspective: 700px; }
+.bo-coin-face { transform-origin: center; }
+.bo-coin-red { transform: rotateY(180deg) translateZ(2px); }
+.bo-coin-show-red { animation: bo-coin-land-red 1.35s cubic-bezier(.18,.72,.25,1) both !important; }
+.bo-coin-show-blue { animation: bo-coin-land-blue 1.35s cubic-bezier(.18,.72,.25,1) both !important; }
+@media (max-width: 420px) {
+  .bo-score-cluster { gap: 5px; }
+  .bo-turn-timer { width: 36px; height: 36px; flex-basis: 36px; }
+  .bo-turn-timer span { font-size: 13px; }
+  .bo-match-leave { padding: 5px 7px; }
+}
