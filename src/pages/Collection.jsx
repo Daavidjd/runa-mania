@@ -15,6 +15,7 @@ const Collection = () => {
   const [deck, setDeck] = useState([]);
   const [selectedDeckRune, setSelectedDeckRune] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [pendingDeckAction, setPendingDeckAction] = useState(null);
 
   const loadData = async () => {
     if (!user) return;
@@ -69,6 +70,22 @@ const Collection = () => {
   };
 
   const isInDeck = rune => deck.some(r => r.id === rune.id);
+
+  const confirmDeckAction = async () => {
+    if (pendingDeckAction === 'random') {
+      const availableRunes = Object.values(ownedRunes);
+      const shuffled = [...availableRunes];
+      for (let i = shuffled.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+      }
+      await persistDeck(shuffled.slice(0, DECK_SIZE));
+    } else if (pendingDeckAction === 'clear') {
+      await persistDeck([]);
+    }
+    setSelectedDeckRune(null);
+    setPendingDeckAction(null);
+  };
   const unlockedCount = Object.keys(ownedRunes).length;
 
   if (loading) return <div className="collection-loading">Cargando mazo y runas...</div>;
@@ -77,7 +94,23 @@ const Collection = () => {
     <div className="collection-screen">
       <section className="deck-hero-section">
         <div className="deck-hero-header">
+          <button
+            type="button"
+            className="deck-tool-button deck-random-button"
+            onClick={() => setPendingDeckAction('random')}
+            disabled={unlockedCount === 0}
+            title="Crear mazo aleatorio"
+            aria-label="Crear mazo aleatorio con mis runas"
+          >🎲</button>
           <h2 className="deck-hero-title">⚔️ MAZO DE BATALLA</h2>
+          <button
+            type="button"
+            className="deck-tool-button deck-clear-button"
+            onClick={() => setPendingDeckAction('clear')}
+            disabled={deck.length === 0}
+            title="Vaciar mazo"
+            aria-label="Vaciar todo el mazo"
+          >🗑️</button>
         </div>
         <div className="deck-hero-grid deck-grid-online">
           {Array.from({ length: DECK_SIZE }).map((_, index) => {
@@ -121,6 +154,32 @@ const Collection = () => {
           })}
         </div>
       </main>
+
+      {pendingDeckAction && (
+        <div className="deck-confirm-overlay" role="presentation" onClick={() => setPendingDeckAction(null)}>
+          <section
+            className="deck-confirm-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="deck-confirm-title"
+            onClick={event => event.stopPropagation()}
+          >
+            <div className="deck-confirm-icon">{pendingDeckAction === 'random' ? '🎲' : '🗑️'}</div>
+            <h3 id="deck-confirm-title">{pendingDeckAction === 'random' ? '¿MAZO ALEATORIO?' : '¿VACIAR EL MAZO?'}</h3>
+            <p>
+              {pendingDeckAction === 'random'
+                ? `Se elegirán hasta 8 runas al azar de las ${unlockedCount} que tienes. ¿Quieres continuar?`
+                : 'Se quitarán todas las runas de tu mazo. ¿Seguro que quieres continuar?'}
+            </p>
+            <div className="deck-confirm-actions">
+              <button type="button" className="deck-confirm-cancel" onClick={() => setPendingDeckAction(null)}>Cancelar</button>
+              <button type="button" className="deck-confirm-accept" onClick={confirmDeckAction}>
+                {pendingDeckAction === 'random' ? '¡Alea, crear!' : 'Sí, vaciar'}
+              </button>
+            </div>
+          </section>
+        </div>
+      )}
 
       {selectedRune && (
         <RuneDetail
