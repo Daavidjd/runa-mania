@@ -455,7 +455,7 @@ const BattleOnline = () => {
             <div className="bo-lobby-player bo-them">
               {oppJoined ? (
                 <>
-                  <img src={avatarSrcOf(oppProfile)} alt="rival" className="bp-avatar-frame" style={{ borderColor: oppColor === 'red' ? '#f44336' : oppColor === 'blue' ? '#2196f3' : '#888' }} />
+                  <img src={avatarSrcOf(oppProfile)} alt="rival" className="bp-avatar-frame bo-match-avatar" style={{ borderColor: oppColor === 'red' ? '#f44336' : oppColor === 'blue' ? '#2196f3' : '#888' }} />
                   <span className="bo-lobby-name bo-match-name">{battleData?.opponentName || 'Rival'}</span>
                   {colorsAssigned && <span className="bo-lobby-tag" style={{ color: oppColor === 'red' ? '#ff8a80' : '#4fc3f7' }}>{oppColor === 'red' ? '🔴 Rojo' : '🔵 Azul'}</span>}
                 </>
@@ -490,14 +490,14 @@ const BattleOnline = () => {
           <div className="bo-coin" aria-label="Moneda de agua y fuego"><span className="bo-coin-water">≈</span><span className="bo-coin-fire">♨</span></div>
           <div className="bo-vs-row bo-coinflip-names">
             <div className="bo-lobby-player bo-me">
-              <img src={avatarSrcOf(myProfile)} alt="yo" className="bp-avatar-frame" style={{ borderColor: myColor === 'red' ? '#f44336' : '#2196f3' }} />
+              <img src={avatarSrcOf(myProfile)} alt="yo" className="bp-avatar-frame bo-match-avatar" style={{ borderColor: myColor === 'red' ? '#f44336' : '#2196f3' }} />
               <span className="bo-lobby-name">{myProfile?.username || 'Tú'}</span>
               <span className="bo-lobby-tag" style={{ color: myColor === 'red' ? '#ff8a80' : '#4fc3f7' }}>{myColor === 'red' ? '🔴 Rojo' : '🔵 Azul'}</span>
             </div>
             <span className="bo-vs-bolt">VS</span>
             <div className="bo-lobby-player bo-them">
-              <img src={avatarSrcOf(oppProfile)} alt="rival" className="bp-avatar-frame" style={{ borderColor: oppColor === 'red' ? '#f44336' : '#2196f3' }} />
-              <span className="bo-lobby-name">{battleData?.opponentName || 'Rival'}</span>
+              <img src={avatarSrcOf(oppProfile)} alt="rival" className="bp-avatar-frame bo-match-avatar" style={{ borderColor: oppColor === 'red' ? '#f44336' : '#2196f3' }} />
+              <span className="bo-lobby-name bo-match-name">{battleData?.opponentName || oppProfile?.username || 'Rival'}</span>
               <span className="bo-lobby-tag" style={{ color: oppColor === 'red' ? '#ff8a80' : '#4fc3f7' }}>{oppColor === 'red' ? '🔴 Rojo' : '🔵 Azul'}</span>
             </div>
           </div>
