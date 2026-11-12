@@ -372,8 +372,10 @@ const BattleOnline = () => {
   }, [room]);
 
   useEffect(() => {
-    if (!room.finished || !room.winnerUid || gameOver) return;
-    setGameOver(true); setIWon(room.winnerUid === myUid); setShowEndModal(true);
+    if (!room.finished || gameOver) return;
+    setGameOver(true);
+    setIWon(room.winnerUid ? room.winnerUid === myUid : null);
+    setShowEndModal(true);
   }, [room.finished, room.winnerUid, gameOver, myUid]);
 
   useEffect(() => {
