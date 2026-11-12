@@ -114,6 +114,7 @@ const Battle = () => {
   const [loading, setLoading] = useState(true);
 
   const [flippingCells, setFlippingCells] = useState([]);
+  const [captureOwnerOverrides, setCaptureOwnerOverrides] = useState({});
   const [pendingCaptures, setPendingCaptures] = useState([]);
   const [lastPlaced, setLastPlaced] = useState(null);
   const [showEndModal, setShowEndModal] = useState(false);
@@ -166,6 +167,7 @@ const Battle = () => {
       setGameOver(false);
       setWinner(null);
       setFlippingCells([]);
+      setCaptureOwnerOverrides({});
       setPendingCaptures([]);
       setLastPlaced(null);
       setAttackDirs({});
@@ -238,6 +240,9 @@ const Battle = () => {
     const { board: resolved, captured } = resolveCaptures(newBoard, index, 'player');
     const finalBoard = applyCaptures(resolved, captured, 'player');
     const finalScores = calcScores(finalBoard);
+    if (captured.length > 0) {
+      setCaptureOwnerOverrides(Object.fromEntries(captured.map(ci => [ci, board[ci]?.owner])));
+    }
     setBoard(finalBoard);
     setPlayerHand(prev => prev.filter((_, i) => i !== selectedCard));
     setScores(finalScores);
@@ -250,6 +255,8 @@ const Battle = () => {
         setFlippingCells(captured);
         setPendingCaptures(captured);
         setAttackDirs({});
+        // A los 300 ms (mitad del giro) se revela el nuevo propietario.
+        setTimeout(() => setCaptureOwnerOverrides({}), 300);
         setTimeout(() => {
           setFlippingCells([]);
           setPendingCaptures([]);
@@ -326,6 +333,9 @@ const Battle = () => {
       const { board: resolved, captured } = resolveCaptures(newBoard, bestMove.bi, 'ai');
       const finalBoard = applyCaptures(resolved, captured, 'ai');
       const finalScores = calcScores(finalBoard);
+      if (captured.length > 0) {
+        setCaptureOwnerOverrides(Object.fromEntries(captured.map(ci => [ci, board[ci]?.owner])));
+      }
       setBoard(finalBoard);
       setAiHand(prev => prev.filter(r => r.id !== bestMove.card.id));
       setScores(finalScores);
@@ -337,6 +347,8 @@ const Battle = () => {
           setFlippingCells(captured);
           setPendingCaptures(captured);
           setAttackDirs({});
+          // El color cambia exactamente en el punto medio del giro.
+          setTimeout(() => setCaptureOwnerOverrides({}), 300);
           setTimeout(() => {
             setFlippingCells([]);
             setPendingCaptures([]);
@@ -438,15 +450,18 @@ const Battle = () => {
 
         <div className="bp-board-container">
           <div className="bp-grid-4x4">
-            {board.map((cell, i) => (
+            {board.map((cell, i) => {
+              const visualOwner = captureOwnerOverrides[i] || cell?.owner;
+              return (
               <div
                 key={i}
-                className={`bp-cell ${cell ? `bp-cell-${cell.owner}` : 'bp-cell-empty'} ${flippingCells.includes(i) || pendingCaptures.includes(i) ? 'bp-cell-flip' : ''} ${lastPlaced === i ? 'bp-cell-placed' : ''}`}
+                className={`bp-cell ${cell ? `bp-cell-${visualOwner}` : 'bp-cell-empty'} ${flippingCells.includes(i) || pendingCaptures.includes(i) ? 'bp-cell-flip' : ''} ${lastPlaced === i ? 'bp-cell-placed' : ''}`}
                 onClick={() => handleCellClick(i)}
               >
                 {cell ? (
                   <RuneCard
                     rune={cell}
+                    visualOwner={visualOwner}
                     owned={true}
                     battleMode={true}
                     isFlipping={flippingCells.includes(i) || pendingCaptures.includes(i)}
@@ -457,7 +472,8 @@ const Battle = () => {
                   <div className="bp-cell-slot-dot">᛭</div>
                 )}
               </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       </main>
