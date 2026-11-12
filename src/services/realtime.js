@@ -3,6 +3,8 @@ import {
 } from 'firebase/database';
 import { rtdb } from './firebase';
 
+const ROOM_PATH = 'onlineRooms';
+
 export const joinOnlineRoom = async (roomId, uid, displayName, matchOrder = []) => {
   const roomRef = ref(rtdb, `${ROOM_PATH}/${roomId}`);
   const now = Date.now();
