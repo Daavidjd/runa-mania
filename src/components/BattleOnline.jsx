@@ -180,11 +180,11 @@ const BattleOnline = () => {
       cancelled = true;
       unsubscribe?.();
       if (heartbeat) clearInterval(heartbeat);
-      // Al aceptar un match, no ejecutar la limpieza de "waiting":
-      // el documento ya pertenece a una reserva matched que el otro cliente escucha.
-      if (!accepted) {
-        leaveMatchmakingQueue(user.uid).catch(error => console.error('Error saliendo de la cola:', error));
-      }
+      // No borrar la cola desde el cleanup del efecto: en React StrictMode
+      // el efecto puede desmontarse/remontarse mientras findRandomMatch crea
+      // el documento. Esa carrera provoca 409 (verify exists:false).
+      // La salida voluntaria se limpia en cancelMatchmaking; el match aceptado
+      // se limpia en acceptMatch mediante completeMatchmaking.
     };
   }, [user, battleData?.searching]);
 
