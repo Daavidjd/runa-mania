@@ -34,7 +34,7 @@ export const joinOnlineRoom = async (roomId, uid, displayName, matchOrder = []) 
       room.blueUid = ordered.length === 2 ? ordered[0] : byArrival[0];
       room.redUid = joinedIds.find(id => id !== room.blueUid);
       if (!room.starterUid) {
-        room.starterUid = Math.random() < 0.5 ? room.blueUid : room.redUid;
+        room.starterUid = room.blueUid;
       }
       room.colorsAssignedAt = now;
     }
@@ -47,7 +47,8 @@ export const joinOnlineRoom = async (roomId, uid, displayName, matchOrder = []) 
 };
 
 // Registra una jugada contra la versión más reciente de la sala.
-// La transacción evita que dos clientes sobrescriban movimientos con tableros obsoletos.
+// Azul siempre juega con número par de casillas ocupadas; rojo con número impar.
+// La transacción evita sobrescrituras de movimientos concurrentes.
 export const playOnlineMove = async (roomId, uid, card, index, moveId) => {
   const roomRef = ref(rtdb, `${ROOM_PATH}/${roomId}`);
   let capturedResult = [];
@@ -61,7 +62,10 @@ export const playOnlineMove = async (roomId, uid, card, index, moveId) => {
       ? [...room.board]
       : Array(16).fill(null);
     const occupied = board.filter(Boolean).length;
-    const isMyTurn = room.starterUid === uid ? occupied % 2 === 0 : occupied % 2 === 1;
+    const isBlue = room.blueUid === uid;
+    const isRed = room.redUid === uid;
+    if (!isBlue && !isRed) { rejectionReason = 'No tienes un color asignado en esta sala'; return; }
+    const isMyTurn = isBlue ? occupied % 2 === 0 : occupied % 2 === 1;
     if (!isMyTurn) {
       rejectionReason = 'No es tu turno';
       return;
@@ -70,7 +74,7 @@ export const playOnlineMove = async (roomId, uid, card, index, moveId) => {
       rejectionReason = 'Esa casilla ya está ocupada';
       return;
     }
-    const myColor = room.blueUid === uid ? 'blue' : room.redUid === uid ? 'red' : null;
+    const myColor = isBlue ? 'blue' : 'red';
     if (!myColor) {
       rejectionReason = 'No tienes un color asignado en esta sala';
       return;

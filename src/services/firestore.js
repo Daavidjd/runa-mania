@@ -140,11 +140,13 @@ export const watchMatchmakingEntry = (uid, callback, onError) =>
 
 export const completeMatchmaking = async (uid, roomId) => {
   const queueRef = doc(db, MATCH_QUEUE, uid);
-  await runTransaction(db, async transaction => {
-    const snapshot = await transaction.get(queueRef);
-    if (snapshot.exists() && snapshot.data().status === 'matched'
-      && snapshot.data().roomId === roomId) transaction.delete(queueRef);
-  });
+  // Ya no hay heartbeat al aceptar el match: una lectura simple seguida de
+  // borrado evita una transacción de verificación innecesaria sobre la cola.
+  const snapshot = await getDoc(queueRef);
+  if (snapshot.exists() && snapshot.data().status === 'matched'
+    && snapshot.data().roomId === roomId) {
+    await deleteDoc(queueRef);
+  }
 };
 
 export const leaveMatchmakingQueue = async uid => {
