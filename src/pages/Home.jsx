@@ -4,8 +4,8 @@ import { useAuth } from '../context/AuthContext';
 import {
   getUserProfile,
   getPlayerDecks,
+  leaveMatchmakingQueue
 } from '../services/firestore';
-import { leaveQueue } from '../services/realtime';
 
 import { RUNES_DB } from '../data/runes';
 import { AVATAR_OPTIONS } from '../data/avatars'; // ✅ IMPORTACIÓN CENTRALIZADA
@@ -84,7 +84,7 @@ const Home = () => {
   const stopSearching = async () => {
     setSearching(false);
     localStorage.removeItem('randomMatchPending');
-    if (user) await leaveQueue(user.uid);
+    if (user) await leaveMatchmakingQueue(user.uid);
   };
 
   const handleRandomBattle = async () => {
