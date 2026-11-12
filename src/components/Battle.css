@@ -291,11 +291,17 @@
 .bp-btn:active { transform: translateY(4px); box-shadow: 0 1px 0 #05070c, inset 0 1px 0 rgba(255,255,255,.18); filter: brightness(.96); }
 
 .bp-btn-repeat {
-  background: #0284c7; border-color: #38bdf8; box-shadow: 0 4px 0 #0369a1; color: #ffffff;
+  background: #0284c7;
+  border-color: #05070c;
+  box-shadow: 0 5px 0 #05070c, inset 0 1px 0 rgba(255,255,255,.22);
+  color: #ffffff;
 }
 
 .bp-btn-exit {
-  background: #334155; border-color: #475569; box-shadow: 0 4px 0 #1e293b; color: #f1f5f9;
+  background: #334155;
+  border-color: #05070c;
+  box-shadow: 0 5px 0 #05070c, inset 0 1px 0 rgba(255,255,255,.16);
+  color: #f1f5f9;
 }
 
 /* Temblor */
