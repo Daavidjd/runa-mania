@@ -550,7 +550,20 @@ const BattleOnline = () => {
         <div className="bp-stars"></div>
         <div className="bo-lobby">
           <h2 className="bo-lobby-title">🎲 Volteo de moneda</h2>
-          <div className={`bo-coin ${myColor === "blue" ? "bo-coin-show-blue" : "bo-coin-show-red"}`} aria-label={myColor === "blue" ? "Cara azul, elemento agua" : "Cara roja, elemento fuego"}><div className="bo-coin-face bo-coin-blue"><span>≋</span><small>AGUA · AZUL</small></div><div className="bo-coin-face bo-coin-red"><span>♨</span><small>FUEGO · ROJO</small></div></div>
+          <div
+            className={`bo-coin ${myColor === "blue" ? "bo-coin-show-blue" : "bo-coin-show-red"}`}
+            role="img"
+            aria-label="Moneda de dos caras: azul con símbolo de agua y roja con símbolo de fuego"
+          >
+            <div className="bo-coin-face bo-coin-blue">
+              <span aria-hidden="true">🌊</span>
+              <small>AGUA · AZUL</small>
+            </div>
+            <div className="bo-coin-face bo-coin-red">
+              <span aria-hidden="true">🔥</span>
+              <small>FUEGO · ROJO</small>
+            </div>
+          </div>
           <div className="bo-vs-row bo-coinflip-names">
             <div className="bo-lobby-player bo-me">
               <img src={avatarSrcOf(myProfile)} alt="yo" className="bp-avatar-frame bo-match-avatar" style={{ borderColor: myColor === 'red' ? '#f44336' : '#2196f3' }} />
