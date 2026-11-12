@@ -258,7 +258,7 @@
 }
 
 
-/* Retrato simétrico para ambos invocadores en las pantallas de emparejamiento. */
+/* Avatares iguales y moneda de dos caras: cada jugador ve su elemento asignado. */
 .bo-lobby-player .bo-match-avatar {
   width: 88px;
   height: 88px;
@@ -277,33 +277,46 @@
   margin-top: 2px;
 }
 .bo-coin {
-  width: 104px;
-  height: 104px;
+  position: relative;
+  width: 112px;
+  height: 112px;
   margin: 10px auto;
   border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  overflow: hidden;
-  border: 5px solid #d6d9e2;
-  background: linear-gradient(90deg, #1478d4 0 50%, #d92f35 50% 100%);
-  box-shadow: 0 0 0 5px rgba(255,255,255,.08), 0 8px 22px rgba(0,0,0,.55), inset 0 0 0 3px rgba(255,255,255,.2);
-  animation: bo-coin-flip 1s ease-in-out infinite;
   transform-style: preserve-3d;
+  filter: drop-shadow(0 9px 13px rgba(0,0,0,.55));
 }
-.bo-coin-water, .bo-coin-fire {
-  width: 50%;
+.bo-coin-face {
+  position: absolute;
+  inset: 0;
+  border: 5px solid #d9dce5;
+  border-radius: 50%;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
-  color: #fff;
-  font-size: 38px;
-  font-weight: 900;
-  line-height: 1;
-  text-shadow: 0 2px 5px rgba(0,0,0,.45);
+  gap: 3px;
+  color: white;
+  text-shadow: 0 2px 5px rgba(0,0,0,.55);
+  box-shadow: inset 0 0 0 3px rgba(255,255,255,.18), inset 0 0 18px rgba(0,0,0,.22);
 }
-.bo-coin-water { background: linear-gradient(145deg, #39b9ff, #0752a5); height: 100%; }
-.bo-coin-fire { background: linear-gradient(145deg, #ff7548, #a90e25); height: 100%; }
+.bo-coin-face span { font-size: 46px; font-weight: 900; line-height: 1; }
+.bo-coin-face small { font-size: 8px; font-weight: 1000; letter-spacing: 1px; }
+.bo-coin-blue { background: radial-gradient(circle at 32% 25%, #52caff, #0875c7 55%, #063b83); transform: rotateY(0deg); }
+.bo-coin-red { background: radial-gradient(circle at 32% 25%, #ff9861, #df342e 55%, #811522); transform: rotateY(180deg); }
+.bo-coin-show-blue { animation: bo-coin-land-blue 1.35s cubic-bezier(.18,.72,.25,1) both; }
+.bo-coin-show-red { animation: bo-coin-land-red 1.35s cubic-bezier(.18,.72,.25,1) both; }
+@keyframes bo-coin-land-blue {
+  0% { transform: rotateY(-720deg) scale(.72); }
+  75% { transform: rotateY(35deg) scale(1.08); }
+  100% { transform: rotateY(0deg) scale(1); }
+}
+@keyframes bo-coin-land-red {
+  0% { transform: rotateY(-720deg) scale(.72); }
+  75% { transform: rotateY(215deg) scale(1.08); }
+  100% { transform: rotateY(180deg) scale(1); }
+}
 @media (max-width: 360px) {
   .bo-lobby-player .bo-match-avatar { width: 76px; height: 76px; min-width: 76px; }
 }
