@@ -551,7 +551,7 @@ const BattleOnline = () => {
         <div className="bo-lobby">
           <h2 className="bo-lobby-title">🎲 Volteo de moneda</h2>
           <div
-            className={`bo-coin ${myColor === "blue" ? "bo-coin-show-blue" : "bo-coin-show-red"}`}
+            className={`bo-coin ${myColor === "blue" ? "bo-coin-show-blue" : "bo-coin-show-red bo-coin-red-first"}`}
             role="img"
             aria-label="Moneda de dos caras: azul con símbolo de agua y roja con símbolo de fuego"
           >
@@ -566,13 +566,13 @@ const BattleOnline = () => {
           </div>
           <div className="bo-vs-row bo-coinflip-names">
             <div className="bo-lobby-player bo-me">
-              <img src={avatarSrcOf(myProfile)} alt="yo" className="bp-avatar-frame bo-match-avatar" style={{ borderColor: myColor === 'red' ? '#f44336' : '#2196f3' }} />
+              <img src={avatarSrcOf(myProfile)} alt="yo" className={`bp-avatar-frame bo-match-avatar bo-avatar-${myColor || "blue"}`} />
               <span className="bo-lobby-name bo-match-name">{myProfile?.username || 'Tú'}</span>
               <span className="bo-lobby-tag" style={{ color: myColor === 'red' ? '#ff8a80' : '#4fc3f7' }}>{myColor === 'red' ? '🔴 Rojo' : '🔵 Azul'}</span>
             </div>
             <span className="bo-vs-bolt">VS</span>
             <div className="bo-lobby-player bo-them">
-              <img src={avatarSrcOf(oppProfile)} alt="rival" className="bp-avatar-frame bo-match-avatar" style={{ borderColor: oppColor === 'red' ? '#f44336' : '#2196f3' }} />
+              <img src={avatarSrcOf(oppProfile)} alt="rival" className={`bp-avatar-frame bo-match-avatar bo-avatar-${oppColor || "blue"}`} />
               <span className="bo-lobby-name bo-match-name">{battleData?.opponentName || oppProfile?.username || 'Rival'}</span>
               <span className="bo-lobby-tag" style={{ color: oppColor === 'red' ? '#ff8a80' : '#4fc3f7' }}>{oppColor === 'red' ? '🔴 Rojo' : '🔵 Azul'}</span>
             </div>
@@ -597,8 +597,7 @@ const BattleOnline = () => {
           <img
             src={avatarSrcOf(oppProfile)}
             alt="rival"
-            className="bp-avatar-frame bp-enemy-frame"
-            style={{ borderColor: oppColor === 'red' ? '#f44336' : '#2196f3' }}
+            className={`bp-avatar-frame bp-enemy-frame bo-avatar-${oppColor || "blue"}`}
           />
           <div className="bp-user-names">
             <span className="bp-user-title">{battleData?.opponentName || oppProfile?.username || 'Rival'}</span>
@@ -669,7 +668,7 @@ const BattleOnline = () => {
           {myHand.map((r, i) => (
             <div
               key={`${r.id}-${i}`}
-              className={`bp-slot bp-slot-player ${selectedCard === i ? 'bp-selected' : ''} ${!myTurn ? 'bp-disabled' : ''}`}
+              className={`bp-slot bp-slot-player ${selectedCard === i ? (myColor === 'red' ? 'bp-selected bp-selected-red' : 'bp-selected') : ''} ${!myTurn ? 'bp-disabled' : ''}`}
               onClick={() => myTurn && setSelectedCard(i)}
             >
               <RuneCard rune={{ ...r, owner: myColor === 'red' ? 'ai' : 'player' }} owned={true} battleMode={true} />
@@ -684,8 +683,7 @@ const BattleOnline = () => {
           <img
             src={avatarSrcOf(myProfile)}
             alt="Tu Avatar"
-            className="bp-avatar-frame bp-self-frame"
-            style={{ borderColor: myColor === 'red' ? '#f44336' : '#2196f3' }}
+            className={`bp-avatar-frame bp-self-frame bo-avatar-${myColor || "blue"}`}
           />
           <div className="bp-user-names">
             <span className="bp-user-title">{myProfile?.username || 'Invocador'}</span>
