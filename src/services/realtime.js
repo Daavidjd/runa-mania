@@ -55,7 +55,7 @@ export const playOnlineMove = async (roomId, uid, card, index, moveId) => {
   let capturedResult = [];
   let rejectionReason = 'La jugada ya no es válida';
   const result = await runTransaction(roomRef, room => {
-    if (!room || !room.players?.[uid]?.joinedAt || !room.starterUid) {
+    if (!room || room.finished || !room.players?.[uid]?.joinedAt || !room.starterUid) {
       rejectionReason = 'La sala todavía no está preparada';
       return;
     }
@@ -71,6 +71,10 @@ export const playOnlineMove = async (roomId, uid, card, index, moveId) => {
       });
     }
     const occupied = board.filter(Boolean).length;
+    if (room.turnDeadlineAt && Date.now() > Number(room.turnDeadlineAt)) {
+      rejectionReason = 'Se agotó el tiempo de este turno';
+      return;
+    }
     const isBlue = room.blueUid === uid;
     const isRed = room.redUid === uid;
     if (!isBlue && !isRed) { rejectionReason = 'No tienes un color asignado en esta sala'; return; }
