@@ -309,33 +309,43 @@
   backface-visibility: hidden;
   -webkit-backface-visibility: hidden;
   display: flex;
-  flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 5px;
   color: white;
-  text-shadow: 0 2px 5px rgba(0,0,0,.55);
-  box-shadow: inset 0 0 0 3px rgba(255,255,255,.24), inset 0 0 20px rgba(0,0,0,.28), 0 0 0 2px rgba(91,61,20,.7);
+  text-shadow: 0 3px 7px rgba(0,0,0,.65);
+  box-shadow:
+    inset 0 0 0 3px rgba(255,255,255,.34),
+    inset 0 0 0 8px rgba(8,18,35,.22),
+    inset 0 0 24px rgba(0,0,0,.3),
+    0 0 0 2px rgba(91,61,20,.7);
+}
+.bo-coin-face::before {
+  content: '';
+  position: absolute;
+  inset: 9px;
+  border: 2px solid rgba(255,255,255,.34);
+  border-radius: 50%;
+  box-shadow: 0 0 12px rgba(255,255,255,.18), inset 0 0 12px rgba(255,255,255,.12);
+  pointer-events: none;
 }
 .bo-coin-face span {
+  position: relative;
+  z-index: 1;
   display: block;
   font-family: system-ui, sans-serif;
-  font-size: 54px;
+  font-size: 66px;
   line-height: 1;
-  filter: drop-shadow(0 3px 3px rgba(0,0,0,.38));
-}
-.bo-coin-face small {
-  font-size: 9px;
-  font-weight: 1000;
-  letter-spacing: 1.15px;
-  text-shadow: 0 2px 4px rgba(0,0,0,.7);
+  filter: drop-shadow(0 4px 3px rgba(0,0,0,.48));
+  transform: translateY(-1px);
 }
 .bo-coin-blue {
-  background: radial-gradient(circle at 30% 22%, #8be7ff 0%, #25a9ed 30%, #0875c7 62%, #063b83 100%);
+  background: radial-gradient(circle at 30% 22%, #b4f3ff 0%, #36c1ff 28%, #087ed5 62%, #052e70 100%);
+  border-color: #9beaff;
   transform: rotateY(0deg) translateZ(1px);
 }
 .bo-coin-red {
-  background: radial-gradient(circle at 30% 22%, #ffd08b 0%, #ff754b 30%, #df342e 62%, #811522 100%);
+  background: radial-gradient(circle at 30% 22%, #ffe0a3 0%, #ff805c 28%, #e52e3d 62%, #710d27 100%);
+  border-color: #ffc0a0;
   transform: rotateY(180deg) translateZ(1px);
 }
 .bo-coin-show-blue { animation: bo-coin-land-blue 1.35s cubic-bezier(.18,.72,.25,1) both; }
