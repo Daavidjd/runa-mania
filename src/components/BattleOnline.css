@@ -256,3 +256,54 @@
   0%, 22% { opacity: 1; transform: scale(1) rotate(0); }
   25%, 100% { opacity: 0; transform: scale(.72) rotate(-12deg); }
 }
+
+
+/* Retrato simétrico para ambos invocadores en las pantallas de emparejamiento. */
+.bo-lobby-player .bo-match-avatar {
+  width: 88px;
+  height: 88px;
+  min-width: 88px;
+  border-radius: 50%;
+  border-width: 3px;
+  object-fit: cover;
+  box-shadow: 0 0 20px rgba(80, 160, 255, .2);
+}
+.bo-lobby-player .bo-match-name {
+  display: block;
+  width: 100%;
+  max-width: 150px;
+  text-align: center;
+  font-size: 13px;
+  margin-top: 2px;
+}
+.bo-coin {
+  width: 104px;
+  height: 104px;
+  margin: 10px auto;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  border: 5px solid #d6d9e2;
+  background: linear-gradient(90deg, #1478d4 0 50%, #d92f35 50% 100%);
+  box-shadow: 0 0 0 5px rgba(255,255,255,.08), 0 8px 22px rgba(0,0,0,.55), inset 0 0 0 3px rgba(255,255,255,.2);
+  animation: bo-coin-flip 1s ease-in-out infinite;
+  transform-style: preserve-3d;
+}
+.bo-coin-water, .bo-coin-fire {
+  width: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-size: 38px;
+  font-weight: 900;
+  line-height: 1;
+  text-shadow: 0 2px 5px rgba(0,0,0,.45);
+}
+.bo-coin-water { background: linear-gradient(145deg, #39b9ff, #0752a5); height: 100%; }
+.bo-coin-fire { background: linear-gradient(145deg, #ff7548, #a90e25); height: 100%; }
+@media (max-width: 360px) {
+  .bo-lobby-player .bo-match-avatar { width: 76px; height: 76px; min-width: 76px; }
+}
