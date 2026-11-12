@@ -334,3 +334,14 @@
     filter: drop-shadow(0 2px 2px rgba(0,0,0,0.6)); 
   }
 }
+
+/* Evita selección, arrastre y menú contextual sobre ilustraciones de runas. */
+.rune-art-protected,
+.rune-card img {
+  -webkit-user-drag: none;
+  -webkit-touch-callout: none;
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+}
