@@ -5,9 +5,13 @@ import {
   getUserProfile,
   getUserActiveDeck,
   watchChallenge,
-  recordOnlineBattleResult
+  recordOnlineBattleResult,
+  findRandomMatch,
+  watchMatchmakingEntry,
+  completeMatchmaking,
+  leaveMatchmakingQueue
 } from '../services/firestore';
-import { findRandomMatch, watchMyQueueEntry, completeQueueMatch, leaveQueue, joinOnlineRoom, watchRoom, leaveOnlineRoom, updateOnlineRoom } from '../services/realtime';
+import { joinOnlineRoom, watchRoom, leaveOnlineRoom, updateOnlineRoom } from '../services/realtime';
 
 import { RUNES_DB } from '../data/runes';
 import { AVATAR_OPTIONS } from '../data/avatars';
@@ -119,7 +123,7 @@ const BattleOnline = () => {
         searching: false
       };
       localStorage.setItem('onlineBattle', JSON.stringify(next));
-      completeQueueMatch(user.uid, entry.roomId).catch(error => console.error('Error limpiando la cola tras emparejar:', error));
+      completeMatchmaking(user.uid, entry.roomId).catch(error => console.error('Error limpiando la cola tras emparejar:', error));
       setBattleData(next);
     };
     (async () => {
@@ -135,7 +139,7 @@ const BattleOnline = () => {
           acceptMatch(result);
           return;
         }
-        unsubscribe = watchMyQueueEntry(user.uid, acceptMatch, () => { if (!cancelled) setPhase('error'); });
+        unsubscribe = watchMatchmakingEntry(user.uid, acceptMatch, () => { if (!cancelled) setPhase('error'); });
         // Reintentar la búsqueda periódicamente: cubre el caso de dos altas
         // en el mismo milisegundo donde el jugador con prioridad aún no vio al otro.
         heartbeat = setInterval(async () => {
@@ -156,12 +160,12 @@ const BattleOnline = () => {
       cancelled = true;
       unsubscribe?.();
       if (heartbeat) clearInterval(heartbeat);
-      leaveQueue(user.uid).catch(error => console.error('Error saliendo de la cola:', error));
+      leaveMatchmakingQueue(user.uid).catch(error => console.error('Error saliendo de la cola:', error));
     };
   }, [user, battleData?.searching]);
 
   const cancelMatchmaking = async () => {
-    if (user) await leaveQueue(user.uid);
+    if (user) await leaveMatchmakingQueue(user.uid);
     localStorage.removeItem('onlineBattle');
     setBattleData(null);
     setPhase('error');

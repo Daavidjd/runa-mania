@@ -12,9 +12,150 @@ import {
   limit as fsLimit,
   serverTimestamp,
   onSnapshot,
-  writeBatch
+  writeBatch,
+  runTransaction
 } from 'firebase/firestore';
 import { db } from './firebase';
+
+const MATCH_QUEUE = 'matchmakingQueue';
+const MATCH_QUEUE_STALE_MS = 45000;
+
+const matchedResult = (uid, entry) => ({
+  success: true,
+  matched: true,
+  roomId: entry.roomId,
+  opponentUid: entry.opponentUid,
+  opponentName: entry.opponentName || 'Rival',
+  opponentAvatarId: entry.opponentAvatarId || 'mago',
+  matchOrder: entry.matchOrder || [entry.opponentUid, uid]
+});
+
+// Cola aleatoria en Firestore. La transacción reserva simultáneamente a ambos
+// jugadores; el orden por searchedAt + UID evita que dos clientes se reclamen.
+export const findRandomMatch = async (uid, name, avatarId) => {
+  const ownRef = doc(db, MATCH_QUEUE, uid);
+  const now = Date.now();
+  try {
+    const registration = await runTransaction(db, async transaction => {
+      const ownSnap = await transaction.get(ownRef);
+      const own = ownSnap.exists() ? ownSnap.data() : null;
+      if (own?.status === 'matched' && own.roomId && own.opponentUid) {
+        return { matched: true, entry: own };
+      }
+      const isFresh = own?.status === 'waiting'
+        && Number.isFinite(Number(own.lastSeenAt))
+        && now - Number(own.lastSeenAt) <= MATCH_QUEUE_STALE_MS;
+      const searchedAt = isFresh ? Number(own.searchedAt) : now;
+      transaction.set(ownRef, {
+        uid, name: name || 'Invocador', avatarId: avatarId || 'mago',
+        status: 'waiting', searchedAt, lastSeenAt: now
+      });
+      return { matched: false, searchedAt };
+    });
+    if (registration.matched) return matchedResult(uid, registration.entry);
+    const searchedAt = registration.searchedAt;
+
+    const queueSnap = await getDocs(query(
+      collection(db, MATCH_QUEUE),
+      where('status', '==', 'waiting'),
+      fsLimit(50)
+    ));
+    const candidates = queueSnap.docs
+      .filter(item => item.id !== uid)
+      .map(item => ({ uid: item.id, ...item.data() }))
+      .filter(item => {
+        const candidateSeen = Number(item.lastSeenAt ?? item.searchedAt);
+        const candidateSearch = Number(item.searchedAt);
+        if (!Number.isFinite(candidateSeen) || !Number.isFinite(candidateSearch)
+          || now - candidateSeen > MATCH_QUEUE_STALE_MS) return false;
+        return candidateSearch < searchedAt
+          || (candidateSearch === searchedAt && item.uid.localeCompare(uid) < 0);
+      })
+      .sort((a, b) => Number(a.searchedAt) - Number(b.searchedAt)
+        || a.uid.localeCompare(b.uid));
+
+    for (const opponent of candidates) {
+      const opponentRef = doc(db, MATCH_QUEUE, opponent.uid);
+      const roomId = `online-${now}-${[uid, opponent.uid].sort().join('-').slice(0, 24)}`;
+      const matchOrder = [opponent.uid, uid];
+      const result = await runTransaction(db, async transaction => {
+        const [myLatestSnap, opponentLatestSnap] = await Promise.all([
+          transaction.get(ownRef),
+          transaction.get(opponentRef)
+        ]);
+        if (!myLatestSnap.exists() || !opponentLatestSnap.exists()) return null;
+        const mine = myLatestSnap.data();
+        const rival = opponentLatestSnap.data();
+        const txNow = Date.now();
+        const mineFresh = mine.status === 'waiting'
+          && txNow - Number(mine.lastSeenAt ?? mine.searchedAt) <= MATCH_QUEUE_STALE_MS;
+        const rivalFresh = rival.status === 'waiting'
+          && txNow - Number(rival.lastSeenAt ?? rival.searchedAt) <= MATCH_QUEUE_STALE_MS;
+        const rivalHasPriority = Number(rival.searchedAt) < Number(mine.searchedAt)
+          || (Number(rival.searchedAt) === Number(mine.searchedAt) && opponent.uid.localeCompare(uid) < 0);
+        if (!mineFresh || !rivalFresh || !rivalHasPriority) return null;
+
+        transaction.update(ownRef, {
+          status: 'matched', opponentUid: opponent.uid,
+          opponentName: rival.name || 'Rival',
+          opponentAvatarId: rival.avatarId || 'mago',
+          roomId, matchOrder, matchedAt: txNow
+        });
+        transaction.update(opponentRef, {
+          status: 'matched', opponentUid: uid,
+          opponentName: mine.name || 'Invocador',
+          opponentAvatarId: mine.avatarId || 'mago',
+          roomId, matchOrder, matchedAt: txNow
+        });
+        return {
+          success: true, matched: true, roomId,
+          opponentUid: opponent.uid,
+          opponentName: rival.name || 'Rival',
+          opponentAvatarId: rival.avatarId || 'mago',
+          matchOrder
+        };
+      });
+      if (result?.matched) return result;
+    }
+
+    const latestSnap = await getDoc(ownRef);
+    const latest = latestSnap.data();
+    if (latest?.status === 'matched' && latest.roomId && latest.opponentUid) {
+      return matchedResult(uid, latest);
+    }
+    return { success: true, matched: false };
+  } catch (error) {
+    console.error('Error buscando partida en Firestore:', error);
+    return { success: false, matched: false, message: error?.message || 'Error al buscar rival' };
+  }
+};
+
+export const watchMatchmakingEntry = (uid, callback, onError) =>
+  onSnapshot(doc(db, MATCH_QUEUE, uid),
+    snapshot => callback(snapshot.exists() ? { uid, ...snapshot.data() } : null),
+    error => {
+      console.error('Error escuchando la cola de matchmaking:', error);
+      onError?.(error);
+    });
+
+export const completeMatchmaking = async (uid, roomId) => {
+  const queueRef = doc(db, MATCH_QUEUE, uid);
+  await runTransaction(db, async transaction => {
+    const snapshot = await transaction.get(queueRef);
+    if (snapshot.exists() && snapshot.data().status === 'matched'
+      && snapshot.data().roomId === roomId) transaction.delete(queueRef);
+  });
+};
+
+export const leaveMatchmakingQueue = async uid => {
+  const queueRef = doc(db, MATCH_QUEUE, uid);
+  await runTransaction(db, async transaction => {
+    const snapshot = await transaction.get(queueRef);
+    if (snapshot.exists() && snapshot.data().status === 'waiting') transaction.delete(queueRef);
+  });
+};
+
+
 
 export const getUserCollection = async (userId) => {
   try {
