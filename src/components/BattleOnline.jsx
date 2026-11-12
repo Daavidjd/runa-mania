@@ -11,7 +11,7 @@ import {
   completeMatchmaking,
   leaveMatchmakingQueue
 } from '../services/firestore';
-import { joinOnlineRoom, watchRoom, leaveOnlineRoom, playOnlineMove } from '../services/realtime';
+import { joinOnlineRoom, watchRoom, leaveOnlineRoom, updateOnlineRoom, playOnlineMove } from '../services/realtime';
 
 import { RUNES_DB } from '../data/runes';
 import { AVATAR_OPTIONS } from '../data/avatars';
@@ -23,7 +23,7 @@ import './BattleOnline.css';
 // ⚔️ BATALLA EN LÍNEA (estilo Match de Clash Royale)
 // Misma mecánica que la batalla NPC (tablero 4x4 + flechas),
 // pero sincronizada entre dos jugadores reales por Firestore.
-// 🔵 AZUL = tú   |   🔴 ROJO = rival   (50/50 al elegir quien empieza)
+// 🔵 AZUL = primer jugador y siempre empieza | 🔴 ROJO = segundo jugador
 // ============================================================
 
 const getAttackDirections = (placedIdx, capturedIdxs) => {
@@ -114,6 +114,8 @@ const BattleOnline = () => {
     const acceptMatch = (entry) => {
       if (cancelled || accepted || !entry?.roomId || !entry?.opponentUid) return;
       accepted = true;
+      if (heartbeat) clearInterval(heartbeat);
+      unsubscribe?.();
       const next = {
         role: 'random',
         roomId: entry.roomId,
@@ -173,8 +175,7 @@ const BattleOnline = () => {
     navigate('/home');
   };
 
-  // 🎨 El primer jugador en entrar a la sala es AZUL 🔵 y el segundo ROJO 🔴
-  // (el orden de llegada queda guardado en Firestore, ambos clientes coinciden)
+  // 🎨 El orden de matchmaking fija los colores: AZUL primero (siempre empieza), ROJO segundo.
   const activePlayers = Object.entries(room.players || {}).filter(([, p]) => p && p.joinedAt);
   const bothJoined = activePlayers.length >= 2;
   const colorsAssigned = bothJoined && !!room.blueUid && !!room.redUid;
@@ -182,10 +183,8 @@ const BattleOnline = () => {
   const iAmFirst = blueUid ? blueUid === myUid : false;
   const myColor = colorsAssigned ? (iAmFirst ? 'blue' : 'red') : null;
   const oppColor = colorsAssigned ? (iAmFirst ? 'red' : 'blue') : null;
-  // El sorteo solo existe cuando los dos colores ya están asignados.
-  const starterIsMe = colorsAssigned && room.starterUid
-    ? room.starterUid === myUid
-    : false;
+  // Azul siempre abre la partida. starterUid se fija en la sala y ambos clientes usan el mismo dato.
+  const starterIsMe = colorsAssigned && room.starterUid === myUid;
 
   // ---------- CONEXIÓN A LA SALA ----------
   useEffect(() => {
@@ -350,7 +349,7 @@ const BattleOnline = () => {
   const placedCount = board.filter(c => c !== null).length;
   // El que empieza coloca las jugadas 1ª, 3ª, 5ª... (índices pares ya colocados = su turno)
   const myTurn = phase === 'playing' && !gameOver &&
-    (starterIsMe ? placedCount % 2 === 0 : placedCount % 2 === 1);
+    (myColor === 'blue' ? placedCount % 2 === 0 : myColor === 'red' ? placedCount % 2 === 1 : false);
 
   const handleCellClick = useCallback(async (index) => {
     if (gameOver || phase !== 'playing' || !myTurn || movePending || board[index]) return;
@@ -487,7 +486,7 @@ const BattleOnline = () => {
         <div className="bp-stars"></div>
         <div className="bo-lobby">
           <h2 className="bo-lobby-title">🎲 Volteo de moneda</h2>
-          <div className="bo-coin" aria-label="Moneda de agua y fuego"><span className="bo-coin-water">≈</span><span className="bo-coin-fire">♨</span></div>
+          <div className={`bo-coin ${myColor === "blue" ? "bo-coin-show-blue" : "bo-coin-show-red"}`} aria-label={myColor === "blue" ? "Cara azul, elemento agua" : "Cara roja, elemento fuego"}><div className="bo-coin-face bo-coin-blue"><span>≋</span><small>AGUA · AZUL</small></div><div className="bo-coin-face bo-coin-red"><span>♨</span><small>FUEGO · ROJO</small></div></div>
           <div className="bo-vs-row bo-coinflip-names">
             <div className="bo-lobby-player bo-me">
               <img src={avatarSrcOf(myProfile)} alt="yo" className="bp-avatar-frame bo-match-avatar" style={{ borderColor: myColor === 'red' ? '#f44336' : '#2196f3' }} />
