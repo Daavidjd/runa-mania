@@ -7,7 +7,7 @@ import {
   watchChallenge,
   recordOnlineBattleResult
 } from '../services/firestore';
-import { findRandomMatch, watchMyQueueEntry, refreshQueueEntry, completeQueueMatch, leaveQueue, joinOnlineRoom, watchRoom, leaveOnlineRoom, updateOnlineRoom } from '../services/realtime';
+import { findRandomMatch, watchMyQueueEntry, completeQueueMatch, leaveQueue, joinOnlineRoom, watchRoom, leaveOnlineRoom, updateOnlineRoom } from '../services/realtime';
 
 import { RUNES_DB } from '../data/runes';
 import { AVATAR_OPTIONS } from '../data/avatars';
@@ -105,8 +105,10 @@ const BattleOnline = () => {
     let cancelled = false;
     let unsubscribe = null;
     let heartbeat = null;
+    let accepted = false;
     const acceptMatch = (entry) => {
-      if (cancelled || !entry?.roomId || !entry?.opponentUid) return;
+      if (cancelled || accepted || !entry?.roomId || !entry?.opponentUid) return;
+      accepted = true;
       const next = {
         role: 'random',
         roomId: entry.roomId,
@@ -134,9 +136,17 @@ const BattleOnline = () => {
           return;
         }
         unsubscribe = watchMyQueueEntry(user.uid, acceptMatch, () => { if (!cancelled) setPhase('error'); });
-        heartbeat = setInterval(() => {
-          refreshQueueEntry(user.uid).catch(error => console.error('Error renovando presencia en matchmaking:', error));
-        }, 15000);
+        // Reintentar la búsqueda periódicamente: cubre el caso de dos altas
+        // en el mismo milisegundo donde el jugador con prioridad aún no vio al otro.
+        heartbeat = setInterval(async () => {
+          try {
+            const retry = await findRandomMatch(user.uid, displayName, profile?.avatarId || 'mago');
+            if (retry.matched) acceptMatch(retry);
+            else if (!retry.success) console.error('Reintento de matchmaking fallido:', retry.message);
+          } catch (error) {
+            console.error('Error reintentando matchmaking:', error);
+          }
+        }, 5000);
       } catch (error) {
         console.error('Error buscando rival:', error);
         if (!cancelled) setPhase('error');
