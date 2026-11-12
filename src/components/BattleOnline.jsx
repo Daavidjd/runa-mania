@@ -591,9 +591,13 @@ const BattleOnline = () => {
           </div>
         </div>
         <div className="bo-score-cluster">
+          {!myTurn && (
+          {myTurn && (
           <div className="bo-turn-timer" style={{ '--timer-progress': (timerRemaining / 30) * 100 + '%' }}>
             <span>{timerRemaining}</span>
           </div>
+          )}
+          )}
           <div className="bp-score-badge-box bp-score-ai-box">
             <span className="bp-score-badge-label">PUNTOS</span>
             <span className="bp-score-badge-value">{scores.opp}</span>
