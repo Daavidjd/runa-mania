@@ -112,6 +112,7 @@ const BattleOnline = () => {
         opponentUid: entry.opponentUid,
         opponentName: entry.opponentName || 'Rival',
         opponentAvatarId: entry.opponentAvatarId || 'mago',
+        matchOrder: entry.matchOrder || [entry.opponentUid, user.uid],
         searching: false
       };
       localStorage.setItem('onlineBattle', JSON.stringify(next));
@@ -154,13 +155,16 @@ const BattleOnline = () => {
   // 🎨 El primer jugador en entrar a la sala es AZUL 🔵 y el segundo ROJO 🔴
   // (el orden de llegada queda guardado en Firestore, ambos clientes coinciden)
   const activePlayers = Object.entries(room.players || {}).filter(([, p]) => p && p.joinedAt);
-  const blueUid = room.blueUid || (activePlayers.length ? activePlayers.sort((a, b) => a[1].joinedAt - b[1].joinedAt)[0][0] : null);
-  const iAmFirst = blueUid ? blueUid === myUid : false;
   const bothJoined = activePlayers.length >= 2;
-  const myColor = iAmFirst ? 'blue' : 'red';
-  const oppColor = iAmFirst ? 'red' : 'blue';
-  // ⚔️ Quién empieza: resultado del volteo de moneda 50/50 guardado en la sala
-  const starterIsMe = room.starterUid ? room.starterUid === myUid : iAmFirst;
+  const colorsAssigned = bothJoined && !!room.blueUid && !!room.redUid;
+  const blueUid = colorsAssigned ? room.blueUid : null;
+  const iAmFirst = blueUid ? blueUid === myUid : false;
+  const myColor = colorsAssigned ? (iAmFirst ? 'blue' : 'red') : null;
+  const oppColor = colorsAssigned ? (iAmFirst ? 'red' : 'blue') : null;
+  // El sorteo solo existe cuando los dos colores ya están asignados.
+  const starterIsMe = colorsAssigned && room.starterUid
+    ? room.starterUid === myUid
+    : false;
 
   // ---------- CONEXIÓN A LA SALA ----------
   useEffect(() => {
@@ -188,7 +192,7 @@ const BattleOnline = () => {
         roomIdRef.current = roomId;
 
         // Unirse a la sala y escucharla en tiempo real
-        await joinOnlineRoom(roomId, user.uid, me?.username || 'Invocador');
+        await joinOnlineRoom(roomId, user.uid, me?.username || 'Invocador', battleData.matchOrder || []);
         roomUnsubRef.current = watchRoom(roomId, (data) => { if (!cancelled) setRoom(data || {}); });
 
         // Esperar a que ambos estén dentro de la sala antes de resolver el duelo
@@ -281,6 +285,13 @@ const BattleOnline = () => {
       if (Object.keys(overrides).length) setCaptureOwnerOverrides(overrides);
     }
     setBoard(colored);
+
+    // Una sala inicializa el tablero vacío, así que la transición no debe
+    // depender de que falte el array: solo comienza cuando hay dos jugadores,
+    // ambos colores y el sorteo persistidos en la sala.
+    if (bothJoined && colorsAssigned && room.starterUid && phaseRef.current === 'connecting') {
+      setPhase('coinflip');
+    }
 
     // Cartas restantes del rival (su mazo inicial menos las jugadas)
     const oppUid = Object.keys(room.players || {}).find(k => k !== myUidRef.current && room.players[k]);
@@ -457,17 +468,17 @@ const BattleOnline = () => {
 
           <div className="bo-vs-row">
             <div className="bo-lobby-player bo-me">
-              <img src={avatarSrcOf(myProfile)} alt="yo" className="bp-avatar-frame" style={{ borderColor: myColor === 'red' ? '#f44336' : '#2196f3' }} />
+              <img src={avatarSrcOf(myProfile)} alt="yo" className="bp-avatar-frame" style={{ borderColor: myColor === 'red' ? '#f44336' : myColor === 'blue' ? '#2196f3' : '#888' }} />
               <span className="bo-lobby-name">{myProfile?.username || 'Tú'}</span>
-              <span className="bo-lobby-tag" style={{ color: myColor === 'red' ? '#ff8a80' : '#4fc3f7' }}>{myColor === 'red' ? '🔴 Rojo' : '🔵 Azul'}</span>
+              {colorsAssigned && <span className="bo-lobby-tag" style={{ color: myColor === 'red' ? '#ff8a80' : '#4fc3f7' }}>{myColor === 'red' ? '🔴 Rojo' : '🔵 Azul'}</span>}
             </div>
             <span className="bo-vs-bolt">VS</span>
             <div className="bo-lobby-player bo-them">
               {oppJoined ? (
                 <>
-                  <img src={avatarSrcOf(oppProfile)} alt="rival" className="bp-avatar-frame" style={{ borderColor: oppColor === 'red' ? '#f44336' : '#2196f3' }} />
+                  <img src={avatarSrcOf(oppProfile)} alt="rival" className="bp-avatar-frame" style={{ borderColor: oppColor === 'red' ? '#f44336' : oppColor === 'blue' ? '#2196f3' : '#888' }} />
                   <span className="bo-lobby-name">{battleData?.opponentName || 'Rival'}</span>
-                  <span className="bo-lobby-tag" style={{ color: oppColor === 'red' ? '#ff8a80' : '#4fc3f7' }}>{oppColor === 'red' ? '🔴 Rojo' : '🔵 Azul'}</span>
+                  {colorsAssigned && <span className="bo-lobby-tag" style={{ color: oppColor === 'red' ? '#ff8a80' : '#4fc3f7' }}>{oppColor === 'red' ? '🔴 Rojo' : '🔵 Azul'}</span>}
                 </>
               ) : (
                 <>
@@ -512,7 +523,7 @@ const BattleOnline = () => {
             </div>
           </div>
           <div className="bo-lobby-info bo-coinflip-result">
-            {starterIsMe ? '¡Empiezas tú! 🔵🔴' : `Empieza ${battleData?.opponentName || 'el rival'}`}
+            {starterIsMe ? '¡Empiezas tú!' : 'Empieza el rival'}
           </div>
           <p className="bo-coinflip-countdown">La batalla comienza en {countdown}...</p>
           <button className="bp-btn bp-btn-exit bo-leave" onClick={() => navigate('/home')}>🚪 Salir</button>
