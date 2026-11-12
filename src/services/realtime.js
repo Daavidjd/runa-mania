@@ -11,7 +11,7 @@ export const joinOnlineRoom = async (roomId, uid, displayName, matchOrder = []) 
   const result = await runTransaction(roomRef, room => {
     room = room || {
       roomId, createdAt: now, players: {},
-      board: Array(16).fill(null), deckSizes: {}, finished: false
+      board: {}, deckSizes: {}, finished: false
     };
     room.players = room.players || {};
     const playerIds = Object.keys(room.players).filter(k => room.players[k]);
@@ -58,9 +58,17 @@ export const playOnlineMove = async (roomId, uid, card, index, moveId) => {
       rejectionReason = 'La sala todavía no está preparada';
       return;
     }
-    const board = Array.isArray(room.board) && room.board.length === 16
-      ? [...room.board]
-      : Array(16).fill(null);
+    // RTDB no conserva arrays dispersos con null: los devuelve como objetos
+    // numéricos. Normalizamos SIEMPRE a un array local de 16 casillas.
+    const board = Array(16).fill(null);
+    if (Array.isArray(room.board)) {
+      room.board.forEach((cell, i) => { if (i >= 0 && i < 16 && cell) board[i] = cell; });
+    } else if (room.board && typeof room.board === 'object') {
+      Object.entries(room.board).forEach(([key, cell]) => {
+        const i = Number(key);
+        if (/^(0|[1-9]|1[0-5])$/.test(key) && Number.isInteger(i) && cell) board[i] = cell;
+      });
+    }
     const occupied = board.filter(Boolean).length;
     const isBlue = room.blueUid === uid;
     const isRed = room.redUid === uid;
@@ -104,7 +112,11 @@ export const playOnlineMove = async (roomId, uid, card, index, moveId) => {
       }
     }
     captured.forEach(i => { board[i] = { ...board[i], owner: myColor, flipped: true }; });
-    room.board = board;
+    // Guardamos solo las casillas ocupadas como objeto { "0": rune, ... }.
+    // Nunca persistimos nulls ni un array disperso en Realtime Database.
+    room.board = Object.fromEntries(
+      board.map((cell, i) => cell ? [String(i), cell] : null).filter(Boolean)
+    );
     room.lastMove = { by: uid, index, captured, moveId };
     room.updatedAt = Date.now();
     capturedResult = captured;
