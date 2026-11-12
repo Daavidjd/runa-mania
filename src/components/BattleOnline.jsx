@@ -198,6 +198,40 @@ const BattleOnline = () => {
     navigate('/home');
   };
 
+  // Reiniciar el flujo de matchmaking desde el popup de resultado.
+  const keepFighting = () => {
+    if (!user) {
+      navigate('/profile');
+      return;
+    }
+    roomUnsubRef.current?.();
+    challengeUnsubRef.current?.();
+    roomIdRef.current = null;
+    reportedRef.current = false;
+    timeoutClaimRef.current = false;
+    appliedRemoteMovesRef.current.clear();
+    setRoom({});
+    setBoard(Array(16).fill(null));
+    setMyHand([]);
+    setOppHandCount(8);
+    setSelectedCard(null);
+    setMovePending(false);
+    setScores({ me: 0, opp: 0 });
+    setGameOver(false);
+    setIWon(null);
+    setShowEndModal(false);
+    setFlippingCells([]);
+    setCaptureOwnerOverrides({});
+    setLastPlaced(null);
+    setAttackDirs({});
+    setCountdown(3);
+    setTimerRemaining(30);
+    const searchState = { role: 'random', searching: true };
+    localStorage.setItem('onlineBattle', JSON.stringify(searchState));
+    setBattleData(searchState);
+    setPhase('connecting');
+  };
+
   // 🎨 El orden de matchmaking fija los colores: AZUL primero (siempre empieza), ROJO segundo.
   const activePlayers = Object.entries(room.players || {}).filter(([, p]) => p && p.joinedAt);
   const bothJoined = activePlayers.length >= 2;
@@ -734,8 +768,8 @@ const BattleOnline = () => {
             </div>
 
             <div className="bp-modal-actions">
-              <button className="bp-btn bp-btn-repeat" onClick={() => navigate('/profile')}>
-                👥 Volver a Amigos
+              <button className="bp-btn bp-btn-repeat" onClick={keepFighting}>
+                ⚔️ Seguir luchando
               </button>
               <button className="bp-btn bp-btn-exit" onClick={() => navigate('/home')}>
                 🏠 Salir a Base
