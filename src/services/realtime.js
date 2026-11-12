@@ -143,6 +143,22 @@ export const watchRoom = (roomId, callback) =>
 export const updateOnlineRoom = (roomId, updates) =>
   update(ref(rtdb, `${ROOM_PATH}/${roomId}`), updates);
 
+// Ambos clientes pueden llamarla al terminar el volteo: la transacción solo
+// inicia el reloj una vez y concede 30 segundos completos al primer turno.
+export const startOnlineTurnClock = async (roomId) => {
+  const roomRef = ref(rtdb, `${ROOM_PATH}/${roomId}`);
+  const result = await runTransaction(roomRef, room => {
+    if (!room || room.finished || room.firstTurnClockStartedAt) return;
+    const board = Array.isArray(room.board) ? room.board : Object.values(room.board || {});
+    if (board.some(Boolean)) return;
+    const now = Date.now();
+    room.firstTurnClockStartedAt = now;
+    room.turnDeadlineAt = now + 30000;
+    return room;
+  }, { applyLocally: false });
+  return result.snapshot.val();
+};
+
 // Reclama una victoria por tiempo usando la hora límite compartida en RTDB.
 export const claimOnlineTimeout = async (roomId) => {
   const roomRef = ref(rtdb, `${ROOM_PATH}/${roomId}`);
