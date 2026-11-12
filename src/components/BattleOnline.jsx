@@ -379,7 +379,14 @@ const BattleOnline = () => {
     }
 
     const moveId = `${user.uid}-${Date.now()}`;
-    appliedRemoteMovesRef.current.add(moveId); // no re-animar mi propio movimiento
+    appliedRemoteMovesRef.current.add(moveId); // no re-animar la jugada desde la suscripción
+
+    // Mantener visualmente el dueño anterior hasta alcanzar los 90 grados del giro.
+    if (captured.length > 0) {
+      setCaptureOwnerOverrides(Object.fromEntries(
+        captured.map(ci => [ci, board[ci]?.owner === 'red' ? 'ai' : 'player'])
+      ));
+    }
 
     // Publicar estado en la sala compartida (tablero + jugada para animar en el otro cliente)
     updateRoomState(newBoard, captured, { by: user.uid, index, captured, moveId });
@@ -392,6 +399,7 @@ const BattleOnline = () => {
       setTimeout(() => {
         setFlippingCells(captured);
         setAttackDirs({});
+        setTimeout(() => setCaptureOwnerOverrides({}), 300);
         setTimeout(() => { setFlippingCells([]); }, 600);
       }, 1500);
     } else {
