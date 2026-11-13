@@ -371,7 +371,7 @@
   --timer-progress: 100%;
   width: 42px; height: 42px; flex: 0 0 42px; border-radius: 50%;
   display: grid; place-items: center; position: relative;
-  background: conic-gradient(#ffd54a calc(var(--timer-progress) * 1%), rgba(255,255,255,.14) 0);
+  background: conic-gradient(#ffd54a var(--timer-progress), rgba(255,255,255,.14) 0);
   box-shadow: 0 0 12px rgba(255,213,74,.18);
 }
 .bo-turn-timer::before { content: ''; position: absolute; inset: 4px; border-radius: 50%; background: #101a2d; }
