@@ -283,7 +283,10 @@
 .bp-btn {
   width: 100%; padding: 13px; border-radius: 12px; font-size: 1rem;
   font-weight: 1000; cursor: pointer; border: 3px solid #05070c;
-  border-radius: 12px; text-shadow: 0 1px 1px rgba(0,0,0,.35);
+  border-radius: 12px; color: #fff;
+  -webkit-text-stroke: .8px #05070c;
+  paint-order: stroke fill;
+  text-shadow: 0 2px 0 #05070c, 1px 0 #05070c, -1px 0 #05070c, 0 3px 5px rgba(0,0,0,.55);
   box-shadow: 0 5px 0 #05070c, inset 0 1px 0 rgba(255,255,255,.22);
   transition: transform 0.1s ease, filter 0.1s ease;
 }
