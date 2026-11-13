@@ -547,7 +547,7 @@ const Battle = () => {
 
             <div className="bp-modal-actions">
               <button className="bp-btn bp-btn-repeat" onClick={() => { setShowEndModal(false); loadDeck(); }}>
-                🔄 Revancha
+                Revancha
               </button>
               <button className="bp-btn bp-btn-exit" onClick={() => navigate('/home')}>
                  Salir a Base
