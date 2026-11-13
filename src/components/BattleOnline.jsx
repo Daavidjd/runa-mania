@@ -524,6 +524,16 @@ const BattleOnline = () => {
   }, [phase]);
 
   // ---------- RENDER ----------
+  // El marcador final se calcula directamente desde el tablero persistido en RTDB.
+  // Así no dependemos del último setState cuando el evento de fin llega casi a la vez.
+  const modalBoard = normalizeOnlineBoard(room.board);
+  const modalScores = modalBoard.some(Boolean)
+    ? {
+        me: modalBoard.filter(cell => cell?.owner === myColor).length,
+        opp: modalBoard.filter(cell => cell?.owner === oppColor).length
+      }
+    : scores;
+
   const avatarSrcOf = (p) => {
     const found = AVATAR_OPTIONS.find(a => a.id === p?.avatarId);
     return found ? found.src : AVATAR_OPTIONS[0].src;
@@ -759,12 +769,12 @@ const BattleOnline = () => {
             <div className="bp-modal-scoreboard">
               <div className="bp-modal-score-col">
                 <span className="bp-modal-label">{myProfile?.username || 'Tú'}</span>
-                <span className="bp-modal-points">{scores.me}</span>
+                <span className="bp-modal-points">{modalScores.me}</span>
               </div>
               <span className="bp-modal-vs">VS</span>
               <div className="bp-modal-score-col">
                 <span className="bp-modal-label">{battleData?.opponentName || 'Rival'}</span>
-                <span className="bp-modal-points">{scores.opp}</span>
+                <span className="bp-modal-points">{modalScores.opp}</span>
               </div>
             </div>
 
@@ -775,10 +785,10 @@ const BattleOnline = () => {
 
             <div className="bp-modal-actions">
               <button className="bp-btn bp-btn-repeat" onClick={keepFighting}>
-                ⚔️ Seguir luchando
+                Seguir luchando
               </button>
               <button className="bp-btn bp-btn-exit" onClick={() => navigate('/home')}>
-                🏠 Salir a Base
+                Salir a Base
               </button>
             </div>
           </div>
