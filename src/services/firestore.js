@@ -294,6 +294,18 @@ export const buyRock = async (userId, rockType) => {
   }
 };
 
+export const PICKAXE_TYPES = { iron:{name:'Pico de hierro',price:500}, gold:{name:'Pico de oro',price:800}, diamond:{name:'Pico de diamante',price:1000} };
+
+export const buyPickaxe = async (userId,pickaxeType) => {
+ const pickaxe=PICKAXE_TYPES[pickaxeType]; if(!userId||!pickaxe) return {success:false,message:'Tipo de pico no válido'};
+ const profileRef=doc(db,'users',userId);
+ try { return await runTransaction(db,async transaction=>{ const snapshot=await transaction.get(profileRef);
+  if(!snapshot.exists()) return {success:false,message:'Perfil no encontrado'};
+  const coins=Number(snapshot.data().coins)||0; if(coins<pickaxe.price) return {success:false,message:'No tienes suficientes monedas'};
+  transaction.update(profileRef,{coins:coins-pickaxe.price}); return {success:true,message:'¡Pico comprado!'};
+ }); } catch(error) { console.error('Error comprando pico:',error); throw error; }
+};
+
 export const claimDailyRock = async (userId) => {
   if (!userId) return { success: false, message: 'Usuario no válido' };
 
