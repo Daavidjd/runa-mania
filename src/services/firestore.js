@@ -170,26 +170,39 @@ export const getUserCollection = async (userId) => {
   }
 };
 
-export const addRuneToCollection = async (userId, rune) => {
+export const addRuneToCollection = async (userId, rune, awardId = null) => {
   if (!userId || !rune?.id) throw new Error('Usuario o runa no válidos');
 
-  const docRef = doc(db, `users/${userId}/collection`, rune.id);
+  const collectionRef = doc(db, `users/${userId}/collection`, rune.id);
+  const receiptRef = awardId
+    ? doc(db, `users/${userId}/miningAwards`, awardId)
+    : null;
   const obtainedAt = new Date().toISOString();
 
   await runTransaction(db, async transaction => {
-    const snapshot = await transaction.get(docRef);
+    // Las lecturas ocurren antes de cualquier escritura.
+    if (receiptRef) {
+      const receipt = await transaction.get(receiptRef);
+      if (receipt.exists()) return;
+    }
+
+    const snapshot = await transaction.get(collectionRef);
     if (snapshot.exists()) {
       const currentQuantity = Number(snapshot.data().quantity) || 0;
-      transaction.update(docRef, {
+      transaction.update(collectionRef, {
         quantity: currentQuantity + 1,
         lastObtained: obtainedAt
       });
     } else {
-      transaction.set(docRef, {
+      transaction.set(collectionRef, {
         ...rune,
         quantity: 1,
         obtainedAt
       });
+    }
+
+    if (receiptRef) {
+      transaction.set(receiptRef, { runeId: rune.id, createdAt: obtainedAt });
     }
   });
 };
