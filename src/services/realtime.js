@@ -76,10 +76,6 @@ export const playOnlineMove = async (roomId, uid, card, index, moveId) => {
       rejectionReason = 'La animación de captura todavía está en curso';
       return;
     }
-    if (room.turnDeadlineAt && Date.now() > Number(room.turnDeadlineAt)) {
-      rejectionReason = 'Se agotó el tiempo de este turno';
-      return;
-    }
     const isBlue = room.blueUid === uid;
     const isRed = room.redUid === uid;
     if (!isBlue && !isRed) { rejectionReason = 'No tienes un color asignado en esta sala'; return; }
@@ -128,9 +124,11 @@ export const playOnlineMove = async (roomId, uid, card, index, moveId) => {
       board.map((cell, i) => cell ? [String(i), cell] : null).filter(Boolean)
     );
     room.lastMove = { by: uid, index, captured, moveId };
-    const nextTurnStartsAt = Date.now() + (captured.length ? 1100 : 0);
+    // Bloqueo compartido: colocación (650 ms) o captura completa (1100 ms).
+    // El siguiente jugador no puede colocar hasta que termine la animación.
+    const nextTurnStartsAt = Date.now() + (captured.length ? 1100 : 650);
     room.turnStartsAt = nextTurnStartsAt;
-    room.turnDeadlineAt = nextTurnStartsAt + 30000;
+    delete room.turnDeadlineAt;
     room.updatedAt = Date.now();
     capturedResult = captured;
     rejectionReason = '';
