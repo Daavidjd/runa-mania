@@ -16,6 +16,7 @@ import {
   runTransaction
 } from 'firebase/firestore';
 import { db } from './firebase';
+import { ROCK_TYPES } from '../data/runes';
 
 const MATCH_QUEUE = 'matchmakingQueue';
 const MATCH_QUEUE_STALE_MS = 45000;
@@ -170,21 +171,27 @@ export const getUserCollection = async (userId) => {
 };
 
 export const addRuneToCollection = async (userId, rune) => {
+  if (!userId || !rune?.id) throw new Error('Usuario o runa no válidos');
+
   const docRef = doc(db, `users/${userId}/collection`, rune.id);
-  const docSnap = await getDoc(docRef);
-  
-  if (docSnap.exists()) {
-    await updateDoc(docRef, {
-      quantity: docSnap.data().quantity + 1,
-      lastObtained: new Date().toISOString()
-    });
-  } else {
-    await setDoc(docRef, {
-      ...rune,
-      quantity: 1,
-      obtainedAt: new Date().toISOString()
-    });
-  }
+  const obtainedAt = new Date().toISOString();
+
+  await runTransaction(db, async transaction => {
+    const snapshot = await transaction.get(docRef);
+    if (snapshot.exists()) {
+      const currentQuantity = Number(snapshot.data().quantity) || 0;
+      transaction.update(docRef, {
+        quantity: currentQuantity + 1,
+        lastObtained: obtainedAt
+      });
+    } else {
+      transaction.set(docRef, {
+        ...rune,
+        quantity: 1,
+        obtainedAt
+      });
+    }
+  });
 };
 
 export const getUserDecks = async (userId) => {
@@ -250,70 +257,78 @@ export const updateUserProfile = async (userId, profileData) => {
   });
 };
 
-export const buyRock = async (userId, rockType, price) => {
-  const docRef = doc(db, 'users', userId);
-  const docSnap = await getDoc(docRef);
-  
-  if (!docSnap.exists()) return { success: false, message: 'Perfil no encontrado' };
-  
-  const currentCoins = docSnap.data().coins || 0;
-  if (currentCoins < price) {
-    return { success: false, message: 'No tienes suficientes monedas' };
+export const buyRock = async (userId, rockType) => {
+  const rock = ROCK_TYPES[rockType];
+  if (!userId || !rock) return { success: false, message: 'Tipo de roca no válido' };
+
+  const profileRef = doc(db, 'users', userId);
+  try {
+    return await runTransaction(db, async transaction => {
+      const snapshot = await transaction.get(profileRef);
+      if (!snapshot.exists()) return { success: false, message: 'Perfil no encontrado' };
+
+      const currentCoins = Number(snapshot.data().coins) || 0;
+      if (currentCoins < rock.price) {
+        return { success: false, message: 'No tienes suficientes monedas' };
+      }
+
+      transaction.update(profileRef, { coins: currentCoins - rock.price });
+      return { success: true, message: '¡Roca comprada!' };
+    });
+  } catch (error) {
+    console.error('Error en la compra de roca:', error);
+    throw error;
   }
-  
-  await updateDoc(docRef, {
-    coins: currentCoins - price
-  });
-  
-  return { success: true, message: '¡Roca comprada!' };
 };
 
 export const claimDailyRock = async (userId) => {
-  const docRef = doc(db, 'users', userId);
-  const docSnap = await getDoc(docRef);
-  
-  if (!docSnap.exists()) return { success: false, message: 'Perfil no encontrado' };
-  
-  const profile = docSnap.data();
-  const lastDaily = profile.lastDailyRock || 0;
-  const now = Date.now();
-  const twentyFourHours = 24 * 60 * 60 * 1000;
-  
-  if (now - lastDaily < twentyFourHours) {
-    const remaining = twentyFourHours - (now - lastDaily);
-    const hours = Math.floor(remaining / (60 * 60 * 1000));
-    const minutes = Math.floor((remaining % (60 * 60 * 1000)) / (60 * 1000));
-    return { 
-      success: false, 
-      message: `Vuelve en ${hours}h ${minutes}m`,
-      remaining
-    };
+  if (!userId) return { success: false, message: 'Usuario no válido' };
+
+  const profileRef = doc(db, 'users', userId);
+  try {
+    return await runTransaction(db, async transaction => {
+      const snapshot = await transaction.get(profileRef);
+      if (!snapshot.exists()) return { success: false, message: 'Perfil no encontrado' };
+
+      const lastDaily = Number(snapshot.data().lastDailyRock) || 0;
+      const now = Date.now();
+      const cooldown = 24 * 60 * 60 * 1000;
+      const elapsed = now - lastDaily;
+
+      if (lastDaily > 0 && elapsed < cooldown) {
+        const remaining = cooldown - Math.max(0, elapsed);
+        const hours = Math.floor(remaining / (60 * 60 * 1000));
+        const minutes = Math.floor((remaining % (60 * 60 * 1000)) / (60 * 1000));
+        return {
+          success: false,
+          message: `Vuelve en ${hours}h ${minutes}m`,
+          remaining
+        };
+      }
+
+      transaction.update(profileRef, { lastDailyRock: now });
+      return { success: true, message: '¡Roca diaria reclamada!' };
+    });
+  } catch (error) {
+    console.error('Error reclamando roca diaria:', error);
+    throw error;
   }
-  
-  await updateDoc(docRef, {
-    lastDailyRock: now
-  });
-  
-  return { success: true, message: '¡Roca diaria reclamada!' };
 };
 
 export const getDailyRockStatus = async (userId) => {
-  const docRef = doc(db, 'users', userId);
-  const docSnap = await getDoc(docRef);
-  
-  if (!docSnap.exists()) return { available: true };
-  
-  const profile = docSnap.data();
-  const lastDaily = profile.lastDailyRock || 0;
-  const now = Date.now();
-  const twentyFourHours = 24 * 60 * 60 * 1000;
-  
-  if (now - lastDaily < twentyFourHours) {
-    const remaining = twentyFourHours - (now - lastDaily);
-    return { available: false, remaining };
-  }
-  
-  return { available: true };
+  if (!userId) return { available: false, error: 'Usuario no válido' };
+
+  const profileRef = doc(db, 'users', userId);
+  const snapshot = await getDoc(profileRef);
+  if (!snapshot.exists()) return { available: false, error: 'Perfil no encontrado' };
+
+  const lastDaily = Number(snapshot.data().lastDailyRock) || 0;
+  const cooldown = 24 * 60 * 60 * 1000;
+  const remaining = cooldown - (Date.now() - lastDaily);
+
+  return remaining > 0
+    ? { available: false, remaining }
+    : { available: true };
 };
 // ============================================================
 // 🌐 SISTEMA EN LÍNEA: AMIGOS (agregar, eliminar, retar)
