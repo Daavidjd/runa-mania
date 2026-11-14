@@ -48,7 +48,7 @@
 
 .deck-hero-title {
   color: #ffffff;
-  font-size: 15px;
+  font-size: 19px;
   font-weight: 900;
   letter-spacing: 1.5px;
   margin: 0;
@@ -329,7 +329,7 @@
 }
 .deck-hero-title {
   flex: 1;
-  font-size: 14px;
+  font-size: 19px;
 }
 .deck-tool-button {
   flex: 0 0 40px;
@@ -466,11 +466,14 @@
   font: inherit;
   cursor: pointer;
 }
-.deck-grid-removal-mode .deck-card-wrapper {
-  cursor: crosshair;
-  animation: deckRemovalPulse 1s ease-in-out infinite alternate;
+ .deck-grid-removal-mode .deck-card-wrapper {
+  cursor: pointer;
+  filter: drop-shadow(0 0 6px rgba(255, 75, 75, .75));
 }
-@keyframes deckRemovalPulse {
-  from { filter: drop-shadow(0 0 0 rgba(255, 75, 75, 0)); }
-  to { filter: drop-shadow(0 0 7px rgba(255, 75, 75, .85)); }
+.deck-grid-removal-mode .deck-card-wrapper .rune-card {
+  border-color: #ff5268 !important;
+  box-shadow: 0 0 0 2px rgba(255, 82, 104, .3), 0 0 12px rgba(255, 75, 75, .65) !important;
+}
+.deck-grid-removal-mode .deck-card-wrapper:active {
+  transform: scale(.94);
 }
