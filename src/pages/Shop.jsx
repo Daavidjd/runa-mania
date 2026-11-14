@@ -41,7 +41,7 @@ const Shop = () => {
   const { user } = useAuth();
   const [profile, setProfile] = useState(null);
   const [activeRock, setActiveRock] = useState(null);
-  const [dailyStatus, setDailyStatus] = useState({ available: true });
+  const [dailyStatus, setDailyStatus] = useState({ available: false, loading: true });
   const [countdown, setCountdown] = useState('');
   const [message, setMessage] = useState('');
   const [messageType, setMessageType] = useState('');
@@ -51,8 +51,11 @@ const Shop = () => {
 
   useEffect(() => {
     if (user) {
-      loadProfile();
-      checkDailyStatus();
+      const initializeShop = async () => {
+        await loadProfile();
+        await checkDailyStatus();
+      };
+      initializeShop();
     }
   }, [user]);
 
@@ -127,6 +130,8 @@ const Shop = () => {
       if (status.error) showMessage(status.error, 'error');
     } catch (error) {
       console.error('Error verificando roca diaria:', error);
+      setDailyStatus({ available: false, error: 'No se pudo comprobar la recompensa diaria' });
+      showMessage('No se pudo comprobar la recompensa diaria', 'error');
     }
   };
 
@@ -237,9 +242,11 @@ const Shop = () => {
             <div className="daily-reward-details">
               <h3 className="daily-reward-name">Roca Normal Diaria</h3>
               <p className="daily-reward-desc">
-                {dailyStatus.available
-                  ? '¡Lista para extraer! Golpea 3 veces.'
-                  : `Disponible en ${countdown || 'espera...'}`}
+                {dailyStatus.loading
+                  ? 'Comprobando recompensa...'
+                  : dailyStatus.available
+                    ? '¡Lista para extraer! Golpea 3 veces.'
+                    : `Disponible en ${countdown || 'espera...'}`}
               </p>
             </div>
 
