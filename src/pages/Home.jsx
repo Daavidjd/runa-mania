@@ -195,15 +195,17 @@ const Home = () => {
             <button className="online-cancel-btn" onClick={stopSearching}>✕ Cancelar búsqueda</button>
           </div>
         ) : (
-          <button
-            className={`online-battle-btn ${battleDeck.length < 8 ? 'online-disabled' : ''}` }
-            onClick={handleRandomBattle}
-            title={battleDeck.length < 8 ? 'Necesitas 8 runas en el mazo compartido para el modo online' : 'Batalla online contra un rival aleatorio'}
-          >
-            <span className="online-btn-icon" aria-hidden="true">?</span>
-            <span className="online-btn-txt">BATALLA ONLINE</span>
-            <span className="online-btn-sub">{battleDeck.length < 8 ? `Mazo compartido ${battleDeck.length}/8` : 'vs. jugador aleatorio'}</span>
-          </button>
+          <section className="online-mode-card" aria-label="Modo de batalla online">
+            <span className="online-mode-badge">online</span>
+            <div className="online-mode-icon" aria-hidden="true">?</div>
+            <button
+              className={`online-battle-btn ${battleDeck.length < 8 ? 'online-disabled' : ''}`}
+              onClick={handleRandomBattle}
+              title={battleDeck.length < 8 ? 'Necesitas 8 runas en el mazo compartido para el modo online' : 'Batalla online contra un rival aleatorio'}
+            >
+              <span className="online-btn-txt">¡LUCHAR!</span>
+            </button>
+          </section>
         )}
 
         {matchError && <div className="online-match-error">{matchError}</div>}
