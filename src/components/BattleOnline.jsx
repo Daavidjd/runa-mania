@@ -428,16 +428,25 @@ const BattleOnline = () => {
 
   useEffect(() => {
     if (phase !== 'playing' || gameOver || !room.turnDeadlineAt || !roomIdRef.current) return undefined;
-    const remaining = Number(room.turnDeadlineAt) - Date.now();
-    const timeout = setTimeout(async () => {
+    let cancelled = false;
+    let timeout;
+    const checkTimeout = async () => {
       try {
         const updatedRoom = await claimOnlineTimeout(roomIdRef.current);
         if (updatedRoom) setRoom(updatedRoom);
+        if (!cancelled && !updatedRoom?.finished) {
+          timeout = setTimeout(checkTimeout, 1000);
+        }
       } catch (error) {
         console.error('Error resolviendo el tiempo agotado:', error);
+        if (!cancelled) timeout = setTimeout(checkTimeout, 1000);
       }
-    }, Math.max(0, remaining));
-    return () => clearTimeout(timeout);
+    };
+    timeout = setTimeout(checkTimeout, Math.max(0, Number(room.turnDeadlineAt) - Date.now()) + 500);
+    return () => {
+      cancelled = true;
+      clearTimeout(timeout);
+    };
   }, [phase, gameOver, room.turnDeadlineAt]);
 
   // ---------- MI TURNO ----------
