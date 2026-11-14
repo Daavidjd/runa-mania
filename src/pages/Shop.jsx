@@ -45,7 +45,9 @@ const Shop = () => {
   const [countdown, setCountdown] = useState('');
   const [message, setMessage] = useState('');
   const [messageType, setMessageType] = useState('');
-  const [loading, setLoading] = useState(true);\n  const [purchaseBusy, setPurchaseBusy] = useState(false);\n  const [dailyBusy, setDailyBusy] = useState(false);\n  const [dailyDeadline, setDailyDeadline] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [purchaseBusy, setPurchaseBusy] = useState(false);
+  const [dailyBusy, setDailyBusy] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -57,14 +59,12 @@ const Shop = () => {
   useEffect(() => {
     if (dailyStatus.available === false && dailyStatus.remaining > 0) {
       const deadline = Date.now() + dailyStatus.remaining;
-      setDailyDeadline(deadline);
 
       const updateCountdown = () => {
         const remaining = Math.max(0, deadline - Date.now());
         if (remaining === 0) {
           setCountdown('');
           setDailyStatus({ available: true });
-          setDailyDeadline(null);
           return;
         }
         const hours = Math.floor(remaining / (60 * 60 * 1000));
@@ -123,13 +123,15 @@ const Shop = () => {
     if (!user) return;
     try {
       const status = await getDailyRockStatus(user.uid);
-      setDailyStatus(status);\n      if (status.error) showMessage(status.error, 'error');
+      setDailyStatus(status);
+      if (status.error) showMessage(status.error, 'error');
     } catch (error) {
       console.error('Error verificando roca diaria:', error);
     }
   };
 
-  const handleBuyRock = async (rockType) => {\n    if (purchaseBusy) return;
+  const handleBuyRock = async (rockType) => {
+    if (purchaseBusy) return;
     const rock = ROCK_TYPES[rockType];
     if (!profile || profile.coins < rock.price) {
       showMessage('No tienes suficientes monedas', 'error');
@@ -137,7 +139,8 @@ const Shop = () => {
     }
 
     try {
-      const result = await buyRock(user.uid, rockType, rock.price);
+      setPurchaseBusy(true);
+      const result = await buyRock(user.uid, rockType);
       if (result.success) {
         await loadProfile();
         setActiveRock({ type: rockType, label: rock.name });
@@ -147,13 +150,16 @@ const Shop = () => {
     } catch (error) {
       console.error('Error comprando roca:', error);
       showMessage('Error al comprar la roca', 'error');
+    } finally {
+      setPurchaseBusy(false);
     }
   };
 
   const handleClaimDaily = async () => {
-    if (!dailyStatus.available) return;
+    if (!dailyStatus.available || dailyBusy) return;
 
     try {
+      setDailyBusy(true);
       const result = await claimDailyRock(user.uid);
       if (result.success) {
         await checkDailyStatus();
@@ -164,6 +170,9 @@ const Shop = () => {
       }
     } catch (error) {
       console.error('Error reclamando roca diaria:', error);
+      showMessage('No se pudo reclamar la roca diaria', 'error');
+    } finally {
+      setDailyBusy(false);
     }
   };
 
@@ -253,7 +262,8 @@ const Shop = () => {
           <div className="rocks-row-container">
             {Object.values(ROCK_TYPES).map((rock) => {
               const canAfford = (profile?.coins || 0) >= rock.price;
-              const rockImg = ROCK_IMAGES[rock.id]?.[0] || RocaBlanca1;\n              const dropRates = getDropRates(rock);
+              const rockImg = ROCK_IMAGES[rock.id]?.[0] || RocaBlanca1;
+              const dropRates = getDropRates(rock);
 
               return (
                 <div key={rock.id} className="rock-item-card">
@@ -268,7 +278,9 @@ const Shop = () => {
                     <img src={rockImg} alt={rock.name} className="rock-item-img" />
                   </div>
 
-                  <h3 className="rock-item-name">{rock.name}</h3>\n                  <p className="rock-item-description">{rock.description}</p>\n                  <p className="rock-drop-rates">{dropRates.map(rate => `${rate.label} ${rate.value}%`).join(' · ')}</p>
+                  <h3 className="rock-item-name">{rock.name}</h3>
+                  <p className="rock-item-description">{rock.description}</p>
+                  <p className="rock-drop-rates">{dropRates.map(rate => `${rate.label} ${rate.value}%`).join(' · ')}</p>
 
                   <button
                     className={`rock-buy-btn ${canAfford ? 'affordable' : 'unaffordable'}`}
