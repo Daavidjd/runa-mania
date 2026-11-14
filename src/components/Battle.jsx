@@ -32,31 +32,17 @@ const generateAIDeck = (difficulty) => {
   let deck = [];
 
   if (difficulty === 'Fácil') {
-    // Sky: 100% comunes (runas débiles, 2-4 flechas) — mazo NPC de 5
+    // Sky: 100% comunes — mazo de 8 runas
     const shuffled = [...comunRunes].sort(() => 0.5 - Math.random());
-    deck = shuffled.slice(0, 5).map(r => r.id);
+    deck = shuffled.slice(0, 8).map(r => r.id);
   } else if (difficulty === 'Medio') {
-    // elJonny: 60% comunes, 40% raras — mazo NPC de 5
-    const shuffledComun = [...comunRunes].sort(() => 0.5 - Math.random());
-    const shuffledRara = [...raraRunes].sort(() => 0.5 - Math.random());
-    deck = [
-      ...shuffledComun.slice(0, 3).map(r => r.id),
-      ...shuffledRara.slice(0, 2).map(r => r.id)
-    ];
+    // elJonny: exclusivamente runas raras.
+    deck = [...raraRunes].sort(() => Math.random() - 0.5).slice(0, 8).map(r => r.id);
   } else if (difficulty === 'Difícil') {
-    // Eustakio: 20% comunes, 40% raras, 40% épicas — mazo NPC de 5
-    const shuffledComun = [...comunRunes].sort(() => 0.5 - Math.random());
-    const shuffledRara = [...raraRunes].sort(() => 0.5 - Math.random());
-    const shuffledEpica = [...epicaRunes].sort(() => 0.5 - Math.random());
-    deck = [
-      ...shuffledComun.slice(0, 1).map(r => r.id),
-      ...shuffledRara.slice(0, 2).map(r => r.id),
-      ...shuffledEpica.slice(0, 2).map(r => r.id)
-    ];
+    // Eustakio: exclusivamente runas épicas.
+    deck = [...epicaRunes].sort(() => Math.random() - 0.5).slice(0, 8).map(r => r.id);
   }
-  return deck.slice(0, 5);
-
-  return deck;
+  return deck.slice(0, 8);
 };
 
 // Perfiles de rivales (IDs consistentes con Home)
@@ -67,7 +53,7 @@ const AI_OPPONENTS = [
     avatar: Bruja,
     difficulty: 'Fácil',
     difficultyColor: '#10b981',
-    reward: 20,
+    reward: 25,
     deck: generateAIDeck('Fácil') // ✅ Mazo dinámico
   },
   {
@@ -76,7 +62,7 @@ const AI_OPPONENTS = [
     avatar: Elfo,
     difficulty: 'Medio',
     difficultyColor: '#f59e0b',
-    reward: 50,
+    reward: 40,
     deck: generateAIDeck('Medio') // ✅ Mazo dinámico
   },
   {
@@ -85,7 +71,7 @@ const AI_OPPONENTS = [
     avatar: Caballero,
     difficulty: 'Difícil',
     difficultyColor: '#ef4444',
-    reward: 150,
+    reward: 60,
     deck: generateAIDeck('Difícil') // ✅ Mazo dinámico
   }
 ];
@@ -98,9 +84,9 @@ const getOpponent = () => {
 const getAttackDirections = (placedIdx, capturedIdxs) => {
   const dirs = { top: false, bottom: false, left: false, right: false };
   if (!capturedIdxs.length) return dirs;
-  const pr = Math.floor(placedIdx / 3), pc = placedIdx % 3;
+  const pr = Math.floor(placedIdx / 4), pc = placedIdx % 4;
   capturedIdxs.forEach(ci => {
-    const cr = Math.floor(ci / 3), cc = ci % 3;
+    const cr = Math.floor(ci / 4), cc = ci % 4;
     if (cr === pr - 1 && cc === pc) dirs.top = true;
     if (cr === pr + 1 && cc === pc) dirs.bottom = true;
     if (cr === pr && cc === pc - 1) dirs.left = true;
@@ -117,7 +103,7 @@ const Battle = () => {
   const [selectedOpponent] = useState(getOpponent);
 
   const [playerProfile, setPlayerProfile] = useState(null);
-  const [board, setBoard] = useState(Array(9).fill(null));
+  const [board, setBoard] = useState(Array(16).fill(null));
   const [playerHand, setPlayerHand] = useState([]);
   const [aiHand, setAiHand] = useState([]);
   const [turn, setTurn] = useState('player');
@@ -128,6 +114,7 @@ const Battle = () => {
   const [loading, setLoading] = useState(true);
 
   const [flippingCells, setFlippingCells] = useState([]);
+  const [captureOwnerOverrides, setCaptureOwnerOverrides] = useState({});
   const [pendingCaptures, setPendingCaptures] = useState([]);
   const [lastPlaced, setLastPlaced] = useState(null);
   const [showEndModal, setShowEndModal] = useState(false);
@@ -136,10 +123,12 @@ const Battle = () => {
   const [shakeHand, setShakeHand] = useState(false);
 
   const aiIsPlayingRef = useRef(false);
+  const npcRewardClaimedRef = useRef(false);
 
   const loadDeck = useCallback(async () => {
     setLoading(true);
     setShowEndModal(false);
+    npcRewardClaimedRef.current = false;
     try {
       if (user) {
         const profile = await getUserProfile(user.uid);
@@ -148,33 +137,39 @@ const Battle = () => {
 
       let playerRunes = [];
       if (user) {
-        const npcDeckIds = await getUserNpcDeck(user.uid); // mazo de 5 runas para NPC
+        const npcDeckIds = await getUserNpcDeck(user.uid); // mazo compartido de 8 runas
         playerRunes = npcDeckIds
           .map(id => RUNES_DB.find(r => r.id === id))
           .filter(Boolean)
-          .slice(0, 5)
+          .slice(0, 8)
           .map(r => ({ ...r, owner: 'player' }));
       }
-      if (playerRunes.length < 2) {
-        const shuffled = [...RUNES_DB].sort(() => 0.5 - Math.random());
-        playerRunes = shuffled.slice(0, 5).map(r => ({ ...r, owner: 'player' }));
+      if (playerRunes.length < 8) {
+        const existingIds = new Set(playerRunes.map(r => r.id));
+        const missingRunes = [...RUNES_DB]
+          .filter(r => !existingIds.has(r.id))
+          .sort(() => 0.5 - Math.random())
+          .slice(0, 8 - playerRunes.length)
+          .map(r => ({ ...r, owner: 'player' }));
+        playerRunes = [...playerRunes, ...missingRunes];
       }
 
       // ✅ Usamos el mazo generado dinámicamente según la dificultad
-      const aiRunes = selectedOpponent.deck
+      const aiRunes = generateAIDeck(selectedOpponent.difficulty)
         .map(id => RUNES_DB.find(r => r.id === id))
         .filter(Boolean)
         .map(r => ({ ...r, owner: 'ai' }));
 
       setPlayerHand(playerRunes);
       setAiHand(aiRunes);
-      setBoard(Array(9).fill(null));
+      setBoard(Array(16).fill(null));
       setTurn('player');
       setSelectedCard(null);
       setScores({ player: 0, ai: 0 });
       setGameOver(false);
       setWinner(null);
       setFlippingCells([]);
+      setCaptureOwnerOverrides({});
       setPendingCaptures([]);
       setLastPlaced(null);
       setAttackDirs({});
@@ -192,8 +187,8 @@ const Battle = () => {
   const resolveCaptures = useCallback((currentBoard, index, owner) => {
     const placed = currentBoard[index];
     if (!placed) return { board: currentBoard, captured: [] };
-    const row = Math.floor(index / 3);
-    const col = index % 3;
+    const row = Math.floor(index / 4);
+    const col = index % 4;
     const dirs = [
       { dr: -1, dc: 0, s: 'top', o: 'bottom' },
       { dr: 0, dc: 1, s: 'right', o: 'left' },
@@ -204,8 +199,8 @@ const Battle = () => {
     const captured = [];
     for (const { dr, dc, s, o } of dirs) {
       const nr = row + dr, nc = col + dc;
-      if (nr >= 0 && nr < 3 && nc >= 0 && nc < 3) {
-        const idx = nr * 3 + nc;
+      if (nr >= 0 && nr < 4 && nc >= 0 && nc < 4) {
+        const idx = nr * 4 + nc;
         const adj = final[idx];
         if (adj && adj.owner !== owner) {
           const atk = placed.arrows?.[s] || 0;
@@ -245,20 +240,25 @@ const Battle = () => {
     const newBoard = [...board];
     newBoard[index] = { ...card, owner: 'player' };
     const { board: resolved, captured } = resolveCaptures(newBoard, index, 'player');
-    const newScores = calcScores(resolved);
-    setBoard(resolved);
+    const finalBoard = applyCaptures(resolved, captured, 'player');
+    const finalScores = calcScores(finalBoard);
+    if (captured.length > 0) {
+      setCaptureOwnerOverrides(Object.fromEntries(captured.map(ci => [ci, board[ci]?.owner])));
+    }
+    setBoard(finalBoard);
     setPlayerHand(prev => prev.filter((_, i) => i !== selectedCard));
-    setScores(newScores);
+    setScores(finalScores);
     setSelectedCard(null);
     setLastPlaced(index);
     if (captured.length > 0) {
       const dirs = getAttackDirections(index, captured);
       setAttackDirs({ [index]: dirs });
       setTimeout(() => {
-        const boardWithNewOwners = applyCaptures(resolved, captured, 'player');
-        setBoard(boardWithNewOwners);
+        setFlippingCells(captured);
         setPendingCaptures(captured);
         setAttackDirs({});
+        // A los 300 ms (mitad del giro) se revela el nuevo propietario.
+        setTimeout(() => setCaptureOwnerOverrides({}), 300);
         setTimeout(() => {
           setFlippingCells([]);
           setPendingCaptures([]);
@@ -267,13 +267,13 @@ const Battle = () => {
     } else {
       setTimeout(() => setLastPlaced(null), 600);
     }
-    const isPlayerEmpty = playerHand.length - 1 === 0;
-    const isAiEmpty = aiHand.length === 0;
-    if (isPlayerEmpty && isAiEmpty) {
-      const result = newScores.player > newScores.ai ? 'player' : newScores.ai > newScores.player ? 'ai' : 'draw';
+
+    const boardIsFull = finalBoard.every(cell => cell !== null);
+    if (boardIsFull) {
+      const result = finalScores.player > finalScores.ai ? 'player' : finalScores.ai > finalScores.player ? 'ai' : 'draw';
       setGameOver(true);
       setWinner(result);
-      setTimeout(() => setShowEndModal(true), 900);
+      setTimeout(() => setShowEndModal(true), captured.length > 0 ? 1700 : 900);
     } else {
       setTimeout(() => {
         setTurn('ai');
@@ -287,43 +287,70 @@ const Battle = () => {
     aiIsPlayingRef.current = true;
     const timer = setTimeout(() => {
       let bestMove = null;
-      let maxCap = -1;
-      const emptyCells = [];
-      for (let i = 0; i < board.length; i++) {
-        if (board[i] === null) emptyCells.push(i);
-      }
+      let bestScore = -Infinity;
+      const emptyCells = board.map((cell, index) => cell === null ? index : -1).filter(index => index >= 0);
       for (const card of aiHand) {
         for (const bi of emptyCells) {
           const testBoard = [...board];
           testBoard[bi] = { ...card, owner: 'ai' };
           const { captured } = resolveCaptures(testBoard, bi, 'ai');
-          if (captured.length > maxCap) {
-            maxCap = captured.length;
+          const simulated = applyCaptures(testBoard, captured, 'ai');
+          // Prioriza capturas, pero evita dejar flancos débiles al siguiente turno.
+          let incomingThreat = 0;
+          const row = Math.floor(bi / 4), col = bi % 4;
+          const neighbors = [
+            { dr: -1, dc: 0, attack: 'bottom', defend: 'top' },
+            { dr: 0, dc: 1, attack: 'left', defend: 'right' },
+            { dr: 1, dc: 0, attack: 'top', defend: 'bottom' },
+            { dr: 0, dc: -1, attack: 'right', defend: 'left' }
+          ];
+          for (const { dr, dc, attack, defend } of neighbors) {
+            const nr = row + dr, nc = col + dc;
+            if (nr < 0 || nr >= 4 || nc < 0 || nc >= 4) continue;
+            const adjacent = simulated[nr * 4 + nc];
+            if (adjacent?.owner === 'player' && (adjacent.arrows?.[attack] || 0) > (card.arrows?.[defend] || 0)) {
+              incomingThreat += 1 + ((adjacent.arrows?.[attack] || 0) - (card.arrows?.[defend] || 0)) * 0.25;
+            }
+          }
+          const centerBonus = (row === 1 || row === 2 ? 0.2 : 0) + (col === 1 || col === 2 ? 0.2 : 0);
+          const score = captured.length * 12 - incomingThreat * 5 + centerBonus + Math.random() * 0.05;
+          if (score > bestScore) {
+            bestScore = score;
             bestMove = { card, bi };
           }
         }
       }
       if (!bestMove) {
-        const randomCard = aiHand[Math.floor(Math.random() * aiHand.length)];
-        const randomCell = emptyCells[Math.floor(Math.random() * emptyCells.length)];
-        bestMove = { card: randomCard, bi: randomCell };
+        const finalScores = calcScores(board);
+        setScores(finalScores);
+        setGameOver(true);
+        setWinner(finalScores.player > finalScores.ai ? 'player' : finalScores.ai > finalScores.player ? 'ai' : 'draw');
+        setTimeout(() => setShowEndModal(true), 900);
+        aiIsPlayingRef.current = false;
+        return;
       }
+
       const newBoard = [...board];
       newBoard[bestMove.bi] = { ...bestMove.card, owner: 'ai' };
       const { board: resolved, captured } = resolveCaptures(newBoard, bestMove.bi, 'ai');
-      const newScores = calcScores(resolved);
-      setBoard(resolved);
+      const finalBoard = applyCaptures(resolved, captured, 'ai');
+      const finalScores = calcScores(finalBoard);
+      if (captured.length > 0) {
+        setCaptureOwnerOverrides(Object.fromEntries(captured.map(ci => [ci, board[ci]?.owner])));
+      }
+      setBoard(finalBoard);
       setAiHand(prev => prev.filter(r => r.id !== bestMove.card.id));
-      setScores(newScores);
+      setScores(finalScores);
       setLastPlaced(bestMove.bi);
       if (captured.length > 0) {
         const dirs = getAttackDirections(bestMove.bi, captured);
         setAttackDirs({ [bestMove.bi]: dirs });
         setTimeout(() => {
-          const boardWithNewOwners = applyCaptures(resolved, captured, 'ai');
-          setBoard(boardWithNewOwners);
+          setFlippingCells(captured);
           setPendingCaptures(captured);
           setAttackDirs({});
+          // El color cambia exactamente en el punto medio del giro.
+          setTimeout(() => setCaptureOwnerOverrides({}), 300);
           setTimeout(() => {
             setFlippingCells([]);
             setPendingCaptures([]);
@@ -332,14 +359,14 @@ const Battle = () => {
       } else {
         setTimeout(() => setLastPlaced(null), 600);
       }
-      const isAiEmpty = aiHand.length - 1 === 0;
-      const isPlayerEmpty = playerHand.length === 0;
-      if (isAiEmpty && isPlayerEmpty) {
-        const result = newScores.player > newScores.ai ? 'player' : newScores.ai > newScores.player ? 'ai' : 'draw';
+
+      const boardIsFull = finalBoard.every(cell => cell !== null);
+      if (boardIsFull) {
+        const result = finalScores.player > finalScores.ai ? 'player' : finalScores.ai > finalScores.player ? 'ai' : 'draw';
         setGameOver(true);
         setWinner(result);
-        setTimeout(() => setShowEndModal(true), 900);
-        setTimeout(() => { aiIsPlayingRef.current = false; }, 1000);
+        setTimeout(() => setShowEndModal(true), captured.length > 0 ? 1700 : 900);
+        aiIsPlayingRef.current = false;
       } else {
         setTimeout(() => {
           setTurn('player');
@@ -349,23 +376,30 @@ const Battle = () => {
       }
     }, 1100);
     return () => { clearTimeout(timer); };
-  }, [turn, gameOver]);
+  }, [turn, gameOver, board, aiHand, playerHand, resolveCaptures, applyCaptures, calcScores]);
+
+  const npcBattleReward = winner === 'player'
+    ? selectedOpponent.reward
+    : winner === 'draw'
+      ? Math.round(selectedOpponent.reward * 0.5)
+      : Math.max(8, Math.round(selectedOpponent.reward * 0.2));
 
   useEffect(() => {
-    if (showEndModal && winner === 'player' && user) {
-      const claimReward = async () => {
-        try {
-          const profile = await getUserProfile(user.uid);
-          if (profile) {
-            await updateUserProfile(user.uid, { coins: (profile.coins || 0) + selectedOpponent.reward });
-          }
-        } catch (err) {
-          console.error('Error reclamando recompensa:', err);
+    if (!showEndModal || !winner || !user || npcRewardClaimedRef.current) return;
+    npcRewardClaimedRef.current = true;
+    const claimReward = async () => {
+      try {
+        const profile = await getUserProfile(user.uid);
+        if (profile) {
+          await updateUserProfile(user.uid, { coins: (Number(profile.coins) || 0) + npcBattleReward });
         }
-      };
-      claimReward();
-    }
-  }, [showEndModal, winner, user, selectedOpponent.reward]);
+      } catch (err) {
+        npcRewardClaimedRef.current = false;
+        console.error('Error reclamando recompensa NPC:', err);
+      }
+    };
+    claimReward();
+  }, [showEndModal, winner, user, npcBattleReward]);
 
   const getPlayerAvatar = useCallback(() => {
     const found = AVATAR_OPTIONS.find(a => a.id === playerProfile?.avatarId);
@@ -412,17 +446,6 @@ const Battle = () => {
         </div>
       </div>
 
-      {/* MAZO ENEMIGO */}
-      <section className="bp-hand-area bp-hand-ai-area">
-        <div className="bp-hand-track">
-          {aiHand.map((r) => (
-            <div key={r.id} className="bp-slot bp-slot-ai">
-              <RuneCard rune={r} owned={true} battleMode={true} />
-            </div>
-          ))}
-        </div>
-      </section>
-
       {/* ZONA CENTRAL */}
       <main className="bp-arena-center">
         <div className={`bp-turn-indicator ${turn === 'ai' ? 'is-turn-ai' : 'is-turn-player'}`}>
@@ -435,16 +458,19 @@ const Battle = () => {
         </div>
 
         <div className="bp-board-container">
-          <div className="bp-grid-3x3">
-            {board.map((cell, i) => (
+          <div className="bp-grid-4x4">
+            {board.map((cell, i) => {
+              const visualOwner = captureOwnerOverrides[i] || cell?.owner;
+              return (
               <div
                 key={i}
-                className={`bp-cell ${cell ? `bp-cell-${cell.owner}` : 'bp-cell-empty'} ${flippingCells.includes(i) || pendingCaptures.includes(i) ? 'bp-cell-flip' : ''} ${lastPlaced === i ? 'bp-cell-placed' : ''}`}
+                className={`bp-cell ${cell ? `bp-cell-${visualOwner}` : 'bp-cell-empty'} ${flippingCells.includes(i) || pendingCaptures.includes(i) ? 'bp-cell-flip' : ''} ${lastPlaced === i ? 'bp-cell-placed' : ''}`}
                 onClick={() => handleCellClick(i)}
               >
                 {cell ? (
                   <RuneCard
                     rune={cell}
+                    visualOwner={visualOwner}
                     owned={true}
                     battleMode={true}
                     isFlipping={flippingCells.includes(i) || pendingCaptures.includes(i)}
@@ -455,7 +481,8 @@ const Battle = () => {
                   <div className="bp-cell-slot-dot">᛭</div>
                 )}
               </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       </main>
@@ -513,16 +540,14 @@ const Battle = () => {
               </div>
             </div>
 
-            {winner === 'player' && (
-              <div className="bp-modal-reward">
-                <span className="bp-reward-coin">🪙</span>
-                <span className="bp-reward-val">+{selectedOpponent.reward} Monedas</span>
-              </div>
-            )}
+            <div className="bp-modal-reward">
+              <span className="bp-reward-coin">🪙</span>
+              <span className="bp-reward-val">+{npcBattleReward} Monedas {winner === 'player' ? 'por victoria' : winner === 'draw' ? 'por empate' : 'de consolación'}</span>
+            </div>
 
             <div className="bp-modal-actions">
               <button className="bp-btn bp-btn-repeat" onClick={() => { setShowEndModal(false); loadDeck(); }}>
-                🔄 Revancha
+                Revancha
               </button>
               <button className="bp-btn bp-btn-exit" onClick={() => navigate('/home')}>
                  Salir a Base

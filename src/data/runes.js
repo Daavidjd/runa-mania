@@ -1,33 +1,33 @@
 // Importamos las imágenes de las runas originales y nuevas
-import tibudrac from '../assets/runes/tibudrac.png';
-import rocko from '../assets/runes/rocko.png';
-import aligato from '../assets/runes/aligato.png';
-import catcrank from '../assets/runes/catcrank.png';
-import cucakarcha from '../assets/runes/cucakarcha.png';
-import elfo from '../assets/runes/elfo.png';
-import golcan from '../assets/runes/golcan.png';
-import perry from '../assets/runes/perry.png';
+import tibudrac from '../assets/runes/Tibudrac.png';
+import rocko from '../assets/runes/Rocko.png';
+import aligato from '../assets/runes/Aligato.png';
+import catcrank from '../assets/runes/Catcrank.png';
+import cucakarcha from '../assets/runes/Cucakarcha.png';
+import elfo from '../assets/runes/Elfo.png';
+import golcan from '../assets/runes/Golcan.png';
+import perry from '../assets/runes/Perry.png';
 import tigreoso from '../assets/runes/tigreoso.png';
-import trompi from '../assets/runes/trompi.png';
+import trompi from '../assets/runes/Trompi.png';
 import escorpedo from '../assets/runes/escorpedo.png';
-import infernalSpider from '../assets/runes/infernalSpider.png';
-import lagartoFuego from '../assets/runes/lagartoFuego.png';
-import mantatiburon from '../assets/runes/mantatiburon.png';
-import orcaVoladora from '../assets/runes/orcaVoladora.png';
-import pezInfernal from '../assets/runes/pezInfernal.png';
-import rataroke from '../assets/runes/rataroke.png';
+import infernalSpider from '../assets/runes/InfernalSpider.png';
+import lagartoFuego from '../assets/runes/LagartoFuego.png';
+import mantatiburon from '../assets/runes/Mantatiburon.png';
+import orcaVoladora from '../assets/runes/OrcaVoladora.png';
+import pezInfernal from '../assets/runes/PezInfernal.png';
+import rataroke from '../assets/runes/Rataroke.png';
 import scorpi from '../assets/runes/scorpi.png';
-import superrayo from '../assets/runes/superrayo.png';
+import superrayo from '../assets/runes/Superrayo.png';
 // NUEVAS RUNAS
-import extrarmi from '../assets/runes/extrarmi.png';
-import gallilien from '../assets/runes/gallilien.png';
-import gatuela from '../assets/runes/gatuela.png';
-import hiereleon from '../assets/runes/hiereleon.png';
-import piriposa from '../assets/runes/piriposa.png';
-import scorpano from '../assets/runes/scorpano.png';
+import extrarmi from '../assets/runes/Extrarmi.png';
+import gallilien from '../assets/runes/Gallilien.png';
+import gatuela from '../assets/runes/Gatuela.png';
+import hiereleon from '../assets/runes/Hiereleon.png';
+import piriposa from '../assets/runes/Piriposa.png';
+import scorpano from '../assets/runes/Scorpano.png';
 import sikifis from '../assets/runes/sikifis.png';
-import skarpi from '../assets/runes/skarpi.png';
-import treerex from '../assets/runes/treerex.png';
+import skarpi from '../assets/runes/Skarpi.png';
+import treerex from '../assets/runes/Treerex.png';
 
 export const RUNES_DB = [
   // ==========================================

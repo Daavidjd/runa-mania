@@ -398,3 +398,8 @@
   font-size: 12px;
   font-weight: 900;
 }
+
+.rock-buy-btn:disabled {
+  opacity: 0.75;
+}
+

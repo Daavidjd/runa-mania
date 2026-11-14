@@ -1,0 +1,133 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function isUser(userId) {
+      return signedIn() && request.auth.uid == userId;
+    }
+
+    // Perfiles y datos privados del usuario.
+    match /users/{userId} {
+      allow read: if signedIn();
+      allow create, delete: if isUser(userId);
+      allow update: if isUser(userId)
+        || (
+          signedIn()
+          && request.auth.uid != userId
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['friendIds'])
+          && request.resource.data.friendIds is list
+        );
+
+      match /collection/{runeId} {
+        allow read, create, update, delete: if isUser(userId);
+      }
+
+      // Recibos de minería para que reintentar un guardado no duplique la runa.
+      match /miningAwards/{awardId} {
+        allow read, create: if isUser(userId);
+        allow update, delete: if false;
+      }
+
+      match /decks/{deckId} {
+        // Los mazos de otros jugadores se leen para preparar batallas online.
+        allow read: if signedIn();
+        allow create, update, delete: if isUser(userId);
+      }
+    }
+
+    // Catálogo de runas: lectura autenticada, nunca escritura desde cliente.
+    match /runes/{runeId} {
+      allow read: if signedIn();
+      allow write: if false;
+    }
+
+    match /friendRequests/{requestId} {
+      allow read: if signedIn()
+        && (resource.data.from == request.auth.uid || resource.data.to == request.auth.uid);
+
+      allow create: if signedIn()
+        && request.resource.data.from == request.auth.uid
+        && request.resource.data.to is string
+        && request.resource.data.to != request.auth.uid
+        && request.resource.data.status == 'pending';
+
+      // Solo se permite cambiar el estado y la marca de resolución.
+      allow update: if signedIn()
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'resolvedAt'])
+        && (
+          (
+            resource.data.to == request.auth.uid
+            && request.resource.data.status in ['accepted', 'declined']
+          )
+          || (
+            resource.data.from == request.auth.uid
+            && request.resource.data.status == 'cancelled'
+          )
+        );
+
+      allow delete: if signedIn()
+        && (resource.data.from == request.auth.uid || resource.data.to == request.auth.uid);
+    }
+
+    match /challenges/{challengeId} {
+      allow read: if signedIn()
+        && (resource.data.from == request.auth.uid || resource.data.to == request.auth.uid);
+
+      allow create: if signedIn()
+        && request.resource.data.from == request.auth.uid
+        && request.resource.data.to is string
+        && request.resource.data.to != request.auth.uid
+        && request.resource.data.status == 'pending';
+
+      // Solo el destinatario puede aceptar o rechazar; los datos del reto son inmutables.
+      allow update: if signedIn()
+        && resource.data.to == request.auth.uid
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'acceptedBy', 'resolvedAt'])
+        && request.resource.data.status in ['accepted', 'declined']
+        && (
+          request.resource.data.status != 'accepted'
+          || request.resource.data.acceptedBy == request.auth.uid
+        );
+
+      allow delete: if false;
+    }
+
+    // Cola del matchmaking aleatorio. Solo el propietario crea/abandona;
+    // cualquier jugador autenticado puede reclamar una entrada waiting para sí.
+    match /matchmakingQueue/{uid} {
+      allow read: if signedIn();
+      allow create: if isUser(uid)
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.status == 'waiting';
+      allow update: if isUser(uid)
+        || (
+          signedIn()
+          && resource.data.status == 'waiting'
+          && request.resource.data.status == 'matched'
+          && request.resource.data.opponentUid == request.auth.uid
+          && request.resource.data.uid == uid
+        );
+      allow delete: if isUser(uid);
+    }
+
+    match /matches/{matchId} {
+      allow read: if signedIn()
+        && (resource.data.player1 == request.auth.uid || resource.data.player2 == request.auth.uid);
+
+      allow create: if signedIn()
+        && request.resource.data.player1 == request.auth.uid
+        && request.resource.data.player2 is string
+        && request.resource.data.player2 != request.auth.uid;
+
+      allow update: if signedIn()
+        && (resource.data.player1 == request.auth.uid || resource.data.player2 == request.auth.uid)
+        && request.resource.data.player1 == resource.data.player1
+        && request.resource.data.player2 == resource.data.player2;
+
+      allow delete: if false;
+    }
+  }
+}

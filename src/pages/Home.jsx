@@ -4,13 +4,11 @@ import { useAuth } from '../context/AuthContext';
 import {
   getUserProfile,
   getPlayerDecks,
-  findRandomMatch,
-  watchMyQueueEntry,
-  leaveQueue
+  leaveMatchmakingQueue
 } from '../services/firestore';
+
 import { RUNES_DB } from '../data/runes';
 import { AVATAR_OPTIONS } from '../data/avatars'; // ✅ IMPORTACIÓN CENTRALIZADA
-import RuneCard from '../components/RuneCard';
 
 import './Home.css';
 
@@ -49,8 +47,7 @@ const Home = () => {
   const navigate = useNavigate();
 
   const [profile, setProfile] = useState(null);
-  const [npcDeck, setNpcDeck] = useState([]);    // mazo de 5 runas para batallas NPC
-  const [onlineDeck, setOnlineDeck] = useState([]); // mazo de 8 runas para batallas online
+  const [battleDeck, setBattleDeck] = useState([]); // mazo compartido de 8 runas para NPC y online
   const [showOpponentModal, setShowOpponentModal] = useState(false);
 
   // 🎮 Estado del matchmaking aleatorio (batalla online con cualquiera)
@@ -69,8 +66,7 @@ const Home = () => {
         const userProfile = await getUserProfile(user.uid);
         if (userProfile) setProfile(userProfile);
         const rawDecks = await getPlayerDecks(user.uid);
-        setNpcDeck((rawDecks.npc || []).map(id => RUNES_DB.find(r => r.id === id)).filter(Boolean));
-        setOnlineDeck((rawDecks.online || []).map(id => RUNES_DB.find(r => r.id === id)).filter(Boolean));
+        setBattleDeck((rawDecks.shared || rawDecks.online || rawDecks.npc || []).map(id => RUNES_DB.find(r => r.id === id)).filter(Boolean));
       } catch (err) {
         console.error('Error cargando datos del home:', err);
       }
@@ -88,77 +84,20 @@ const Home = () => {
   const stopSearching = async () => {
     setSearching(false);
     localStorage.removeItem('randomMatchPending');
-    if (user) await leaveQueue(user.uid);
+    if (user) await leaveMatchmakingQueue(user.uid);
   };
 
   const handleRandomBattle = async () => {
     if (!user || searching) return;
-    if (onlineDeck.length < 8) {
-      setMatchError('Necesitas el mazo ONLINE completo de 8 runas para luchar 🔵🔴');
+    if (battleDeck.length < 8) {
+      setMatchError('Necesitas completar tu mazo de batalla con 8 runas para luchar 🔵🔴');
       setTimeout(() => setMatchError(''), 3500);
       return;
     }
     setMatchError('');
-    setSearching(true);
-    localStorage.setItem('randomMatchPending', '1');
-
-    const displayName = profile?.username || user.displayName || user.email?.split('@')[0] || 'Invocador';
-    const res = await findRandomMatch(user.uid, displayName, profile?.avatarId || 'mago');
-
-    if (!res.success) {
-      setSearching(false);
-      localStorage.removeItem('randomMatchPending');
-      setMatchError(res.message || 'No se pudo conectar con la arena online');
-      setTimeout(() => setMatchError(''), 3500);
-      return;
-    }
-
-    if (res.matched) {
-      // El segundo en llegar empareja al primero: entramos directo a la sala
-      localStorage.setItem('onlineBattle', JSON.stringify({
-        roomId: res.roomId,
-        opponentUid: res.opponentUid,
-        opponentName: res.opponentName,
-        opponentAvatarId: res.opponentAvatarId,
-        role: 'random'
-      }));
-      localStorage.removeItem('randomMatchPending');
-      navigate('/battle-online');
-    }
-    // Si no hay rival aún, el useEffect de abajo nos mantiene escuchando la cola
+    localStorage.setItem('onlineBattle', JSON.stringify({ role: 'random', searching: true }));
+    navigate('/battle-online');
   };
-
-  // ⚔️ Escucha en tiempo real: cuando alguien nos encuentra en la cola, entramos a la sala
-  useEffect(() => {
-    if (!user || !searching) return undefined;
-    let navigated = false;
-    let expired = false;
-    const unsub = watchMyQueueEntry(user.uid, (entry) => {
-      if (!entry || navigated || expired) return;
-      if (entry.status === 'matched' && entry.roomId) {
-        navigated = true;
-        localStorage.setItem('onlineBattle', JSON.stringify({
-          roomId: entry.roomId,
-          opponentUid: entry.opponentUid,
-          opponentName: entry.opponentName || 'Rival',
-          opponentAvatarId: entry.opponentAvatarId || 'mago',
-          role: 'random'
-        }));
-        localStorage.removeItem('randomMatchPending');
-        setSearching(false);
-        navigate('/battle-online');
-      } else if (typeof entry.searchedAt === 'number' && Date.now() - entry.searchedAt > 60000) {
-        // ⏱️ Llevamos más de 1 minuto esperando: avisamos y salimos de la cola
-        expired = true;
-        setSearching(false);
-        localStorage.removeItem('randomMatchPending');
-        leaveQueue(user.uid);
-        setMatchError('No hay rivales disponibles ahora mismo. Inténtalo de nuevo 🌙');
-        setTimeout(() => setMatchError(''), 4000);
-      }
-    });
-    return () => unsub();
-  }, [user, searching, navigate]);
 
   // Al volver a Home sin batalla activa (p. ej. cancelado), limpiar cola pendiente
   useEffect(() => {
@@ -223,78 +162,53 @@ const Home = () => {
 
           {/* BOTÓN DE BATALLA */}
           <button
-            className={`huge-battle-cta ${npcDeck.length < 5 ? 'cta-disabled' : ''}`}
-            onClick={() => npcDeck.length >= 5 && navigate('/battle')}
-            disabled={npcDeck.length < 5}
-            title={npcDeck.length < 5 ? `Necesitas 5 runas en el mazo NPC (${npcDeck.length}/5)` : 'Iniciar batalla'}
+            className={`huge-battle-cta ${battleDeck.length < 8 ? 'cta-disabled' : ''}`}
+            onClick={() => battleDeck.length >= 8 && navigate('/battle')}
+            disabled={battleDeck.length < 8}
+            title={battleDeck.length < 8 ? `Necesitas 8 runas en el mazo de batalla (${battleDeck.length}/8)` : 'Iniciar batalla'}
           >
             <div className="cta-glare"></div>
             <div className="cta-main-content">
-              <span className="cta-swords">{npcDeck.length < 5 ? '' : '⚔️'}</span>
+              <span className="cta-swords">{battleDeck.length < 8 ? '' : '⚔️'}</span>
               <span className="cta-txt">
-                {npcDeck.length < 5 ? 'MAZO NPC INCOMPLETO' : '¡A LUCHAR!'}
+                {battleDeck.length < 8 ? 'MAZO INCOMPLETO' : '¡A LUCHAR!'}
               </span>
             </div>
-            {npcDeck.length < 5 && (
-              <span className="cta-sub">Equipas {npcDeck.length}/5 runas en el mazo NPC</span>
+            {battleDeck.length < 8 && (
+              <span className="cta-sub">Equipas {battleDeck.length}/8 runas en el mazo compartido</span>
             )}
           </button>
 
-          {/* 🎮 BOTÓN DE BATALLA ONLINE ALEATORIA */}
-          {searching ? (
-            <div className="online-search-box">
-              <div className="online-search-row">
-                <span className="online-search-orb"></span>
-                <div className="online-search-text">
-                  <span className="online-search-title">BUSCANDO RIVAL...</span>
-                  <span className="online-search-sub">🔵🔴 Cualquier invocador · 50/50</span>
-                </div>
-              </div>
-              <button className="online-cancel-btn" onClick={stopSearching}>✕ Cancelar búsqueda</button>
-            </div>
-          ) : (
-            <button
-              className={`online-battle-btn ${onlineDeck.length < 8 ? 'online-disabled' : ''}`}
-              onClick={handleRandomBattle}
-              title={onlineDeck.length < 8 ? 'Necesitas 8 runas en el mazo ONLINE para el modo online' : 'Batalla online contra un rival aleatorio'}
-            >
-              <span className="online-btn-icon">🌐</span>
-              <span className="online-btn-txt">BATALLA ONLINE</span>
-              <span className="online-btn-sub">{onlineDeck.length < 8 ? `Mazo online ${onlineDeck.length}/8` : 'vs. jugador aleatorio'}</span>
-            </button>
-          )}
-
-          {matchError && <div className="online-match-error">{matchError}</div>}
         </div>
 
-        {/* VISTA PREVIA DE LOS DOS MAZOS */}
-        {[
-          { title: '🤖 MAZO NPC', deck: npcDeck, size: 5, color: '#f39c12' },
-          { title: '🌐 MAZO ONLINE', deck: onlineDeck, size: 8, color: '#a855f7' }
-        ].map(({ title, deck, size, color }) => (
-          <div className="home-deck-preview" key={title}>
-            <div className="deck-preview-header">
-              <span className="deck-preview-title" style={{ color }}>{title}</span>
-              <span className={`deck-preview-count ${deck.length === size ? 'deck-count-ok' : ''}`}>{deck.length}/{size}</span>
+        {/* BATALLA ONLINE: fuera de la tarjeta NPC */}
+        {/* 🎮 BOTÓN DE BATALLA ONLINE ALEATORIA */}
+        {searching ? (
+          <div className="online-search-box">
+            <div className="online-search-row">
+              <span className="online-search-orb"></span>
+              <div className="online-search-text">
+                <span className="online-search-title">BUSCANDO RIVAL...</span>
+                <span className="online-search-sub">🔵🔴 Cualquier invocador · 50/50</span>
+              </div>
             </div>
-            <div className="deck-preview-track">
-              {Array.from({ length: size }).map((_, i) => {
-                const rune = deck[i];
-                return (
-                  <div key={i} className="deck-preview-slot">
-                    {rune ? (
-                      <RuneCard rune={rune} owned={true} battleMode={true} />
-                    ) : (
-                      <div className="deck-preview-empty">
-                        <span className="empty-plus">+</span>
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
+            <button className="online-cancel-btn" onClick={stopSearching}>✕ Cancelar búsqueda</button>
           </div>
-        ))}
+        ) : (
+          <section className="online-mode-card" aria-label="Modo de batalla online">
+            <span className="online-mode-badge">online</span>
+            <div className="online-mode-icon" aria-hidden="true">?</div>
+            <button
+              className={`online-battle-btn ${battleDeck.length < 8 ? 'online-disabled' : ''}`}
+              onClick={handleRandomBattle}
+              title={battleDeck.length < 8 ? 'Necesitas 8 runas en el mazo compartido para el modo online' : 'Batalla online contra un rival aleatorio'}
+            >
+              <span className="online-btn-txt">¡LUCHAR!</span>
+            </button>
+          </section>
+        )}
+
+        {matchError && <div className="online-match-error">{matchError}</div>}
 
         <div className="home-coming-soon">
           <span className="coming-soon-rune">ᛟ</span>

@@ -11,9 +11,154 @@ import {
   where,
   limit as fsLimit,
   serverTimestamp,
-  onSnapshot
+  onSnapshot,
+  writeBatch,
+  runTransaction
 } from 'firebase/firestore';
 import { db } from './firebase';
+import { ROCK_TYPES } from '../data/runes';
+
+const MATCH_QUEUE = 'matchmakingQueue';
+const MATCH_QUEUE_STALE_MS = 45000;
+
+const matchedResult = (uid, entry) => ({
+  success: true,
+  matched: true,
+  roomId: entry.roomId,
+  opponentUid: entry.opponentUid,
+  opponentName: entry.opponentName || 'Rival',
+  opponentAvatarId: entry.opponentAvatarId || 'mago',
+  matchOrder: entry.matchOrder || [entry.opponentUid, uid]
+});
+
+// Cola aleatoria en Firestore. La transacción reserva simultáneamente a ambos
+// jugadores; el orden por searchedAt + UID evita que dos clientes se reclamen.
+export const findRandomMatch = async (uid, name, avatarId) => {
+  const ownRef = doc(db, MATCH_QUEUE, uid);
+  const now = Date.now();
+  try {
+    const registration = await runTransaction(db, async transaction => {
+      const ownSnap = await transaction.get(ownRef);
+      const own = ownSnap.exists() ? ownSnap.data() : null;
+      if (own?.status === 'matched' && own.roomId && own.opponentUid) {
+        return { matched: true, entry: own };
+      }
+      const isFresh = own?.status === 'waiting'
+        && Number.isFinite(Number(own.lastSeenAt))
+        && now - Number(own.lastSeenAt) <= MATCH_QUEUE_STALE_MS;
+      const searchedAt = isFresh ? Number(own.searchedAt) : now;
+      transaction.set(ownRef, {
+        uid, name: name || 'Invocador', avatarId: avatarId || 'mago',
+        status: 'waiting', searchedAt, lastSeenAt: now
+      });
+      return { matched: false, searchedAt };
+    });
+    if (registration.matched) return matchedResult(uid, registration.entry);
+    const searchedAt = registration.searchedAt;
+
+    const queueSnap = await getDocs(query(
+      collection(db, MATCH_QUEUE),
+      where('status', '==', 'waiting'),
+      fsLimit(50)
+    ));
+    const candidates = queueSnap.docs
+      .filter(item => item.id !== uid)
+      .map(item => ({ uid: item.id, ...item.data() }))
+      .filter(item => {
+        const candidateSeen = Number(item.lastSeenAt ?? item.searchedAt);
+        const candidateSearch = Number(item.searchedAt);
+        if (!Number.isFinite(candidateSeen) || !Number.isFinite(candidateSearch)
+          || now - candidateSeen > MATCH_QUEUE_STALE_MS) return false;
+        return candidateSearch < searchedAt
+          || (candidateSearch === searchedAt && item.uid.localeCompare(uid) < 0);
+      })
+      .sort((a, b) => Number(a.searchedAt) - Number(b.searchedAt)
+        || a.uid.localeCompare(b.uid));
+
+    for (const opponent of candidates) {
+      const opponentRef = doc(db, MATCH_QUEUE, opponent.uid);
+      const roomId = `online-${now}-${[uid, opponent.uid].sort().join('-').slice(0, 24)}`;
+      const matchOrder = [opponent.uid, uid];
+      const result = await runTransaction(db, async transaction => {
+        const [myLatestSnap, opponentLatestSnap] = await Promise.all([
+          transaction.get(ownRef),
+          transaction.get(opponentRef)
+        ]);
+        if (!myLatestSnap.exists() || !opponentLatestSnap.exists()) return null;
+        const mine = myLatestSnap.data();
+        const rival = opponentLatestSnap.data();
+        const txNow = Date.now();
+        const mineFresh = mine.status === 'waiting'
+          && txNow - Number(mine.lastSeenAt ?? mine.searchedAt) <= MATCH_QUEUE_STALE_MS;
+        const rivalFresh = rival.status === 'waiting'
+          && txNow - Number(rival.lastSeenAt ?? rival.searchedAt) <= MATCH_QUEUE_STALE_MS;
+        const rivalHasPriority = Number(rival.searchedAt) < Number(mine.searchedAt)
+          || (Number(rival.searchedAt) === Number(mine.searchedAt) && opponent.uid.localeCompare(uid) < 0);
+        if (!mineFresh || !rivalFresh || !rivalHasPriority) return null;
+
+        transaction.update(ownRef, {
+          status: 'matched', opponentUid: opponent.uid,
+          opponentName: rival.name || 'Rival',
+          opponentAvatarId: rival.avatarId || 'mago',
+          roomId, matchOrder, matchedAt: txNow
+        });
+        transaction.update(opponentRef, {
+          status: 'matched', opponentUid: uid,
+          opponentName: mine.name || 'Invocador',
+          opponentAvatarId: mine.avatarId || 'mago',
+          roomId, matchOrder, matchedAt: txNow
+        });
+        return {
+          success: true, matched: true, roomId,
+          opponentUid: opponent.uid,
+          opponentName: rival.name || 'Rival',
+          opponentAvatarId: rival.avatarId || 'mago',
+          matchOrder
+        };
+      });
+      if (result?.matched) return result;
+    }
+
+    const latestSnap = await getDoc(ownRef);
+    const latest = latestSnap.data();
+    if (latest?.status === 'matched' && latest.roomId && latest.opponentUid) {
+      return matchedResult(uid, latest);
+    }
+    return { success: true, matched: false };
+  } catch (error) {
+    console.error('Error buscando partida en Firestore:', error);
+    return { success: false, matched: false, message: error?.message || 'Error al buscar rival' };
+  }
+};
+
+export const watchMatchmakingEntry = (uid, callback, onError) =>
+  onSnapshot(doc(db, MATCH_QUEUE, uid),
+    snapshot => callback(snapshot.exists() ? { uid, ...snapshot.data() } : null),
+    error => {
+      console.error('Error escuchando la cola de matchmaking:', error);
+      onError?.(error);
+    });
+
+export const completeMatchmaking = async (uid, roomId) => {
+  const queueRef = doc(db, MATCH_QUEUE, uid);
+  // Ya no hay heartbeat al aceptar el match: una lectura simple seguida de
+  // borrado evita una transacción de verificación innecesaria sobre la cola.
+  const snapshot = await getDoc(queueRef);
+  if (snapshot.exists() && snapshot.data().status === 'matched'
+    && snapshot.data().roomId === roomId) {
+    await deleteDoc(queueRef);
+  }
+};
+
+export const leaveMatchmakingQueue = async uid => {
+  const queueRef = doc(db, MATCH_QUEUE, uid);
+  await runTransaction(db, async transaction => {
+    const snapshot = await transaction.get(queueRef);
+    if (snapshot.exists() && snapshot.data().status === 'waiting') transaction.delete(queueRef);
+  });
+};
+
+
 
 export const getUserCollection = async (userId) => {
   try {
@@ -25,22 +170,41 @@ export const getUserCollection = async (userId) => {
   }
 };
 
-export const addRuneToCollection = async (userId, rune) => {
-  const docRef = doc(db, `users/${userId}/collection`, rune.id);
-  const docSnap = await getDoc(docRef);
-  
-  if (docSnap.exists()) {
-    await updateDoc(docRef, {
-      quantity: docSnap.data().quantity + 1,
-      lastObtained: new Date().toISOString()
-    });
-  } else {
-    await setDoc(docRef, {
-      ...rune,
-      quantity: 1,
-      obtainedAt: new Date().toISOString()
-    });
-  }
+export const addRuneToCollection = async (userId, rune, awardId = null) => {
+  if (!userId || !rune?.id) throw new Error('Usuario o runa no válidos');
+
+  const collectionRef = doc(db, `users/${userId}/collection`, rune.id);
+  const receiptRef = awardId
+    ? doc(db, `users/${userId}/miningAwards`, awardId)
+    : null;
+  const obtainedAt = new Date().toISOString();
+
+  await runTransaction(db, async transaction => {
+    // Las lecturas ocurren antes de cualquier escritura.
+    if (receiptRef) {
+      const receipt = await transaction.get(receiptRef);
+      if (receipt.exists()) return;
+    }
+
+    const snapshot = await transaction.get(collectionRef);
+    if (snapshot.exists()) {
+      const currentQuantity = Number(snapshot.data().quantity) || 0;
+      transaction.update(collectionRef, {
+        quantity: currentQuantity + 1,
+        lastObtained: obtainedAt
+      });
+    } else {
+      transaction.set(collectionRef, {
+        ...rune,
+        quantity: 1,
+        obtainedAt
+      });
+    }
+
+    if (receiptRef) {
+      transaction.set(receiptRef, { runeId: rune.id, createdAt: obtainedAt });
+    }
+  });
 };
 
 export const getUserDecks = async (userId) => {
@@ -48,41 +212,35 @@ export const getUserDecks = async (userId) => {
   return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 };
 
-// Guardado con ID determinista por tipo de mazo ('npc' -> 5 runas, 'online' -> 8 runas)
-// Evita duplicados y reemplaza el mazo anterior del mismo tipo.
+// Un único mazo compartido de 8 runas para batallas NPC y online.
 export const saveDeck = async (userId, deck) => {
-  const deckType = deck.type || 'npc';
-  await setDoc(doc(db, `users/${userId}/decks`, deckType), {
+  await setDoc(doc(db, `users/${userId}/decks`, 'shared'), {
     ...deck,
-    type: deckType,
+    name: 'Mazo de batalla',
+    type: 'shared',
+    runes: (deck.runes || []).slice(0, 8),
     createdAt: new Date().toISOString()
   }, { merge: true });
 };
 
-// Obtiene los mazos separados por tipo con fallback a datos heredados
+// Lee el mazo compartido; si aún no existe, migra en memoria el mazo legado
+// online o NPC más reciente para que el usuario pueda completarlo hasta 8.
 export const getPlayerDecks = async (userId) => {
   try {
     const decks = await getUserDecks(userId);
-    let npc = decks.find(d => d.type === 'npc') || null;
-    let online = decks.find(d => d.type === 'online') || null;
-
-    // Compatibilidad con mazos antiguos sin campo 'type':
-    // >5 runas se considera mazo online, <=5 mazo NPC
-    if (!npc && !online) {
-      const legacy = decks.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))[0];
-      if (legacy) {
-        if ((legacy.runes || []).length > 5) online = legacy;
-        else npc = legacy;
-      }
-    }
-
-    return {
-      npc: npc?.runes || [],
-      online: online?.runes || []
-    };
+    const shared = decks.find(d => d.type === 'shared' || d.id === 'shared');
+    const legacyOnline = decks.find(d => d.type === 'online' || d.id === 'online');
+    const legacyNpc = decks.find(d => d.type === 'npc' || d.id === 'npc');
+    const legacy = [legacyOnline, legacyNpc].filter(Boolean)
+      .sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0))[0];
+    const selected = shared || (legacyOnline?.runes?.length >= 8 ? legacyOnline : legacy) || decks
+      .slice()
+      .sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0))[0];
+    const runes = (selected?.runes || []).slice(0, 8);
+    return { npc: runes, online: runes, shared: runes };
   } catch (error) {
-    console.error('Error obteniendo mazos:', error);
-    return { npc: [], online: [] };
+    console.error('Error obteniendo mazo:', error);
+    return { npc: [], online: [], shared: [] };
   }
 };
 
@@ -112,70 +270,78 @@ export const updateUserProfile = async (userId, profileData) => {
   });
 };
 
-export const buyRock = async (userId, rockType, price) => {
-  const docRef = doc(db, 'users', userId);
-  const docSnap = await getDoc(docRef);
-  
-  if (!docSnap.exists()) return { success: false, message: 'Perfil no encontrado' };
-  
-  const currentCoins = docSnap.data().coins || 0;
-  if (currentCoins < price) {
-    return { success: false, message: 'No tienes suficientes monedas' };
+export const buyRock = async (userId, rockType) => {
+  const rock = ROCK_TYPES[rockType];
+  if (!userId || !rock) return { success: false, message: 'Tipo de roca no válido' };
+
+  const profileRef = doc(db, 'users', userId);
+  try {
+    return await runTransaction(db, async transaction => {
+      const snapshot = await transaction.get(profileRef);
+      if (!snapshot.exists()) return { success: false, message: 'Perfil no encontrado' };
+
+      const currentCoins = Number(snapshot.data().coins) || 0;
+      if (currentCoins < rock.price) {
+        return { success: false, message: 'No tienes suficientes monedas' };
+      }
+
+      transaction.update(profileRef, { coins: currentCoins - rock.price });
+      return { success: true, message: '¡Roca comprada!' };
+    });
+  } catch (error) {
+    console.error('Error en la compra de roca:', error);
+    throw error;
   }
-  
-  await updateDoc(docRef, {
-    coins: currentCoins - price
-  });
-  
-  return { success: true, message: '¡Roca comprada!' };
 };
 
 export const claimDailyRock = async (userId) => {
-  const docRef = doc(db, 'users', userId);
-  const docSnap = await getDoc(docRef);
-  
-  if (!docSnap.exists()) return { success: false, message: 'Perfil no encontrado' };
-  
-  const profile = docSnap.data();
-  const lastDaily = profile.lastDailyRock || 0;
-  const now = Date.now();
-  const twentyFourHours = 24 * 60 * 60 * 1000;
-  
-  if (now - lastDaily < twentyFourHours) {
-    const remaining = twentyFourHours - (now - lastDaily);
-    const hours = Math.floor(remaining / (60 * 60 * 1000));
-    const minutes = Math.floor((remaining % (60 * 60 * 1000)) / (60 * 1000));
-    return { 
-      success: false, 
-      message: `Vuelve en ${hours}h ${minutes}m`,
-      remaining
-    };
+  if (!userId) return { success: false, message: 'Usuario no válido' };
+
+  const profileRef = doc(db, 'users', userId);
+  try {
+    return await runTransaction(db, async transaction => {
+      const snapshot = await transaction.get(profileRef);
+      if (!snapshot.exists()) return { success: false, message: 'Perfil no encontrado' };
+
+      const lastDaily = Number(snapshot.data().lastDailyRock) || 0;
+      const now = Date.now();
+      const cooldown = 24 * 60 * 60 * 1000;
+      const elapsed = now - lastDaily;
+
+      if (lastDaily > 0 && elapsed < cooldown) {
+        const remaining = cooldown - Math.max(0, elapsed);
+        const hours = Math.floor(remaining / (60 * 60 * 1000));
+        const minutes = Math.floor((remaining % (60 * 60 * 1000)) / (60 * 1000));
+        return {
+          success: false,
+          message: `Vuelve en ${hours}h ${minutes}m`,
+          remaining
+        };
+      }
+
+      transaction.update(profileRef, { lastDailyRock: now });
+      return { success: true, message: '¡Roca diaria reclamada!' };
+    });
+  } catch (error) {
+    console.error('Error reclamando roca diaria:', error);
+    throw error;
   }
-  
-  await updateDoc(docRef, {
-    lastDailyRock: now
-  });
-  
-  return { success: true, message: '¡Roca diaria reclamada!' };
 };
 
 export const getDailyRockStatus = async (userId) => {
-  const docRef = doc(db, 'users', userId);
-  const docSnap = await getDoc(docRef);
-  
-  if (!docSnap.exists()) return { available: true };
-  
-  const profile = docSnap.data();
-  const lastDaily = profile.lastDailyRock || 0;
-  const now = Date.now();
-  const twentyFourHours = 24 * 60 * 60 * 1000;
-  
-  if (now - lastDaily < twentyFourHours) {
-    const remaining = twentyFourHours - (now - lastDaily);
-    return { available: false, remaining };
-  }
-  
-  return { available: true };
+  if (!userId) return { available: false, error: 'Usuario no válido' };
+
+  const profileRef = doc(db, 'users', userId);
+  const snapshot = await getDoc(profileRef);
+  if (!snapshot.exists()) return { available: false, error: 'Perfil no encontrado' };
+
+  const lastDaily = Number(snapshot.data().lastDailyRock) || 0;
+  const cooldown = 24 * 60 * 60 * 1000;
+  const remaining = cooldown - (Date.now() - lastDaily);
+
+  return remaining > 0
+    ? { available: false, remaining }
+    : { available: true };
 };
 // ============================================================
 // 🌐 SISTEMA EN LÍNEA: AMIGOS (agregar, eliminar, retar)
@@ -268,72 +434,88 @@ export const getOutgoingRequests = async (userId) => {
   }
 };
 
-// Enviar solicitud de amistad
+// Enviar solicitud de amistad. Basta con que una persona envíe la invitación;
+// si ya existe una invitación inversa, se acepta automáticamente para ambos.
 export const sendFriendRequest = async (fromUid, toUid) => {
-  if (fromUid === toUid) return { success: false, message: 'No puedes añadirte a ti mismo' };
+  try {
+    if (!fromUid || !toUid || fromUid === toUid) return { success: false, message: 'No puedes añadirte a ti mismo' };
+    const [targetSnap, mySnap] = await Promise.all([
+      getDoc(doc(db, 'users', toUid)),
+      getDoc(doc(db, 'users', fromUid))
+    ]);
+    if (!targetSnap.exists() || !mySnap.exists()) return { success: false, message: 'Jugador no encontrado' };
+    if ((mySnap.data().friendIds || []).includes(toUid) || (targetSnap.data().friendIds || []).includes(fromUid)) {
+      return { success: true, message: 'Ya son amigos' };
+    }
 
-  const targetSnap = await getDoc(doc(db, 'users', toUid));
-  if (!targetSnap.exists()) return { success: false, message: 'Jugador no encontrado' };
+    // Comprobar primero la solicitud inversa: no exigimos que ambos se inviten.
+    const reverseQ = query(
+      collection(db, 'friendRequests'),
+      where('from', '==', toUid),
+      where('to', '==', fromUid),
+      where('status', '==', 'pending')
+    );
+    const reverseSnap = await getDocs(reverseQ);
+    if (!reverseSnap.empty) {
+      const accepted = await acceptFriendRequest(reverseSnap.docs[0].id, fromUid, toUid);
+      if (accepted.success) return { success: true, message: '¡Solicitud aceptada automáticamente! Ya son amigos 🤝', autoAccepted: true };
+      return accepted;
+    }
 
-  if ((targetSnap.data().friendIds || []).includes(fromUid)) {
-    return { success: false, message: 'Ya son amigos' };
+    const outgoingQ = query(
+      collection(db, 'friendRequests'),
+      where('from', '==', fromUid),
+      where('to', '==', toUid),
+      where('status', '==', 'pending')
+    );
+    const outgoingSnap = await getDocs(outgoingQ);
+    if (!outgoingSnap.empty) return { success: true, message: 'Solicitud pendiente; el otro jugador puede aceptarla' };
+
+    await addDoc(collection(db, 'friendRequests'), {
+      from: fromUid,
+      to: toUid,
+      status: 'pending',
+      createdAt: serverTimestamp()
+    });
+    return { success: true, message: 'Solicitud enviada. Cuando la reciba, quedarán conectados como amigos ✉️' };
+  } catch (error) {
+    console.error('Error enviando solicitud de amistad:', error);
+    return { success: false, message: 'No se pudo enviar la solicitud' };
   }
-
-  // Evitar duplicados: si ya existe una pendiente entre ambos, reutilizar/eliminar
-  const dupQ = query(
-    collection(db, 'friendRequests'),
-    where('from', '==', fromUid),
-    where('to', '==', toUid),
-    where('status', '==', 'pending')
-  );
-  const dupSnap = await getDocs(dupQ);
-  if (!dupSnap.empty) return { success: false, message: 'Solicitud ya enviada' };
-
-  // Si el otro ya nos envió una solicitud, se aceptan mutuamente al instante
-  const reverseQ = query(
-    collection(db, 'friendRequests'),
-    where('from', '==', toUid),
-    where('to', '==', fromUid),
-    where('status', '==', 'pending')
-  );
-  const reverseSnap = await getDocs(reverseQ);
-  if (!reverseSnap.empty) {
-    await acceptFriendRequest(reverseSnap.docs[0].id, toUid, fromUid);
-    return { success: true, message: '¡Son nuevos amigos! 🤝', autoAccepted: true };
-  }
-
-  await addDoc(collection(db, 'friendRequests'), {
-    from: fromUid,
-    to: toUid,
-    status: 'pending',
-    createdAt: serverTimestamp()
-  });
-  return { success: true, message: 'Solicitud enviada ✉️' };
 };
 
 // Aceptar solicitud (se añade a la lista friendIds de ambos)
 export const acceptFriendRequest = async (requestId, myUid, otherUidParam = null) => {
   try {
-    const ref = doc(db, 'friendRequests', requestId);
-    const snap = await getDoc(ref);
-    if (!snap.exists()) return { success: false, message: 'Solicitud no encontrada' };
+    const requestRef = doc(db, 'friendRequests', requestId);
+    const requestSnap = await getDoc(requestRef);
+    if (!requestSnap.exists()) return { success: false, message: 'Solicitud no encontrada' };
 
-    const { from, to } = snap.data();
-    const me = myUid;
-    const other = otherUidParam || (me === from ? to : from);
-
-    await updateDoc(ref, { status: 'accepted', resolvedAt: serverTimestamp() });
-
-    for (const uid of [me, other]) {
-      const uRef = doc(db, 'users', uid);
-      const uSnap = await getDoc(uRef);
-      if (!uSnap.exists()) continue;
-      const ids = uSnap.data().friendIds || [];
-      if (!ids.includes(other)) {
-        await updateDoc(uRef, { friendIds: [...ids, other] });
-      }
+    const { from, to, status } = requestSnap.data();
+    if (status !== 'pending' || ![from, to].includes(myUid)) {
+      return { success: false, message: 'La solicitud ya no está disponible' };
     }
-    return { success: true, message: 'Invocador añadido a amigos 🎉' };
+    const otherUid = otherUidParam || (myUid === from ? to : from);
+    const [mySnap, otherSnap] = await Promise.all([
+      getDoc(doc(db, 'users', myUid)),
+      getDoc(doc(db, 'users', otherUid))
+    ]);
+    if (!mySnap.exists() || !otherSnap.exists()) {
+      return { success: false, message: 'No se ha encontrado uno de los perfiles' };
+    }
+
+    const batch = writeBatch(db);
+    batch.update(requestRef, { status: 'accepted', resolvedAt: serverTimestamp() });
+    const myFriends = mySnap.data().friendIds || [];
+    const otherFriends = otherSnap.data().friendIds || [];
+    if (!myFriends.includes(otherUid)) {
+      batch.update(doc(db, 'users', myUid), { friendIds: [...myFriends, otherUid] });
+    }
+    if (!otherFriends.includes(myUid)) {
+      batch.update(doc(db, 'users', otherUid), { friendIds: [...otherFriends, myUid] });
+    }
+    await batch.commit();
+    return { success: true, message: '¡Invocador añadido a amigos! 🎉' };
   } catch (error) {
     console.error('Error aceptando solicitud:', error);
     return { success: false, message: 'Error al aceptar la solicitud' };
@@ -354,17 +536,21 @@ export const declineFriendRequest = async (requestId) => {
 // Eliminar amigo (quita la entrada de ambas listas)
 export const removeFriend = async (myUid, friendUid) => {
   try {
-    for (const uid of [myUid, friendUid]) {
-      const uRef = doc(db, 'users', uid);
-      const uSnap = await getDoc(uRef);
-      if (!uSnap.exists()) continue;
-      const ids = (uSnap.data().friendIds || []).filter(id => id !== (uid === myUid ? friendUid : myUid));
-      await updateDoc(uRef, { friendIds: ids });
+    const myRef = doc(db, 'users', myUid);
+    const friendRef = doc(db, 'users', friendUid);
+    const [mySnap, friendSnap] = await Promise.all([getDoc(myRef), getDoc(friendRef)]);
+    if (!mySnap.exists()) return { success: false, message: 'Tu perfil no está disponible' };
+
+    const batch = writeBatch(db);
+    batch.update(myRef, { friendIds: (mySnap.data().friendIds || []).filter(id => id !== friendUid) });
+    if (friendSnap.exists()) {
+      batch.update(friendRef, { friendIds: (friendSnap.data().friendIds || []).filter(id => id !== myUid) });
     }
-    return { success: true, message: 'Amigo eliminado' };
+    await batch.commit();
+    return { success: true, message: 'Amigo eliminado de tu lista' };
   } catch (error) {
     console.error('Error eliminando amigo:', error);
-    return { success: false, message: 'Error al eliminar al amigo' };
+    return { success: false, message: 'No se pudo eliminar al amigo' };
   }
 };
 
@@ -460,212 +646,58 @@ export const watchChallenge = (challengeId, callback) => {
   });
 };
 
-// Sala compartida en tiempo real estilo Match de Clash Royale.
-// El primer jugador en unirse queda registrado como AZUL 🔵 (blueUid),
-// el segundo será ROJO 🔴. Solo escribe; la escucha se hace con watchRoom.
-export const joinOnlineRoom = async (roomId, myUid, displayName) => {
-  const ref = doc(db, 'rooms', roomId);
-  try {
-    const snap = await getDoc(ref);
-    const data = snap.exists() ? snap.data() : {};
-    const now = Date.now();
+// Recompensas online equilibradas. El identificador de sala evita pagar dos veces
+// si React vuelve a ejecutar el efecto o ambos clientes reportan el mismo resultado.
+export const ONLINE_BATTLE_REWARDS = {
+  win: { coins: 150, xp: 25 },
+  draw: { coins: 20, xp: 12 },
+  loss: { coins: 10, xp: 5 }
+};
 
-    // 🎨 El primer jugador en unirse es AZUL 🔵 (blueUid). Si la sala aún no
-    // existe, el propio azul la CREA (las reglas permiten create solo si
-    // blueUid == creador). El rojo que llega después solo hace UPDATE
-    // (permitido porque ya está incluido en players.keys()).
-    if (!snap.exists()) {
-      // ⚠️ No se incluyen campos con valor null: las reglas de create validan
-      // que todos los valores estén definidos (starterUid se añade luego por merge)
-      await setDoc(ref, {
-        roomId,
-        blueUid: myUid,
-        createdAt: now,
-        [`players.${myUid}`]: { name: displayName, ready: true, joinedAt: now },
-        board: Array(9).fill(null),
-        deckSizes: {},
-        finished: false
+export const recordOnlineBattleResult = async (userId, outcome, matchId) => {
+  try {
+    if (!userId || !matchId || !['win', 'draw', 'loss'].includes(outcome)) return null;
+    const userRef = doc(db, 'users', userId);
+    return await runTransaction(db, async (transaction) => {
+      const snap = await transaction.get(userRef);
+      if (!snap.exists()) return null;
+      const data = snap.data();
+      if (data.lastOnlineRewardRoomId === matchId) return { alreadyRecorded: true };
+      const reward = ONLINE_BATTLE_REWARDS[outcome];
+      transaction.update(userRef, {
+        coins: (Number(data.coins) || 0) + reward.coins,
+        xp: (Number(data.xp) || 0) + reward.xp,
+        onlineWins: (Number(data.onlineWins) || 0) + (outcome === 'win' ? 1 : 0),
+        onlineLosses: (Number(data.onlineLosses) || 0) + (outcome === 'loss' ? 1 : 0),
+        onlineDraws: (Number(data.onlineDraws) || 0) + (outcome === 'draw' ? 1 : 0),
+        lastOnlineRewardRoomId: matchId
       });
-      return { success: true };
-    }
-
-    const updates = {
-      [`players.${myUid}`]: { name: displayName, ready: true, joinedAt: now }
-    };
-    // ⚠️ No escribir blueUid=null en update: las reglas lo exigirían definido
-    if (!data.blueUid) updates.blueUid = myUid;
-
-    await setDoc(ref, updates, { merge: true });
-    return { success: true };
-  } catch (error) {
-    console.error('Error entrando a la sala:', error);
-    return { success: false };
-  }
-};
-
-// Escucha en tiempo real el estado de una sala de batalla
-export const watchRoom = (roomId, callback) => {
-  return onSnapshot(doc(db, 'rooms', roomId), (snap) => {
-    callback(snap.exists() ? snap.data() : {});
-  });
-};
-
-export const leaveOnlineRoom = (roomId, myUid) => {
-  return updateDoc(doc(db, 'rooms', roomId), {
-    [`players.${myUid}`]: null
-  }).catch(() => {});
-};
-
-// ============================================================
-// 🎮 MATCHMAKING ALEATORIO (batalla online con cualquier jugador)
-// Cola en la colección 'queues': el primer jugador que llega deja su
-// ficha; el segundo se la encuentra y ambos entran a la misma sala
-// ('rooms/{roomId}') reutilizando el motor de batalla online 50/50.
-// ⚠️ Las reglas deben permitir update de la ficha del rival emparejado:
-//    allow update: if signedIn() && (request.auth.uid == resourceId
-//                  || resource.data.status != 'waiting');
-// ============================================================
-const QUEUE_TIMEOUT_MS = 24 * 60 * 60 * 1000; // fichas más antiguas se ignoran
-
-// ⚔️ Emparejamiento aleatorio: cualquiera con sesión puede entrar a la cola.
-export const findRandomMatch = async (myUid, displayName, avatarId) => {
-  try {
-    const myRef = doc(db, 'queues', myUid);
-    // Ficha propia: la creamos/actualizamos primero (solo dueño → permitido)
-    await setDoc(myRef, {
-      status: 'searching',
-      name: displayName,
-      avatarId: avatarId || 'mago',
-      searchedAt: Date.now()
-    }, { merge: true });
-
-    const snap = await getDocs(collection(db, 'queues'));
-    const now = Date.now();
-    const candidates = snap.docs
-      .map(d => ({ uid: d.id, data: d.data() }))
-      .filter(({ uid, data }) =>
-        uid !== myUid &&
-        (data?.status === 'waiting' || data?.status === 'searching') &&
-        !data.matched &&
-        typeof data.searchedAt === 'number' &&
-        now - data.searchedAt < QUEUE_TIMEOUT_MS
-      )
-      .sort((a, b) => a.data.searchedAt - b.data.searchedAt);
-
-    if (candidates.length > 0) {
-      // ⚔️ ¡Emparejados! Ambos entran a la misma sala aleatoria
-      const opp = candidates[0];
-      const roomId = `random-${now}-${Math.floor(Math.random() * 1e6).toString(36)}`;
-      await setDoc(myRef, {
-        status: 'matched',
-        opponentUid: opp.uid,
-        opponentName: opp.data.name || 'Rival',
-        opponentAvatarId: opp.data.avatarId || 'mago',
-        roomId
-      }, { merge: true });
-      await setDoc(doc(db, 'queues', opp.uid), {
-        status: 'matched',
-        opponentUid: myUid,
-        opponentName: displayName,
-        opponentAvatarId: avatarId || 'mago',
-        roomId
-      }, { merge: true });
-      return {
-        success: true,
-        matched: true,
-        roomId,
-        opponentUid: opp.uid,
-        opponentName: opp.data.name || 'Rival',
-        opponentAvatarId: opp.data.avatarId || 'mago'
-      };
-    }
-
-    // 🕐 Nadie esperando: quedarme en 'waiting' para que otro me encuentre
-    await setDoc(myRef, { status: 'waiting' }, { merge: true });
-    return { success: true, matched: false };
-  } catch (error) {
-    console.error('Error buscando partida aleatoria:', error);
-    return { success: false, matched: false, message: 'Error al buscar rival' };
-  }
-};
-
-// Escucha en tiempo real mi ficha de cola (para saber cuando alguien me encuentra)
-export const watchMyQueueEntry = (myUid, callback) => {
-  return onSnapshot(doc(db, 'queues', myUid), (snap) => {
-    callback(snap.exists() ? { uid: snap.id, ...snap.data() } : null);
-  });
-};
-
-// Eliminar mi ficha de cola tras caducar el timeout (si las reglas lo permiten; si no, se ignora)
-const purgeMyQueueEntry = async (myUid) => {
-  try { await deleteDoc(doc(db, 'queues', myUid)); } catch { /* opcional */ }
-};
-
-// Salir de la cola (solo si sigo esperando; si ya fui emparejado no borro nada)
-export const leaveQueue = async (myUid) => {
-  try {
-    const ref = doc(db, 'queues', myUid);
-    const snap = await getDoc(ref);
-    if (snap.exists() && snap.data().status === 'waiting') {
-      // ⚠️ Las reglas de seguridad no permiten DELETE a los jugadores:
-      // salimos de la marcando la ficha como 'cancelled' (es mi doc, update ok)
-      await updateDoc(ref, { status: 'cancelled', cancelledAt: Date.now() });
-    }
-  } catch (error) {
-    console.error('Error saliendo de la cola:', error);
-  }
-};
-
-// Limpiar fichas huérfanas de la cola (mejora opcional, sin permisos falla silenciosamente)
-export const cleanupQueueStale = async () => {
-  try {
-    const q = query(
-      collection(db, 'queues'),
-      where('status', '==', 'waiting'),
-      where('searchedAt', '<', Date.now() - QUEUE_TIMEOUT_MS)
-    );
-    const snap = await getDocs(q);
-    await Promise.all(snap.docs.map(d => deleteDoc(d.ref)));
-  } catch { /* sin permisos: se ignora, los stale ya se filtran arriba */ }
-};
-
-// Guardar resultado de una batalla online (estadísticas del perfil)
-export const recordOnlineBattleResult = async (userId, won) => {
-  try {
-    const ref = doc(db, 'users', userId);
-    const snap = await getDoc(ref);
-    if (!snap.exists()) return;
-    const data = snap.data();
-    const wins = data.onlineWins || 0;
-    const losses = data.onlineLosses || 0;
-    const updates = won
-      ? { onlineWins: wins + 1, coins: (data.coins || 0) + 30, xp: (data.xp || 0) + 25 }
-      : { onlineLosses: losses + 1, coins: (data.coins || 0) + 5, xp: (data.xp || 0) + 5 };
-    await updateDoc(ref, updates);
+      return { ...reward, outcome };
+    });
   } catch (error) {
     console.error('Error guardando resultado online:', error);
+    return null;
   }
 };
 
 
-// Mazo activo de un jugador para batallas EN LÍNEA (mazo de 8 runas).
+// Mazo compartido para batallas NPC y online (8 runas).
 // Fallback: último mazo guardado de cualquier tipo.
 export const getUserActiveDeck = async (userId) => {
   try {
     const { online, npc } = await getPlayerDecks(userId);
-    return online.length ? online : npc;
+    return (online.length ? online : npc).slice(0, 8);
   } catch (error) {
     console.error('Error obteniendo mazo activo:', error);
     return [];
   }
 };
 
-// Mazo activo para batallas NPC (mazo de 5 runas).
-// Fallback: mazo online recortado a 5.
+// Alias compatible: el modo NPC utiliza el mismo mazo compartido de 8 runas.
 export const getUserNpcDeck = async (userId) => {
   try {
     const { npc, online } = await getPlayerDecks(userId);
-    return npc.length ? npc : online.slice(0, 5);
+    return (online.length ? online : npc).slice(0, 8);
   } catch (error) {
     console.error('Error obteniendo mazo NPC:', error);
     return [];
