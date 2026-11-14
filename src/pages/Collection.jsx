@@ -17,6 +17,7 @@ const Collection = () => {
   const [loading, setLoading] = useState(true);
   const [pendingDeckAction, setPendingDeckAction] = useState(null);
   const [showDeckFullNotice, setShowDeckFullNotice] = useState(false);
+  const [choosingDeckRuneToRemove, setChoosingDeckRuneToRemove] = useState(false);
 
   const loadData = async () => {
     if (!user) return;
@@ -113,16 +114,22 @@ const Collection = () => {
             aria-label="Crear mazo aleatorio con mis runas"
           >🎲</button>
         </div>
-        <div className="deck-hero-grid deck-grid-online">
+        {choosingDeckRuneToRemove && (
+          <div className="deck-removal-prompt">
+            <span>Selecciona la runa que quieres quitar del mazo</span>
+            <button type="button" onClick={() => setChoosingDeckRuneToRemove(false)}>Cancelar</button>
+          </div>
+        )}
+        <div className={`deck-hero-grid deck-grid-online ${choosingDeckRuneToRemove ? 'deck-grid-removal-mode' : ''}`}>
           {Array.from({ length: DECK_SIZE }).map((_, index) => {
             const rune = deck[index];
             const isSelected = selectedDeckRune?.id === rune?.id;
             return (
               <div key={index} className="deck-hero-slot">
                 {rune ? (
-                  <div className={`deck-card-wrapper ${isSelected ? 'selected' : ''}`} onClick={() => setSelectedDeckRune(isSelected ? null : rune)}>
+                  <div className={`deck-card-wrapper ${isSelected ? 'selected' : ''} ${choosingDeckRuneToRemove ? 'deck-removal-choice' : ''}`} onClick={() => choosingDeckRuneToRemove ? handleRemoveFromDeck(rune) : setSelectedDeckRune(isSelected ? null : rune)}>
                     <RuneCard rune={rune} owned={true} />
-                    {isSelected && <button className="deck-remove-pill" onClick={(e) => handleRemoveFromDeck(rune, e)}>✕ Quitar</button>}
+                    {isSelected && !choosingDeckRuneToRemove && <button className="deck-remove-pill" onClick={(e) => handleRemoveFromDeck(rune, e)}>✕ Quitar</button>}
                   </div>
                 ) : (
                   <div className="deck-hero-empty">
@@ -149,7 +156,7 @@ const Collection = () => {
             return (
               <div key={rune.id} className="compact-item-wrapper">
                 <RuneCard rune={rune} owned={owned} onClick={() => setSelectedRune(rune)} />
-                {inDeck && <div className="compact-deck-badge">✓ EN MAZO</div>}
+
               </div>
             );
           })}
@@ -169,7 +176,12 @@ const Collection = () => {
             <h3 id="deck-full-title">¡MAZO COMPLETO!</h3>
             <p>Tu mazo ya tiene las 8 runas permitidas. Quita una runa antes de añadir otra.</p>
             <div className="deck-confirm-actions">
-              <button type="button" className="deck-confirm-accept" onClick={() => setShowDeckFullNotice(false)}>Aceptar</button>
+              <button type="button" className="deck-confirm-cancel" onClick={() => setShowDeckFullNotice(false)}>Aceptar</button>
+              <button type="button" className="deck-confirm-accept" onClick={() => {
+                setShowDeckFullNotice(false);
+                setChoosingDeckRuneToRemove(true);
+                setSelectedDeckRune(null);
+              }}>Quitar una runa</button>
             </div>
           </section>
         </div>
