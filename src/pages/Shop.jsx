@@ -248,14 +248,12 @@ const Shop = () => {
             </div>
 
             <div className="daily-reward-details">
-              <h3 className="daily-reward-name">Roca Normal Diaria</h3>
-              <p className="daily-reward-desc">
-                {dailyStatus.loading
-                  ? 'Comprobando recompensa...'
-                  : dailyStatus.available
-                    ? '¡Lista para extraer! Golpea 3 veces.'
-                    : `Disponible en ${countdown || 'espera...'}`}
-              </p>
+              <h3 className="daily-reward-name">Roca gratis</h3>
+              {!dailyStatus.available && (
+                <p className="daily-reward-desc">
+                  {dailyStatus.loading ? 'Comprobando recompensa...' : `Disponible en ${countdown || 'espera...'}`}
+                </p>
+              )}
             </div>
 
             <button
