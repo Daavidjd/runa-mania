@@ -441,7 +441,7 @@ const BattleOnline = () => {
         }).catch(error => { timeoutClaimRef.current = false; console.error('Error en la jugada automática:', error); });
       }
     };
-    tick(); const interval = setInterval(tick, 150);
+    tick(); const interval = setInterval(tick, 1000);
     return () => clearInterval(interval);
   }, [phase, gameOver, room.turnStartsAt, room.turnDeadlineAt, room.blueUid, room.redUid, board, myUid, myHand]);
 
