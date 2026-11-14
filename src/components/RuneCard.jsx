@@ -10,7 +10,8 @@ const RuneCard = React.memo(({
   isFlipping = false, 
   isPlaced = false,
   attackDirs = {},
-  visualOwner = null // Mantiene el dueño visual anterior hasta la mitad del giro
+  visualOwner = null, // Mantiene el dueño visual anterior hasta la mitad del giro
+  hideName = false
 }) => {
   if (!rune) return null;
 
@@ -62,7 +63,7 @@ const RuneCard = React.memo(({
         {owned ? (
           <>
             <img src={rune.image} alt={rune.name} className="rune-image rune-art-protected" loading="lazy" decoding="async" fetchPriority="low" draggable="false" onContextMenu={e => e.preventDefault()} onDragStart={e => e.preventDefault()} />
-            <h3 className="rune-name">{rune.name}</h3>
+            {!hideName && <h3 className="rune-name">{rune.name}</h3>}
           </>
         ) : (
           <div className="rune-locked">?</div>
