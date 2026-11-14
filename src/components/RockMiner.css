@@ -112,6 +112,21 @@
   filter: drop-shadow(0 0 28px rgba(56, 189, 248, 0.6));
 }
 
+
+/* La ficha es un botón para abrir su detalle, pero conserva el aspecto original. */
+button.reveal-rune-box {
+  appearance: none;
+  -webkit-appearance: none;
+  border: 0;
+  padding: 0;
+  margin: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  outline-offset: 6px;
+}
+
 .collect-minimal-btn {
   padding: 14px 40px;
   border-radius: 14px;
