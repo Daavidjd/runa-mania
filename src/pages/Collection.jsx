@@ -191,6 +191,10 @@ const Collection = () => {
             <h3 id="deck-full-title">¡MAZO COMPLETO!</h3>
             <p>Tu mazo ya tiene las 8 runas permitidas. Quita una runa antes de añadir otra.</p>
             <div className="deck-confirm-actions">
+              <button type="button" className="deck-confirm-cancel" onClick={() => {
+                setShowDeckFullNotice(false);
+                setPendingReplacementRune(null);
+              }}>Aceptar</button>
               <button type="button" className="deck-confirm-accept" onClick={() => {
                 setShowDeckFullNotice(false);
                 setChoosingDeckRuneToRemove(true);
