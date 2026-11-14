@@ -11,7 +11,7 @@ import {
   completeMatchmaking,
   leaveMatchmakingQueue
 } from '../services/firestore';
-import { joinOnlineRoom, watchRoom, leaveOnlineRoom, updateOnlineRoom, playOnlineMove, claimOnlineForfeit } from '../services/realtime';
+import { joinOnlineRoom, watchRoom, leaveOnlineRoom, updateOnlineRoom, playOnlineMove, claimOnlineForfeit, startOnlineTurnClock, claimOnlineTimeout } from '../services/realtime';
 
 import { RUNES_DB } from '../data/runes';
 import { AVATAR_OPTIONS } from '../data/avatars';
@@ -426,6 +426,20 @@ const BattleOnline = () => {
     return () => clearTimeout(unlock);
   }, [phase, gameOver, room.turnStartsAt]);
 
+  useEffect(() => {
+    if (phase !== 'playing' || gameOver || !room.turnDeadlineAt || !roomIdRef.current) return undefined;
+    const remaining = Number(room.turnDeadlineAt) - Date.now();
+    const timeout = setTimeout(async () => {
+      try {
+        const updatedRoom = await claimOnlineTimeout(roomIdRef.current);
+        if (updatedRoom) setRoom(updatedRoom);
+      } catch (error) {
+        console.error('Error resolviendo el tiempo agotado:', error);
+      }
+    }, Math.max(0, remaining));
+    return () => clearTimeout(timeout);
+  }, [phase, gameOver, room.turnDeadlineAt]);
+
   // ---------- MI TURNO ----------
   const placedCount = board.filter(c => c !== null).length;
   // El que empieza coloca las jugadas 1ª, 3ª, 5ª... (índices pares ya colocados = su turno)
@@ -500,7 +514,13 @@ const BattleOnline = () => {
       setCountdown(remaining);
       if (remaining <= 0) {
         clearInterval(id);
-        setPhase('playing');
+        try {
+          if (roomIdRef.current) await startOnlineTurnClock(roomIdRef.current);
+          setPhase('playing');
+        } catch (error) {
+          console.error('No se pudo iniciar el reloj de la partida:', error);
+          setPhase('error');
+        }
       }
     }, 1000);
     return () => clearInterval(id);
