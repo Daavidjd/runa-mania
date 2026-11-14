@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { RUNES_DB } from '../data/runes';
 import { getUserCollection, getPlayerDecks, saveDeck } from '../services/firestore';
@@ -10,6 +11,7 @@ const DECK_SIZE = 8;
 
 const Collection = () => {
   const { user } = useAuth();
+  const location = useLocation();
   const [ownedRunes, setOwnedRunes] = useState({});
   const [selectedRune, setSelectedRune] = useState(null);
   const [deck, setDeck] = useState([]);
@@ -30,6 +32,12 @@ const Collection = () => {
       });
       setOwnedRunes(ownedMap);
 
+      const requestedRuneId = location.state?.selectedRuneId;
+      if (requestedRuneId && ownedMap[requestedRuneId]) {
+        setSelectedRune(ownedMap[requestedRuneId]);
+        window.history.replaceState({}, document.title, window.location.pathname);
+      }
+
       const rawDecks = await getPlayerDecks(user.uid);
       setDeck((rawDecks.shared || rawDecks.online || rawDecks.npc || [])
         .map(id => ownedMap[id] || RUNES_DB.find(r => r.id === id))
@@ -42,7 +50,7 @@ const Collection = () => {
     }
   };
 
-  useEffect(() => { loadData(); }, [user]);
+  useEffect(() => { loadData(); }, [user, location.key]);
 
   const persistDeck = async (runes) => {
     const next = runes.slice(0, DECK_SIZE);
