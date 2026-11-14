@@ -11,7 +11,7 @@ import {
   completeMatchmaking,
   leaveMatchmakingQueue
 } from '../services/firestore';
-import { joinOnlineRoom, watchRoom, leaveOnlineRoom, updateOnlineRoom, playOnlineMove, claimOnlineForfeit, startOnlineTurnClock, playRandomOnlineMove } from '../services/realtime';
+import { joinOnlineRoom, watchRoom, leaveOnlineRoom, updateOnlineRoom, playOnlineMove, claimOnlineForfeit } from '../services/realtime';
 
 import { RUNES_DB } from '../data/runes';
 import { AVATAR_OPTIONS } from '../data/avatars';
@@ -107,9 +107,7 @@ const BattleOnline = () => {
   const [attackDirs, setAttackDirs] = useState({});
   const [shakeHand, setShakeHand] = useState(false);
   const [countdown, setCountdown] = useState(3); // ⏳ cuenta regresiva del volteo de moneda
-  const [timerRemaining, setTimerRemaining] = useState(30);
   const [turnReady, setTurnReady] = useState(true);
-  const timeoutClaimRef = useRef(false);
 
   const roomUnsubRef = useRef(null);
   const challengeUnsubRef = useRef(null);
@@ -212,7 +210,6 @@ const BattleOnline = () => {
     }
     roomIdRef.current = null;
     reportedRef.current = false;
-    timeoutClaimRef.current = false;
     appliedRemoteMovesRef.current.clear();
     setRoom({});
     setBoard(Array(16).fill(null));
@@ -229,7 +226,6 @@ const BattleOnline = () => {
     setLastPlaced(null);
     setAttackDirs({});
     setCountdown(3);
-    setTimerRemaining(30);
     const searchState = { role: 'random', searching: true };
     localStorage.setItem('onlineBattle', JSON.stringify(searchState));
     setBattleData(searchState);
@@ -416,34 +412,19 @@ const BattleOnline = () => {
     setShowEndModal(true);
   }, [room.finished, room.winnerUid, gameOver, myUid]);
 
+  // El turno solo se habilita cuando termina la ventana de animación
+  // publicada por el servidor. No hay reloj ni jugadas automáticas.
   useEffect(() => {
-    if (phase !== 'playing' || gameOver || !room.turnDeadlineAt) return undefined;
-    timeoutClaimRef.current = false;
-    const tick = () => {
-      const now = Date.now();
-      const turnStartsAt = Number(room.turnStartsAt || 0);
-      const ready = now >= turnStartsAt;
-      setTurnReady(ready);
-      const seconds = ready ? Math.max(0, Math.ceil((Number(room.turnDeadlineAt) - now) / 1000)) : 30;
-      setTimerRemaining(seconds);
-      const occupied = board.filter(Boolean).length;
-      const activeUid = occupied % 2 === 0 ? room.blueUid : room.redUid;
-      if (seconds === 0 && activeUid === myUid && !timeoutClaimRef.current) {
-        timeoutClaimRef.current = true;
-        playRandomOnlineMove(roomIdRef.current, myUid, myHand).then(result => {
-          if (result.committed && result.card) {
-            setMyHand(prev => { const index = prev.findIndex(card => card.id === result.card.id); return index < 0 ? prev : prev.filter((_, i) => i !== index); });
-            setSelectedCard(null); setLastPlaced(result.index);
-          } else if (result.reason) {
-            console.info('Jugada automática:', result.reason);
-            if (result.reason !== 'El turno todavía tiene tiempo' && result.reason !== 'Ya no es tu turno') timeoutClaimRef.current = false;
-          }
-        }).catch(error => { timeoutClaimRef.current = false; console.error('Error en la jugada automática:', error); });
-      }
-    };
-    tick(); const interval = setInterval(tick, 1000);
-    return () => clearInterval(interval);
-  }, [phase, gameOver, room.turnStartsAt, room.turnDeadlineAt, room.blueUid, room.redUid, board, myUid, myHand]);
+    if (phase !== 'playing' || gameOver) return undefined;
+    const remaining = Number(room.turnStartsAt || 0) - Date.now();
+    if (remaining <= 0) {
+      setTurnReady(true);
+      return undefined;
+    }
+    setTurnReady(false);
+    const unlock = setTimeout(() => setTurnReady(true), remaining);
+    return () => clearTimeout(unlock);
+  }, [phase, gameOver, room.turnStartsAt]);
 
   // ---------- MI TURNO ----------
   const placedCount = board.filter(c => c !== null).length;
@@ -463,13 +444,16 @@ const BattleOnline = () => {
     const moveId = `${user.uid}-${Date.now()}`;
     appliedRemoteMovesRef.current.add(moveId);
     setMovePending(true);
+    setTurnReady(false);
     try {
       const result = await playOnlineMove(roomIdRef.current, user.uid, card, index, moveId);
       if (!result.committed) {
         appliedRemoteMovesRef.current.delete(moveId);
         console.warn('Jugada online rechazada:', result.reason || 'El tablero ha cambiado');
+        setTurnReady(true);
         return;
       }
+      if (result.room) setRoom(result.room);
       setMyHand(prev => prev.filter((_, i) => i !== selectedCard));
       setSelectedCard(null);
       setLastPlaced(index);
@@ -490,6 +474,7 @@ const BattleOnline = () => {
       }
     } catch (error) {
       appliedRemoteMovesRef.current.delete(moveId);
+      setTurnReady(true);
       console.error('No se pudo registrar la jugada online:', error);
     } finally {
       setMovePending(false);
@@ -515,8 +500,6 @@ const BattleOnline = () => {
       setCountdown(remaining);
       if (remaining <= 0) {
         clearInterval(id);
-        try { await startOnlineTurnClock(roomIdRef.current); }
-        catch (error) { console.error('Error iniciando el reloj de turno:', error); }
         setPhase('playing');
       }
     }, 1000);
@@ -657,11 +640,6 @@ const BattleOnline = () => {
           </div>
         </div>
         <div className="bo-score-cluster">
-          {!myTurn && (
-            <div className="bo-turn-timer" style={{ '--timer-progress': `${Math.max(0, Math.min(30, timerRemaining)) / 30 * 100}%` }}>
-              <span>{timerRemaining}</span>
-            </div>
-          )}
           <div className="bp-score-badge-box bp-score-ai-box">
             <span className="bp-score-badge-label">PUNTOS</span>
             <span className="bp-score-badge-value">{scores.opp}</span>
@@ -743,11 +721,6 @@ const BattleOnline = () => {
           </div>
         </div>
         <div className="bo-score-cluster">
-          {myTurn && (
-            <div className="bo-turn-timer" style={{ '--timer-progress': `${Math.max(0, Math.min(30, timerRemaining)) / 30 * 100}%` }}>
-              <span>{timerRemaining}</span>
-            </div>
-          )}
           <div className="bp-score-badge-box bp-score-self-box">
             <span className="bp-score-badge-label">TUS PUNTOS</span>
             <span className="bp-score-badge-value">{scores.me}</span>
