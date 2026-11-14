@@ -164,15 +164,14 @@ const RockMiner = ({ onClose, rockType = 'normal', pickaxeType = null }) => {
   if(isPickaxeRun){
     const complete=pickaxeRocks.every(rock=>rock.rune&&(!user||rock.saved));
     return <div className="rock-miner-overlay pickaxe-miner-overlay"><div className="pickaxe-miner-content">
-      <h1 className="miner-huge-title">{complete?'¡3 RUNAS OBTENIDAS!':'PICA LAS 3 ROCAS'}</h1>
-      <p className="pickaxe-miner-subtitle">{complete?'Las tres runas se han añadido a tu colección':'Cada roca se pica por separado. Cada una contiene una runa.'}</p>
+      <h1 className="miner-huge-title">PICA</h1>
       <div className="pickaxe-rocks-grid">{pickaxeRocks.map(rock=>{
         const images=ROCK_IMAGES[rockType]||ROCK_IMAGES.normal;
         return <div key={rock.id} className={'pickaxe-rock-card '+(rock.rune?'completed':'')} onClick={()=>!rock.rune&&handlePickaxeHit(rock.id)}>
           {rock.rune?<><span className="pickaxe-done-label">¡RUNA OBTENIDA!</span><div className="reveal-rune-box"><RuneCard rune={rock.rune} owned={true} battleMode={true}/></div>
             {rock.saving&&<span className="pickaxe-hit-label">Guardando...</span>}
             {rock.saveError&&<button className="pickaxe-retry" onClick={event=>{event.stopPropagation();handlePickaxeRetry(rock.id);}}>Reintentar guardado</button>}
-          </>:<><img className={'rock-standalone-img '+(mining&&activePickRock===rock.id?'shaking':'')} src={images[Math.min(rock.hits,2)]} alt={'Roca '+(rock.id+1)} draggable="false"/><span className="pickaxe-hit-label">{rock.hits}/3 golpes</span></>}
+          </>:<><img className={'rock-standalone-img '+(mining&&activePickRock===rock.id?'shaking':'')} src={images[Math.min(rock.hits,2)]} alt={'Roca '+(rock.id+1)} draggable="false"/></>}
         </div>;
       })}</div>
       <button className="collect-minimal-btn" onClick={onClose} disabled={!complete}>Continuar</button>
