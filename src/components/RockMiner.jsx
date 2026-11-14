@@ -38,7 +38,6 @@ const RockMiner = ({ onClose, rockType = 'normal' }) => {
 
   const isProcessingRef = useRef(false);
   const hitCountRef = useRef(0);
-  const pendingHitsRef = useRef(0);
   const awardIdRef = useRef(null);
   const savedRef = useRef(false);
 
@@ -73,44 +72,39 @@ const RockMiner = ({ onClose, rockType = 'normal' }) => {
   }, []);
 
   const handleHit = async () => {
-    if (revealedRune || hitCountRef.current + pendingHitsRef.current >= 3) return;
-
-    // Encola hasta tres toques. Así no se pierden taps rápidos, pero las
-    // animaciones se reproducen una detrás de otra y cada imagen llega a verse.
-    pendingHitsRef.current += 1;
-    if (isProcessingRef.current) return;
+    // Ignora cualquier toque adicional mientras la fase actual está activa.
+    // No se encolan golpes: cada animación debe terminar antes del siguiente.
+    if (revealedRune || isProcessingRef.current || hitCountRef.current >= 3) return;
 
     isProcessingRef.current = true;
     try {
-      while (pendingHitsRef.current > 0 && hitCountRef.current < 3) {
-        pendingHitsRef.current -= 1;
-        const newHits = hitCountRef.current + 1;
-        hitCountRef.current = newHits;
-        setHits(newHits);
-        setMining(true);
+      const newHits = hitCountRef.current + 1;
+      hitCountRef.current = newHits;
+      setHits(newHits);
+      setMining(true);
 
-        await new Promise(resolve => setTimeout(resolve, 420));
-        setMining(false);
+      // La animación de golpe dura 300 ms; dejamos una pequeña pausa extra
+      // para que cada estado de la roca se vea antes de aceptar otro toque.
+      await new Promise(resolve => setTimeout(resolve, 480));
+      setMining(false);
 
-        if (newHits === 3) {
-          const rune = getRandomRune(rockType);
-          setRevealedRune(rune);
-          awardIdRef.current = awardIdRef.current || `mine-${user?.uid || 'guest'}-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+      if (newHits === 3) {
+        const rune = getRandomRune(rockType);
+        setRevealedRune(rune);
+        awardIdRef.current = awardIdRef.current || `mine-${user?.uid || 'guest'}-${Date.now()}-${Math.random().toString(36).slice(2)}`;
 
-          if (user) {
-            setSaving(true);
-            setSaveError(false);
-            try {
-              await addRuneToCollection(user.uid, rune, awardIdRef.current);
-              savedRef.current = true;
-            } catch (err) {
-              console.error('Error guardando runa:', err);
-              setSaveError(true);
-            } finally {
-              setSaving(false);
-            }
+        if (user) {
+          setSaving(true);
+          setSaveError(false);
+          try {
+            await addRuneToCollection(user.uid, rune, awardIdRef.current);
+            savedRef.current = true;
+          } catch (err) {
+            console.error('Error guardando runa:', err);
+            setSaveError(true);
+          } finally {
+            setSaving(false);
           }
-          pendingHitsRef.current = 0;
         }
       }
     } finally {
