@@ -28,8 +28,6 @@ const ROCK_IMAGES = {
   epic: [RocaLila1, RocaLila2, RocaLila3]
 };
 
-const SAVE_TIMEOUT_MS = 5000;
-
 const RockMiner = ({ onClose, rockType = 'normal' }) => {
   const { user } = useAuth();
   const [hits, setHits] = useState(0);
@@ -82,15 +80,10 @@ const RockMiner = ({ onClose, rockType = 'normal' }) => {
           setSaving(true);
           setSaveError(false);
 
-          const savePromise = addRuneToCollection(user.uid, rune);
-          const timeoutPromise = new Promise((_, reject) =>
-            setTimeout(() => reject(new Error('Timeout')), SAVE_TIMEOUT_MS)
-          );
-
           try {
-            await Promise.race([savePromise, timeoutPromise]);
+            await addRuneToCollection(user.uid, rune);
           } catch (err) {
-            console.error('Error guardando runa (no bloqueante):', err);
+            console.error('Error guardando runa:', err);
             setSaveError(true);
           } finally {
             setSaving(false);
@@ -126,7 +119,7 @@ const RockMiner = ({ onClose, rockType = 'normal' }) => {
 
           {saveError && (
             <div className="save-error-banner">
-              ️ Error al guardar. La runa se mostrará pero puede no quedar en tu colección.
+              ️ No se pudo confirmar el guardado. Comprueba tu conexión antes de salir.
             </div>
           )}
 
@@ -139,7 +132,7 @@ const RockMiner = ({ onClose, rockType = 'normal' }) => {
             onClick={onClose}
             disabled={saving}
           >
-            {saving ? '⏳ Guardando...' : saveError ? '⚠️ Continuar (sin guardar)' : 'Continuar'}
+            {saving ? '⏳ Guardando...' : saveError ? '⚠️ Cerrar' : 'Continuar'}
           </button>
         </div>
       )}
