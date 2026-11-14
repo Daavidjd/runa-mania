@@ -1,8 +1,11 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { getUserProfile, buyRock, claimDailyRock, getDailyRockStatus } from '../services/firestore';
+import { getUserProfile, buyRock, claimDailyRock, getDailyRockStatus, buyPickaxe } from '../services/firestore';
 import { ROCK_TYPES } from '../data/runes';
 import RockMiner from '../components/RockMiner';
+import PicoHierro from '../assets/pico/PicoHierro.png';
+import PicoOro from '../assets/pico/PicoOro.png';
+import PicoDiamante from '../assets/pico/PicoDiamante.png';
 import './Shop.css';
 
 // Importar las 12 imágenes de rocas
@@ -26,6 +29,12 @@ const ROCK_IMAGES = {
   rare: [RocaAzul1, RocaAzul2, RocaAzul3],
   epic: [RocaLila1, RocaLila2, RocaLila3]
 };
+
+const PICKAXES = [
+ { id:'iron',name:'Pico de hierro',price:500,rockType:'normal',image:PicoHierro,rarity:'Normal',color:'#90a4ae' },
+ { id:'gold',name:'Pico de oro',price:800,rockType:'rare',image:PicoOro,rarity:'Rara',color:'#eab308' },
+ { id:'diamond',name:'Pico de diamante',price:1000,rockType:'epic',image:PicoDiamante,rarity:'Épica',color:'#38bdf8' }
+];
 
 const Shop = () => {
   const { user } = useAuth();
@@ -148,6 +157,16 @@ const Shop = () => {
     } finally {
       setPurchaseBusy(false);
     }
+  };
+
+  const handleBuyPickaxe = async (pickaxe) => {
+    if (purchaseBusy) return;
+    if (!profile || profile.coins < pickaxe.price) { showMessage('No tienes suficientes monedas', 'error'); return; }
+    try { setPurchaseBusy(true); const result = await buyPickaxe(user.uid, pickaxe.id);
+      if (result.success) { await loadProfile(); setActiveRock({ type:pickaxe.rockType,label:pickaxe.name,pickaxeType:pickaxe.id }); }
+      else showMessage(result.message,'error');
+    } catch(error) { console.error('Error comprando pico:',error); showMessage('Error al comprar el pico','error'); }
+    finally { setPurchaseBusy(false); }
   };
 
   const handleClaimDaily = async () => {
@@ -289,6 +308,17 @@ const Shop = () => {
             })}
           </div>
         </section>
+        <section className="shop-section">
+          <div className="section-title-bar"><span className="section-title-txt">PICOS ESPECIALES</span><span className="section-tag">3 ROCAS</span></div>
+          <div className="rocks-row-container">
+            {PICKAXES.map((pickaxe) => { const canAfford=(profile?.coins||0)>=pickaxe.price; return <div key={pickaxe.id} className="rock-item-card">
+              <div className="rock-rarity-ribbon" style={{background:pickaxe.color}}>{pickaxe.rarity}</div>
+              <div className="rock-visual-box"><img src={pickaxe.image} alt={pickaxe.name} className="rock-item-img" /></div>
+              <h3 className="rock-item-name">{pickaxe.name}</h3><p className="pickaxe-description">Abre 3 rocas del mismo nivel</p>
+              <button className={`rock-buy-btn ${canAfford?'affordable':'unaffordable'}`} onClick={()=>handleBuyPickaxe(pickaxe)} disabled={!canAfford||purchaseBusy}><span className="buy-coin-icon">🪙</span><span className="buy-price">{purchaseBusy?'...':pickaxe.price}</span></button>
+            </div>; })}
+          </div>
+        </section>
       </main>
 
       {activeRock && (
@@ -296,6 +326,7 @@ const Shop = () => {
           onClose={handleRockMinerClose}
           rockType={activeRock.type}
           rockLabel={activeRock.label}
+          pickaxeType={activeRock.pickaxeType}
         />
       )}
     </div>
