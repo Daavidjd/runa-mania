@@ -26,7 +26,7 @@ import hiereleon from '../assets/runes/Hiereleon.png';
 import piriposa from '../assets/runes/Piriposa.png';
 import scorpano from '../assets/runes/Scorpano.png';
 import sikifis from '../assets/runes/sikifis.png';
-import skarpi from '../assets/runes/Skarpi.png';
+import skarpi from '../assets/runes/skarpi.png';
 import treerex from '../assets/runes/Treerex.png';
 import busanGel from '../assets/runes/BusanGel.png';
 import nocMare from '../assets/runes/NocMare.png';
