@@ -252,6 +252,13 @@
   }
 }
 
+/* En combate las flechas permanecen estáticas para evitar animar decenas
+   de elementos y filtros simultáneamente. El efecto de ataque se conserva. */
+.rune-battle .battle-arrow {
+  animation: none;
+  filter: none;
+}
+
 /* --------------------------------------------------------------------------
    5. ANIMACIÓN DE ATAQUE DE FLECHAS (EXAGERADA - Carrerilla → Impacto brutal → Retorno)
    -------------------------------------------------------------------------- */
