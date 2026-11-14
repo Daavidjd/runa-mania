@@ -76,6 +76,10 @@ export const playOnlineMove = async (roomId, uid, card, index, moveId) => {
       rejectionReason = 'La animación de captura todavía está en curso';
       return;
     }
+    if (room.turnDeadlineAt && Date.now() >= Number(room.turnDeadlineAt)) {
+      rejectionReason = 'Se agotó el tiempo para realizar la jugada';
+      return;
+    }
     const isBlue = room.blueUid === uid;
     const isRed = room.redUid === uid;
     if (!isBlue && !isRed) { rejectionReason = 'No tienes un color asignado en esta sala'; return; }
@@ -128,7 +132,7 @@ export const playOnlineMove = async (roomId, uid, card, index, moveId) => {
     // El siguiente jugador no puede colocar hasta que termine la animación.
     const nextTurnStartsAt = Date.now() + (captured.length ? 1100 : 650);
     room.turnStartsAt = nextTurnStartsAt;
-    delete room.turnDeadlineAt;
+    room.turnDeadlineAt = nextTurnStartsAt + 30000;
     room.updatedAt = Date.now();
     capturedResult = captured;
     rejectionReason = '';

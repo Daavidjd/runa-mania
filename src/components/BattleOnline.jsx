@@ -11,7 +11,7 @@ import {
   completeMatchmaking,
   leaveMatchmakingQueue
 } from '../services/firestore';
-import { joinOnlineRoom, watchRoom, leaveOnlineRoom, updateOnlineRoom, playOnlineMove, claimOnlineForfeit } from '../services/realtime';
+import { joinOnlineRoom, watchRoom, leaveOnlineRoom, updateOnlineRoom, playOnlineMove, claimOnlineForfeit, startOnlineTurnClock, claimOnlineTimeout } from '../services/realtime';
 
 import { RUNES_DB } from '../data/runes';
 import { AVATAR_OPTIONS } from '../data/avatars';
@@ -426,6 +426,29 @@ const BattleOnline = () => {
     return () => clearTimeout(unlock);
   }, [phase, gameOver, room.turnStartsAt]);
 
+  useEffect(() => {
+    if (phase !== 'playing' || gameOver || !room.turnDeadlineAt || !roomIdRef.current) return undefined;
+    let cancelled = false;
+    let timeout;
+    const checkTimeout = async () => {
+      try {
+        const updatedRoom = await claimOnlineTimeout(roomIdRef.current);
+        if (updatedRoom) setRoom(updatedRoom);
+        if (!cancelled && !updatedRoom?.finished) {
+          timeout = setTimeout(checkTimeout, 1000);
+        }
+      } catch (error) {
+        console.error('Error resolviendo el tiempo agotado:', error);
+        if (!cancelled) timeout = setTimeout(checkTimeout, 1000);
+      }
+    };
+    timeout = setTimeout(checkTimeout, Math.max(0, Number(room.turnDeadlineAt) - Date.now()) + 500);
+    return () => {
+      cancelled = true;
+      clearTimeout(timeout);
+    };
+  }, [phase, gameOver, room.turnDeadlineAt]);
+
   // ---------- MI TURNO ----------
   const placedCount = board.filter(c => c !== null).length;
   // El que empieza coloca las jugadas 1ª, 3ª, 5ª... (índices pares ya colocados = su turno)
@@ -500,7 +523,16 @@ const BattleOnline = () => {
       setCountdown(remaining);
       if (remaining <= 0) {
         clearInterval(id);
-        setPhase('playing');
+        try {
+          if (roomIdRef.current) {
+            const startedRoom = await startOnlineTurnClock(roomIdRef.current);
+            if (startedRoom) setRoom(startedRoom);
+          }
+          setPhase('playing');
+        } catch (error) {
+          console.error('No se pudo iniciar el reloj de la partida:', error);
+          setPhase('error');
+        }
       }
     }, 1000);
     return () => clearInterval(id);
