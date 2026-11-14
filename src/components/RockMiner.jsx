@@ -37,6 +37,16 @@ const RockMiner = ({ onClose, rockType = 'normal' }) => {
   const [saveError, setSaveError] = useState(false);
 
   const isProcessingRef = useRef(false);
+  const hitCountRef = useRef(0);
+  const awardIdRef = useRef(null);
+  const savedRef = useRef(false);
+
+  useEffect(() => {
+    Object.values(ROCK_IMAGES).flat().forEach(src => {
+      const image = new Image();
+      image.src = src;
+    });
+  }, []);
 
   useEffect(() => {
     const handleBack = (e) => {
@@ -62,38 +72,62 @@ const RockMiner = ({ onClose, rockType = 'normal' }) => {
   }, []);
 
   const handleHit = async () => {
-    if (mining || hits >= 3 || revealedRune || isProcessingRef.current) return;
+    if (isProcessingRef.current || hitCountRef.current >= 3 || revealedRune) return;
+
+    // Bloqueo síncrono: no depende del siguiente render de React.
     isProcessingRef.current = true;
+    const newHits = hitCountRef.current + 1;
+    hitCountRef.current = newHits;
+    setHits(newHits);
+    setMining(true);
 
+    // Mantiene visible cada fase de la roca y evita que los toques rápidos
+    // salten las imágenes intermedias.
+    await new Promise(resolve => setTimeout(resolve, 420));
+    setMining(false);
+
+    if (newHits < 3) {
+      isProcessingRef.current = false;
+      return;
+    }
+
+    const rune = getRandomRune(rockType);
+    setRevealedRune(rune);
+    awardIdRef.current = awardIdRef.current || `mine-${user?.uid || 'guest'}-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+
+    if (!user) {
+      isProcessingRef.current = false;
+      return;
+    }
+
+    setSaving(true);
+    setSaveError(false);
     try {
-      const newHits = hits + 1;
-      setHits(newHits);
-      setMining(true);
-
-      setTimeout(() => setMining(false), 300);
-
-      if (newHits === 3) {
-        const rune = getRandomRune(rockType);
-        setRevealedRune(rune);
-
-        if (user) {
-          setSaving(true);
-          setSaveError(false);
-
-          try {
-            await addRuneToCollection(user.uid, rune);
-          } catch (err) {
-            console.error('Error guardando runa:', err);
-            setSaveError(true);
-          } finally {
-            setSaving(false);
-          }
-        }
-      }
+      await addRuneToCollection(user.uid, rune, awardIdRef.current);
+      savedRef.current = true;
+    } catch (err) {
+      console.error('Error guardando runa:', err);
+      setSaveError(true);
     } finally {
-      setTimeout(() => {
-        isProcessingRef.current = false;
-      }, 100);
+      setSaving(false);
+      isProcessingRef.current = false;
+    }
+  };
+
+  const handleRetrySave = async () => {
+    if (!user || !revealedRune || savedRef.current || saving || !awardIdRef.current) return;
+    isProcessingRef.current = true;
+    setSaving(true);
+    setSaveError(false);
+    try {
+      await addRuneToCollection(user.uid, revealedRune, awardIdRef.current);
+      savedRef.current = true;
+    } catch (err) {
+      console.error('Error reintentando guardar runa:', err);
+      setSaveError(true);
+    } finally {
+      setSaving(false);
+      isProcessingRef.current = false;
     }
   };
 
@@ -108,7 +142,7 @@ const RockMiner = ({ onClose, rockType = 'normal' }) => {
           <h1 className="miner-huge-title">PICA</h1>
 
           <div className={`rock-center ${mining ? 'shaking' : ''}`}>
-            <img src={rockImage} alt="Roca" className="rock-standalone-img" />
+            <img key={rockImage} src={rockImage} alt="Roca" className="rock-standalone-img" draggable="false" />
           </div>
           
           {/* ✅ Eliminados los puntos de progreso (miner-hits-indicator) */}
@@ -119,7 +153,7 @@ const RockMiner = ({ onClose, rockType = 'normal' }) => {
 
           {saveError && (
             <div className="save-error-banner">
-              ️ No se pudo confirmar el guardado. Comprueba tu conexión antes de salir.
+              No se pudo confirmar el guardado. Tu runa sigue aquí; vuelve a intentarlo.
             </div>
           )}
 
@@ -129,10 +163,10 @@ const RockMiner = ({ onClose, rockType = 'normal' }) => {
 
           <button
             className={`collect-minimal-btn ${saveError ? 'btn-warning' : ''}`}
-            onClick={onClose}
-            disabled={saving}
+            onClick={saveError ? handleRetrySave : onClose}
+            disabled={saving || saveError || (!savedRef.current && !!user)}
           >
-            {saving ? '⏳ Guardando...' : saveError ? '⚠️ Cerrar' : 'Continuar'}
+            {saving ? '⏳ Guardando...' : saveError ? 'Reintentar guardado' : 'Continuar'}
           </button>
         </div>
       )}
