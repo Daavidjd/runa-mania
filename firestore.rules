@@ -25,6 +25,12 @@ service cloud.firestore {
         allow read, create, update, delete: if isUser(userId);
       }
 
+      // Recibos de minería para que reintentar un guardado no duplique la runa.
+      match /miningAwards/{awardId} {
+        allow read, create: if isUser(userId);
+        allow update, delete: if false;
+      }
+
       match /decks/{deckId} {
         // Los mazos de otros jugadores se leen para preparar batallas online.
         allow read: if signedIn();
