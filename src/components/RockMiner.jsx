@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { getRandomRune } from '../data/runes';
 import { addRuneToCollection } from '../services/firestore';
@@ -30,6 +31,7 @@ const ROCK_IMAGES = {
 
 const RockMiner = ({ onClose, rockType = 'normal' }) => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [hits, setHits] = useState(0);
   const [revealedRune, setRevealedRune] = useState(null);
   const [mining, setMining] = useState(false);
@@ -156,9 +158,14 @@ const RockMiner = ({ onClose, rockType = 'normal' }) => {
             </div>
           )}
 
-          <div className="reveal-rune-box">
+          <button
+            type="button"
+            className="reveal-rune-box"
+            onClick={() => navigate('/collection', { state: { selectedRuneId: revealedRune.id } })}
+            aria-label={`Ver detalles de ${revealedRune.name} en la colección`}
+          >
             <RuneCard rune={revealedRune} owned={true} battleMode={true} />
-          </div>
+          </button>
 
           <button
             className={`collect-minimal-btn ${saveError ? 'btn-warning' : ''}`}
