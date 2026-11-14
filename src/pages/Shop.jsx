@@ -314,7 +314,7 @@ const Shop = () => {
             {PICKAXES.map((pickaxe) => { const canAfford=(profile?.coins||0)>=pickaxe.price; return <div key={pickaxe.id} className="rock-item-card">
               <div className="rock-rarity-ribbon" style={{background:pickaxe.color}}>{pickaxe.rarity}</div>
               <div className="rock-visual-box"><img src={pickaxe.image} alt={pickaxe.name} className="rock-item-img" /></div>
-              <h3 className="rock-item-name">{pickaxe.name}</h3><p className="pickaxe-description">Abre 3 rocas del mismo nivel</p>
+              <h3 className="rock-item-name">{pickaxe.name}</h3>
               <button className={`rock-buy-btn ${canAfford?'affordable':'unaffordable'}`} onClick={()=>handleBuyPickaxe(pickaxe)} disabled={!canAfford||purchaseBusy}><span className="buy-coin-icon">🪙</span><span className="buy-price">{purchaseBusy?'...':pickaxe.price}</span></button>
             </div>; })}
           </div>
