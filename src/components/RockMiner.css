@@ -98,6 +98,8 @@
   font-weight: 900;
   color: #fde047;
   letter-spacing: 2px;
+  text-align: center;
+  width: 100%;
   text-shadow: 0 4px 12px rgba(0, 0, 0, 0.8), 0 0 24px rgba(245, 158, 11, 0.5);
 }
 

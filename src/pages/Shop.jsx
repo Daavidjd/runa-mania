@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { getUserProfile, buyRock, claimDailyRock, getDailyRockStatus } from '../services/firestore';
-import { ROCK_TYPES, RUNES_DB } from '../data/runes';
+import { ROCK_TYPES } from '../data/runes';
 import RockMiner from '../components/RockMiner';
 import './Shop.css';
 
@@ -25,16 +25,6 @@ const ROCK_IMAGES = {
   normal: [RocaBlanca1, RocaBlanca2, RocaBlanca3], 
   rare: [RocaAzul1, RocaAzul2, RocaAzul3],
   epic: [RocaLila1, RocaLila2, RocaLila3]
-};
-
-const getDropRates = (rock) => {
-  const tiers = ['comun', 'rara', 'epica'];
-  const totals = tiers.map(tier => RUNES_DB.filter(rune => rune.tier === tier).length * rock.weights[tier]);
-  const total = totals.reduce((sum, weight) => sum + weight, 0);
-  return tiers.map((tier, index) => ({
-    label: tier === 'comun' ? 'Común' : tier === 'rara' ? 'Rara' : 'Épica',
-    value: total ? Math.round((totals[index] / total) * 1000) / 10 : 0
-  }));
 };
 
 const Shop = () => {
@@ -270,7 +260,6 @@ const Shop = () => {
             {Object.values(ROCK_TYPES).map((rock) => {
               const canAfford = (profile?.coins || 0) >= rock.price;
               const rockImg = ROCK_IMAGES[rock.id]?.[0] || RocaBlanca1;
-              const dropRates = getDropRates(rock);
 
               return (
                 <div key={rock.id} className="rock-item-card">
@@ -286,8 +275,6 @@ const Shop = () => {
                   </div>
 
                   <h3 className="rock-item-name">{rock.name}</h3>
-                  <p className="rock-item-description">{rock.description}</p>
-                  <p className="rock-drop-rates">{dropRates.map(rate => `${rate.label} ${rate.value}%`).join(' · ')}</p>
 
                   <button
                     className={`rock-buy-btn ${canAfford ? 'affordable' : 'unaffordable'}`}
