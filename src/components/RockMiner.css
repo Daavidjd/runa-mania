@@ -206,22 +206,22 @@ button.reveal-rune-box {
 }
 /* Modo pico: tres rocas independientes */
 .pickaxe-miner-overlay { overflow-y:auto; }
-.pickaxe-miner-content { width:100%; max-width:900px; display:flex; flex-direction:column; align-items:center; gap:16px; }
-.pickaxe-miner-subtitle { color:#cbd5e1; font-size:13px; font-weight:800; text-align:center; margin:0; }
-.pickaxe-rocks-grid { width:100%; display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:12px; }
-.pickaxe-rock-card { min-width:0; min-height:190px; border:2px solid #334155; border-radius:16px; background:rgba(15,23,42,.92); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:8px; padding:8px 4px; cursor:pointer; }
-.pickaxe-rock-card.completed { border-color:#eab308; cursor:default; }
+.pickaxe-miner-content { width:100%; max-width:720px; display:flex; flex-direction:column; align-items:center; gap:18px; }
+.pickaxe-rocks-grid { width:min(100%,560px); display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); justify-items:center; align-items:center; gap:8px 24px; }
+.pickaxe-rock-card { width:100%; min-width:0; min-height:190px; border:0; border-radius:0; background:transparent; box-shadow:none; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:8px; padding:0; cursor:pointer; }
+.pickaxe-rock-card:first-child { grid-column:1 / -1; width:50%; }
+.pickaxe-rock-card.completed { cursor:default; }
 .pickaxe-rock-card .rock-standalone-img { width:100%; max-width:190px; height:auto; aspect-ratio:1; }
 .pickaxe-rock-card .rock-standalone-img.shaking { animation:rock-hit-shake .3s both; }
-.pickaxe-hit-label,.pickaxe-done-label { color:#fef08a; font-size:11px; font-weight:900; text-align:center; }
+.pickaxe-done-label { color:#fef08a; font-size:11px; font-weight:900; text-align:center; }
 .pickaxe-rock-card .reveal-rune-box { width:120px; height:120px; filter:none; }
 .pickaxe-retry { background:#b45309; color:white; border:0; border-radius:8px; padding:6px; font-size:10px; font-weight:800; }
-.pickaxe-description { color:#9fb0ca; font-size:9px; text-align:center; margin:-5px 0 7px; min-height:22px; }
 @media(max-width:520px) {
  .pickaxe-miner-overlay { padding:10px; }
  .pickaxe-miner-content { gap:10px; }
- .pickaxe-miner-overlay .miner-huge-title { font-size:clamp(1.8rem,8vw,3rem); letter-spacing:2px; }
- .pickaxe-rocks-grid { gap:5px; }
- .pickaxe-rock-card { min-height:145px; padding:5px 2px; }
+ .pickaxe-miner-overlay .miner-huge-title { font-size:clamp(2.5rem,10vw,3.5rem); letter-spacing:3px; }
+ .pickaxe-rocks-grid { gap:0 10px; }
+ .pickaxe-rock-card { min-height:135px; }
+ .pickaxe-rock-card:first-child { width:58%; }
  .pickaxe-rock-card .reveal-rune-box { width:85px; height:85px; }
 }
