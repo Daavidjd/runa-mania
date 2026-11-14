@@ -524,7 +524,10 @@ const BattleOnline = () => {
       if (remaining <= 0) {
         clearInterval(id);
         try {
-          if (roomIdRef.current) await startOnlineTurnClock(roomIdRef.current);
+          if (roomIdRef.current) {
+            const startedRoom = await startOnlineTurnClock(roomIdRef.current);
+            if (startedRoom) setRoom(startedRoom);
+          }
           setPhase('playing');
         } catch (error) {
           console.error('No se pudo iniciar el reloj de la partida:', error);
