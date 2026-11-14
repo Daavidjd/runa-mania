@@ -207,6 +207,7 @@ button.reveal-rune-box {
 /* Modo pico: tres rocas independientes */
 .pickaxe-miner-overlay { overflow-y:auto; }
 .pickaxe-miner-content { width:100%; max-width:720px; display:flex; flex-direction:column; align-items:center; gap:18px; }
+.pickaxe-miner-content > .miner-huge-title { width:100%; text-align:center; }
 .pickaxe-rocks-grid { width:min(100%,560px); display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); justify-items:center; align-items:center; gap:8px 24px; }
 .pickaxe-rock-card { width:100%; min-width:0; min-height:190px; border:0; border-radius:0; background:transparent; box-shadow:none; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:8px; padding:0; cursor:pointer; }
 .pickaxe-rock-card:first-child { grid-column:1 / -1; width:50%; }
