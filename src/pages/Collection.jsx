@@ -152,7 +152,6 @@ const Collection = () => {
         <div className="runes-compact-grid">
           {RUNES_DB.map(rune => {
             const owned = !!ownedRunes[rune.id];
-            const inDeck = isInDeck(rune);
             return (
               <div key={rune.id} className="compact-item-wrapper">
                 <RuneCard rune={rune} owned={owned} onClick={() => setSelectedRune(rune)} />
