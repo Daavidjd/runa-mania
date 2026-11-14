@@ -199,7 +199,7 @@ const Collection = () => {
                 setShowDeckFullNotice(false);
                 setChoosingDeckRuneToRemove(true);
                 setSelectedDeckRune(null);
-              }}>Sustituir una runa</button>
+              }}>Reemplazar</button>
             </div>
           </section>
         </div>
