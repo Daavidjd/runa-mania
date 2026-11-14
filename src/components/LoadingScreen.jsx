@@ -59,7 +59,7 @@ const LoadingScreen = ({ assets = [], onComplete, minDisplayTime = 1500 }) => {
       finishLoading();
     } else {
       const preloadAsset = (src) => {
-        if (typeof src !== 'string' || !/\\.(png|jpe?g|webp|svg)(\\?.*)?$/i.test(src)) {
+        if (typeof src !== 'string' || !/\.(png|jpe?g|webp|svg)(\?.*)?$/i.test(src)) {
           updateProgress();
           return;
         }
