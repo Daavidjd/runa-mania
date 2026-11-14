@@ -31,9 +31,9 @@ const ROCK_IMAGES = {
 };
 
 const PICKAXES = [
- { id:'iron',name:'Pico de hierro',price:500,rockType:'normal',image:PicoHierro,rarity:'Normal',color:'#90a4ae' },
- { id:'gold',name:'Pico de oro',price:800,rockType:'rare',image:PicoOro,rarity:'Rara',color:'#eab308' },
- { id:'diamond',name:'Pico de diamante',price:1000,rockType:'epic',image:PicoDiamante,rarity:'Épica',color:'#38bdf8' }
+ { id:'iron',name:'Hierro',price:500,rockType:'normal',image:PicoHierro,rarity:'Normal',color:'#90a4ae' },
+ { id:'gold',name:'Oro',price:800,rockType:'rare',image:PicoOro,rarity:'Rara',color:'#eab308' },
+ { id:'diamond',name:'Diamante',price:1000,rockType:'epic',image:PicoDiamante,rarity:'Épica',color:'#38bdf8' }
 ];
 
 const Shop = () => {
@@ -216,10 +216,9 @@ const Shop = () => {
     <div className="shop-screen">
       <header className="shop-header">
         <div className="shop-header-title">
-          <span className="shop-header-icon">⛏️</span>
+          <img src={PicoHierro} alt="Pico de hierro" className="shop-header-icon" />
           <div>
             <h1 className="shop-title">LA MINA</h1>
-            <span className="shop-subtitle">Extrae runas de las rocas</span>
           </div>
         </div>
 
