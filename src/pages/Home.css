@@ -638,28 +638,72 @@
 /* ============================================================
    🌐 BOTÓN DE BATALLA ONLINE (matchmaking aleatorio)
    ============================================================ */
-.online-battle-btn {
+.online-mode-card {
   width: 100%;
-  max-width: 320px;
-  min-height: 78px;
+  max-width: 510px;
+  min-height: 325px;
   align-self: center;
-  margin: 0 auto;
-  padding: 9px 14px 10px;
+  box-sizing: border-box;
+  padding: 18px 22px 20px;
   display: flex;
   flex-direction: column;
   align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  background: #121828;
+  border: 4px solid #1c273e;
+  border-radius: 26px;
+  box-shadow: 0 5px 0 #080c14, 0 12px 20px rgba(0, 0, 0, 0.48),
+    inset 0 2px 4px rgba(255, 255, 255, 0.06);
+}
+
+.online-mode-badge {
+  min-width: 120px;
+  padding: 5px 18px;
+  box-sizing: border-box;
+  border: 2px solid #00d4ff;
+  border-radius: 14px;
+  background: #090d18;
+  color: #00d4ff;
+  text-align: center;
+  font-size: 16px;
+  line-height: 1.1;
+  font-weight: 950;
+  box-shadow: 0 3px 0 #006b80;
+}
+
+.online-mode-icon {
+  width: 126px;
+  height: 126px;
+  flex: 0 0 126px;
+  display: flex;
+  align-items: center;
   justify-content: center;
-  gap: 3px;
+  border: 5px solid #00d4ff;
+  border-radius: 50%;
+  background: #090d18;
+  color: #00d4ff;
+  font-size: 66px;
+  line-height: 1;
+  font-weight: 950;
+}
+
+.online-battle-btn {
+  width: min(100%, 360px);
+  min-height: 70px;
+  box-sizing: border-box;
+  padding: 12px 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   position: relative;
   overflow: hidden;
   border: 4px solid #fff275;
-  border-radius: 18px;
+  border-radius: 20px;
   background: linear-gradient(180deg, #ffe34d 0%, #ffd000 38%, #ffc400 100%);
   color: #2b1700;
   cursor: pointer;
-  box-shadow:
-    0 8px 0 #9e6400,
-    0 12px 18px rgba(0, 0, 0, 0.42),
+  box-shadow: 0 8px 0 #9e6400, 0 12px 18px rgba(0, 0, 0, 0.42),
     inset 0 3px 4px rgba(255, 255, 255, 0.65);
   transition: transform 0.12s ease, box-shadow 0.12s ease, filter 0.12s ease;
 }
@@ -670,15 +714,6 @@
   inset: 0 0 auto;
   height: 44%;
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.42), transparent);
-  pointer-events: none;
-}
-
-.online-battle-btn::after {
-  content: "";
-  position: absolute;
-  inset: 5px;
-  border: none;
-  border-radius: 10px;
   pointer-events: none;
 }
 
@@ -694,63 +729,23 @@
   box-shadow: 0 3px 0 #9e6400, 0 5px 10px rgba(0, 0, 0, 0.35);
 }
 
-.online-btn-icon {
-  width: 25px;
-  height: 25px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  position: relative;
-  z-index: 1;
-  border: 2px solid #5b4300;
-  border-radius: 50%;
-  background: radial-gradient(circle at 35% 25%, #fff5b0, #ffd000 68%);
-  color: #3a2800;
-  font-size: 18px;
-  line-height: 1;
-  font-weight: 1000;
-  box-shadow: 0 2px 0 rgba(92, 56, 0, 0.55), 0 0 0 2px rgba(0, 212, 255, 0.28);
-}
-
 .online-btn-txt {
   position: relative;
   z-index: 1;
   color: #2b1700;
-  font-size: 18px;
+  font-size: 25px;
   font-weight: 950;
-  letter-spacing: 1.35px;
+  letter-spacing: 1.5px;
   line-height: 1.1;
   text-shadow: 0 1px 0 rgba(255, 255, 255, 0.55);
-}
-
-.online-btn-sub {
-  position: relative;
-  z-index: 1;
-  color: #654300;
-  font-size: 11px;
-  font-weight: 900;
-  letter-spacing: 0.35px;
-  line-height: 1.1;
 }
 
 .online-battle-btn.online-disabled {
   background: #2a3441;
   border-color: #4a5568;
-  color: #a0aec0;
   box-shadow: 0 8px 0 #1a202c, 0 12px 18px rgba(0, 0, 0, 0.45);
   opacity: 0.72;
   cursor: not-allowed;
-}
-
-.online-battle-btn.online-disabled::after {
-  border-color: rgba(148, 163, 184, 0.2);
-}
-
-.online-battle-btn.online-disabled .online-btn-icon {
-  background: #374151;
-  border-color: #718096;
-  color: #cbd5e1;
-  box-shadow: none;
 }
 
 .online-battle-btn.online-disabled .online-btn-txt {
@@ -758,14 +753,28 @@
   text-shadow: none;
 }
 
-.online-battle-btn.online-disabled .online-btn-sub {
-  color: #718096;
-}
-
 .online-battle-btn.online-disabled:hover {
   transform: none;
   filter: none;
   background: #2a3441;
+}
+
+@media (max-width: 380px) {
+  .online-mode-card {
+    min-height: 300px;
+    padding: 16px 14px 18px;
+  }
+
+  .online-mode-icon {
+    width: 112px;
+    height: 112px;
+    flex-basis: 112px;
+    font-size: 58px;
+  }
+
+  .online-battle-btn {
+    min-height: 64px;
+  }
 }
 
 /* ---- Estado buscando rival ---- */
