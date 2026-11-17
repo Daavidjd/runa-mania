@@ -374,13 +374,14 @@ const BattleOnline = () => {
       setLastPlaced(lastMove.index);
       if (lastMove.captured?.length) {
         setAttackDirs({ [lastMove.index]: getAttackDirections(lastMove.index, lastMove.captured) });
+        // Dar tiempo a que termine el ataque antes de iniciar el giro.
         setTimeout(() => {
           setFlippingCells(lastMove.captured);
           setAttackDirs({});
-          // Cambiar el color justo a mitad de la animación de giro (300 de 600 ms).
-          setTimeout(() => setCaptureOwnerOverrides({}), 300);
-          setTimeout(() => { setFlippingCells([]); }, 600);
-        }, 400);
+          // El color cambia a mitad del giro para que el volteo sea visible.
+          setTimeout(() => setCaptureOwnerOverrides({}), 450);
+          setTimeout(() => { setFlippingCells([]); }, 900);
+        }, 1500);
       } else {
         setTimeout(() => setLastPlaced(null), 600);
       }
@@ -481,9 +482,9 @@ const BattleOnline = () => {
             setTimeout(() => {
               setFlippingCells(captured);
               setAttackDirs({});
-              setTimeout(() => setCaptureOwnerOverrides({}), 300);
-              setTimeout(() => setFlippingCells([]), 600);
-            }, 400);
+              setTimeout(() => setCaptureOwnerOverrides({}), 450);
+              setTimeout(() => setFlippingCells([]), 900);
+            }, 1500);
           } else {
             setTimeout(() => setLastPlaced(null), 600);
           }
@@ -531,9 +532,9 @@ const BattleOnline = () => {
         setTimeout(() => {
           setFlippingCells(captured);
           setAttackDirs({});
-          setTimeout(() => setCaptureOwnerOverrides({}), 300);
-          setTimeout(() => setFlippingCells([]), 600);
-        }, 400);
+          setTimeout(() => setCaptureOwnerOverrides({}), 450);
+          setTimeout(() => setFlippingCells([]), 900);
+        }, 1500);
       } else {
         setTimeout(() => setLastPlaced(null), 600);
       }
