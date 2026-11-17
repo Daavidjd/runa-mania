@@ -204,14 +204,14 @@
 .bp-cell-player { border-color: #0284c7; }
 .bp-cell-ai { border-color: #b91c1c; }
 
-.bp-cell-flip { animation: bp-flip 0.75s ease; }
+.bp-cell-flip { animation: bp-flip 0.95s ease-in-out; }
 @keyframes bp-flip {
   0% { transform: scale(1) rotateY(0); }
   50% { transform: scale(1.12) rotateY(180deg); }
   100% { transform: scale(1) rotateY(360deg); }
 }
 
-.bp-cell-placed { animation: bp-placed 0.45s ease-out; }
+.bp-cell-placed { animation: bp-placed 0.65s ease-out; }
 @keyframes bp-placed {
   0% { transform: scale(1.2); }
   100% { transform: scale(1); }
