@@ -200,7 +200,8 @@ export const playRandomOnlineMove = async (roomId, uid, hand) => {
     room.board = Object.fromEntries(board.map((cell, i) => cell ? [String(i), cell] : null).filter(Boolean));
     const moveId = `${uid}-auto-${Date.now()}`;
     room.lastMove = { by: uid, index, captured, moveId, autoPlayed: true, runeId: card.id };
-    const nextTurnStartsAt = Date.now() + (captured.length ? 1100 : 0);
+    // La siguiente cuenta de 30 s comienza cuando termina la animación.
+    const nextTurnStartsAt = Date.now() + (captured.length ? 1100 : 650);
     room.turnStartsAt = nextTurnStartsAt;
     room.turnDeadlineAt = nextTurnStartsAt + 30000;
     room.updatedAt = Date.now();
