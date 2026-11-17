@@ -11,7 +11,7 @@ import {
   completeMatchmaking,
   leaveMatchmakingQueue
 } from '../services/firestore';
-import { joinOnlineRoom, watchRoom, leaveOnlineRoom, updateOnlineRoom, playOnlineMove, claimOnlineForfeit, startOnlineTurnClock, claimOnlineTimeout } from '../services/realtime';
+import { joinOnlineRoom, watchRoom, leaveOnlineRoom, updateOnlineRoom, playOnlineMove, playRandomOnlineMove, claimOnlineForfeit, startOnlineTurnClock } from '../services/realtime';
 
 import { RUNES_DB } from '../data/runes';
 import { AVATAR_OPTIONS } from '../data/avatars';
@@ -108,6 +108,8 @@ const BattleOnline = () => {
   const [shakeHand, setShakeHand] = useState(false);
   const [countdown, setCountdown] = useState(3); // ⏳ cuenta regresiva del volteo de moneda
   const [turnReady, setTurnReady] = useState(true);
+  const [timerRemaining, setTimerRemaining] = useState(30);
+  const autoMovePendingRef = useRef(false);
 
   const roomUnsubRef = useRef(null);
   const challengeUnsubRef = useRef(null);
@@ -217,6 +219,8 @@ const BattleOnline = () => {
     setOppHandCount(8);
     setSelectedCard(null);
     setMovePending(false);
+    autoMovePendingRef.current = false;
+    setTimerRemaining(30);
     setScores({ me: 0, opp: 0 });
     setGameOver(false);
     setIWon(null);
@@ -426,28 +430,65 @@ const BattleOnline = () => {
     return () => clearTimeout(unlock);
   }, [phase, gameOver, room.turnStartsAt]);
 
+  // Reloj compartido de 30 segundos: empieza al terminar la animación
+  // y ambos clientes muestran la misma cuenta atrás.
   useEffect(() => {
-    if (phase !== 'playing' || gameOver || !room.turnDeadlineAt || !roomIdRef.current) return undefined;
-    let cancelled = false;
-    let timeout;
-    const checkTimeout = async () => {
-      try {
-        const updatedRoom = await claimOnlineTimeout(roomIdRef.current);
-        if (updatedRoom) setRoom(updatedRoom);
-        if (!cancelled && !updatedRoom?.finished) {
-          timeout = setTimeout(checkTimeout, 1000);
-        }
-      } catch (error) {
-        console.error('Error resolviendo el tiempo agotado:', error);
-        if (!cancelled) timeout = setTimeout(checkTimeout, 1000);
-      }
+    if (phase !== 'playing' || gameOver || !room.turnDeadlineAt) {
+      setTimerRemaining(30);
+      return undefined;
+    }
+    const updateTimer = () => {
+      const left = Math.max(0, Math.ceil((Number(room.turnDeadlineAt) - Date.now()) / 1000));
+      setTimerRemaining(left);
     };
-    timeout = setTimeout(checkTimeout, Math.max(0, Number(room.turnDeadlineAt) - Date.now()) + 500);
-    return () => {
-      cancelled = true;
-      clearTimeout(timeout);
-    };
+    updateTimer();
+    const interval = setInterval(updateTimer, 250);
+    return () => clearInterval(interval);
   }, [phase, gameOver, room.turnDeadlineAt]);
+
+  // Al agotarse el tiempo, solo el jugador cuyo turno está activo ejecuta
+  // la jugada automática. La transacción de RTDB evita duplicados/race conditions.
+  useEffect(() => {
+    if (phase !== 'playing' || gameOver || !myTurn || movePending ||
+        timerRemaining > 0 || autoMovePendingRef.current || !roomIdRef.current) return;
+    autoMovePendingRef.current = true;
+    setMovePending(true);
+    setTurnReady(false);
+    playRandomOnlineMove(roomIdRef.current, myUid, myHand)
+      .then(result => {
+        if (!result.committed) return;
+        if (result.room) setRoom(result.room);
+        if (result.card) {
+          setMyHand(prev => {
+            const index = prev.findIndex(card => card.id === result.card.id);
+            return index < 0 ? prev : prev.filter((_, i) => i !== index);
+          });
+          setSelectedCard(null);
+          setLastPlaced(result.index);
+          appliedRemoteMovesRef.current.add(result.room?.lastMove?.moveId);
+          const captured = result.captured || [];
+          if (captured.length) {
+            setCaptureOwnerOverrides(Object.fromEntries(
+              captured.map(index => [index, boardRef.current[index]?.owner === 'red' ? 'ai' : 'player'])
+            ));
+            setAttackDirs({ [result.index]: getAttackDirections(result.index, captured) });
+            setTimeout(() => {
+              setFlippingCells(captured);
+              setAttackDirs({});
+              setTimeout(() => setCaptureOwnerOverrides({}), 300);
+              setTimeout(() => setFlippingCells([]), 600);
+            }, 400);
+          } else {
+            setTimeout(() => setLastPlaced(null), 600);
+          }
+        }
+      })
+      .catch(error => console.error('Error ejecutando la jugada automática:', error))
+      .finally(() => {
+        autoMovePendingRef.current = false;
+        setMovePending(false);
+      });
+  }, [phase, gameOver, myTurn, movePending, timerRemaining, myUid, myHand]);
 
   // ---------- MI TURNO ----------
   const placedCount = board.filter(c => c !== null).length;
@@ -683,6 +724,11 @@ const BattleOnline = () => {
       <main className="bp-arena-center">
         <div className={`bp-turn-indicator ${myTurn ? 'is-turn-player' : 'is-turn-ai'}`}>
           <span className="bp-turn-icon">{myTurn ? '⚔️' : '⏳'}</span>
+          {!gameOver && phase === 'playing' && (
+            <div className="bo-turn-timer" style={{ '--timer-progress': `${Math.max(0, Math.min(30, timerRemaining)) / 30 * 100}%` }}>
+              <span>{timerRemaining}</span>
+            </div>
+          )}
           <span className="bp-turn-txt">
             {gameOver
               ? 'Partida finalizada'
