@@ -446,6 +446,12 @@ const BattleOnline = () => {
     return () => clearInterval(interval);
   }, [phase, gameOver, room.turnDeadlineAt]);
 
+  // ---------- MI TURNO ----------
+  const placedCount = board.filter(c => c !== null).length;
+  // El que empieza coloca las jugadas 1ª, 3ª, 5ª... (índices pares ya colocados = su turno)
+  const myTurn = phase === 'playing' && turnReady && !gameOver &&
+    (myColor === 'blue' ? placedCount % 2 === 0 : myColor === 'red' ? placedCount % 2 === 1 : false);
+
   // Al agotarse el tiempo, solo el jugador cuyo turno está activo ejecuta
   // la jugada automática. La transacción de RTDB evita duplicados/race conditions.
   useEffect(() => {
@@ -490,11 +496,6 @@ const BattleOnline = () => {
       });
   }, [phase, gameOver, myTurn, movePending, timerRemaining, myUid, myHand]);
 
-  // ---------- MI TURNO ----------
-  const placedCount = board.filter(c => c !== null).length;
-  // El que empieza coloca las jugadas 1ª, 3ª, 5ª... (índices pares ya colocados = su turno)
-  const myTurn = phase === 'playing' && turnReady && !gameOver &&
-    (myColor === 'blue' ? placedCount % 2 === 0 : myColor === 'red' ? placedCount % 2 === 1 : false);
 
   const handleCellClick = useCallback(async (index) => {
     if (gameOver || phase !== 'playing' || !myTurn || movePending || board[index]) return;
