@@ -572,9 +572,10 @@ const BattleOnline = () => {
           setRoom(result.room);
           // Desbloqueo explícito del jugador rojo cuando termina la ventana de animación.
           const unlockIn = Math.max(0, Number(result.room.turnStartsAt || 0) - Date.now());
-          setTimeout(() => {
-            if (!cancelled) setTurnReady(true);
-          }, unlockIn);
+          // Este timeout no debe depender de la vida del efecto: al actualizar
+          // room.lastMove el efecto se vuelve a ejecutar y su cleanup marcaría
+          // cancelled=true antes de que termine la animación, bloqueando al humano.
+          setTimeout(() => setTurnReady(true), unlockIn);
         }
         setBotHand(prev => prev.filter(r => r.id !== card.id));
       } catch (error) {
