@@ -112,6 +112,7 @@ const BattleOnline = () => {
   const [timerRemaining, setTimerRemaining] = useState(30);
   const autoMovePendingRef = useRef(false);
   const autoMoveAttemptedDeadlineRef = useRef(null);
+  const manualMovePendingRef = useRef(false);
 
   const roomUnsubRef = useRef(null);
   const challengeUnsubRef = useRef(null);
@@ -591,7 +592,10 @@ const BattleOnline = () => {
 
 
   const handleCellClick = useCallback(async (index) => {
-    if (gameOver || phase !== 'playing' || !myTurn || movePending || board[index]) return;
+    // El bloqueo del bot/temporizador no debe impedir una jugada humana.
+    // La referencia independiente evita dobles pulsaciones mientras se guarda
+    // la jugada propia, sin depender del estado compartido movePending.
+    if (gameOver || phase !== 'playing' || !myTurn || manualMovePendingRef.current || board[index]) return;
     if (selectedCard === null) {
       setShakeHand(true);
       setTimeout(() => setShakeHand(false), 500);
@@ -600,6 +604,7 @@ const BattleOnline = () => {
     const card = myHand[selectedCard];
     if (!card) return;
     const moveId = `${user.uid}-${Date.now()}`;
+    manualMovePendingRef.current = true;
     appliedRemoteMovesRef.current.add(moveId);
     setMovePending(true);
     setTurnReady(false);
@@ -635,9 +640,10 @@ const BattleOnline = () => {
       setTurnReady(true);
       console.error('No se pudo registrar la jugada online:', error);
     } finally {
+      manualMovePendingRef.current = false;
       setMovePending(false);
     }
-  }, [gameOver, phase, myTurn, movePending, board, selectedCard, myHand, user]);
+  }, [gameOver, phase, myTurn, board, selectedCard, myHand, user]);
 
 
   // ---------- REPORTAR RESULTADO UNA SOLA VEZ ----------
