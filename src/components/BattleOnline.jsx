@@ -178,6 +178,10 @@ const BattleOnline = () => {
             await leaveMatchmakingQueue(user.uid);
             const botUid = 'bot-larrykaberga';
             const roomId = `larrykaberga-${user.uid}-${Date.now()}`;
+            // La primera escritura debe incluir al usuario autenticado para superar las reglas RTDB.
+            // Después añadimos el bot desde la misma sesión; matchOrder mantiene al bot en azul.
+            const profileForRoom = await getUserProfile(user.uid);
+            await joinOnlineRoom(roomId, user.uid, profileForRoom?.username || user.displayName || 'Invocador', [botUid, user.uid]);
             await joinOnlineRoom(roomId, botUid, 'LarryKaberga', [botUid, user.uid]);
             const next = {
               role: 'random', roomId, opponentUid: botUid,
