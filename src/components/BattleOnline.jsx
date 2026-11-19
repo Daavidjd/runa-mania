@@ -111,6 +111,7 @@ const BattleOnline = () => {
   const [turnReady, setTurnReady] = useState(true);
   const [timerRemaining, setTimerRemaining] = useState(30);
   const autoMovePendingRef = useRef(false);
+  const autoMoveAttemptedDeadlineRef = useRef(null);
 
   const roomUnsubRef = useRef(null);
   const challengeUnsubRef = useRef(null);
@@ -495,14 +496,23 @@ const BattleOnline = () => {
   // Al agotarse el tiempo, solo el jugador cuyo turno está activo ejecuta
   // la jugada automática. La transacción de RTDB evita duplicados/race conditions.
   useEffect(() => {
+    const deadlineKey = Number(room.turnDeadlineAt || 0);
     if (phase !== 'playing' || gameOver || !myTurn || movePending ||
-        timerRemaining > 0 || autoMovePendingRef.current || !roomIdRef.current) return;
+        timerRemaining > 0 || autoMovePendingRef.current || !roomIdRef.current ||
+        !deadlineKey || autoMoveAttemptedDeadlineRef.current === deadlineKey) return;
+    // Solo un intento automático por turno: evita un bucle de transacciones
+    // rechazadas que dejaba movePending bloqueado y congelaba la arena.
+    autoMoveAttemptedDeadlineRef.current = deadlineKey;
     autoMovePendingRef.current = true;
     setMovePending(true);
     setTurnReady(false);
     playRandomOnlineMove(roomIdRef.current, myUid, myHand)
       .then(result => {
-        if (!result.committed) return;
+        if (!result.committed) {
+          console.warn('No se pudo ejecutar la jugada automática:', result.reason || 'Turno actualizado');
+          setTurnReady(true);
+          return;
+        }
         if (result.room) setRoom(result.room);
         if (result.card) {
           setMyHand(prev => {
@@ -534,7 +544,7 @@ const BattleOnline = () => {
         autoMovePendingRef.current = false;
         setMovePending(false);
       });
-  }, [phase, gameOver, myTurn, movePending, timerRemaining, myUid, myHand]);
+  }, [phase, gameOver, myTurn, movePending, timerRemaining, myUid, myHand, room.turnDeadlineAt]);
 
   // LarryKaberga juega desde el cliente del jugador, pero sus movimientos se
   // validan y sincronizan mediante la misma transacción de Realtime Database.
