@@ -9,7 +9,9 @@ const RuneCard = React.memo(({
   battleMode = false, 
   isFlipping = false, 
   isPlaced = false,
-  attackDirs = {} // ✅ Nueva prop para animación de ataque
+  attackDirs = {},
+  visualOwner = null, // Mantiene el dueño visual anterior hasta la mitad del giro
+  hideName = false
 }) => {
   if (!rune) return null;
 
@@ -19,7 +21,7 @@ const RuneCard = React.memo(({
 
   // MODO BATALLA
   if (battleMode) {
-    const ownerClass = rune.owner === 'ai' ? 'battle-ai' : 'battle-player';
+    const ownerClass = (visualOwner || rune.owner) === 'ai' ? 'battle-ai' : 'battle-player';
     const animClass = isFlipping ? 'br-flip' : isPlaced ? 'br-placed' : '';
     
     return (
@@ -48,7 +50,7 @@ const RuneCard = React.memo(({
         
         {/* Área interior (sin nombre en batalla) */}
         <div className="battle-inner">
-          <img src={rune.image} alt={rune.name} className="battle-image" loading="lazy" />
+          <img src={rune.image} alt={rune.name} className="battle-image rune-art-protected" loading="lazy" decoding="async" fetchPriority="low" draggable="false" onContextMenu={e => e.preventDefault()} onDragStart={e => e.preventDefault()} />
         </div>
       </div>
     );
@@ -56,12 +58,12 @@ const RuneCard = React.memo(({
 
   // MODO NORMAL (Colección)
   return (
-    <div className={`rune-card ${!owned ? 'locked' : ''}`} onClick={handleClick}>
+    <div onContextMenu={e => e.preventDefault()} className={`rune-card ${!owned ? 'locked' : ''}`} onClick={handleClick}>
       <div className="rune-inner">
         {owned ? (
           <>
-            <img src={rune.image} alt={rune.name} className="rune-image" loading="lazy" />
-            <h3 className="rune-name">{rune.name}</h3>
+            <img src={rune.image} alt={rune.name} className="rune-image rune-art-protected" loading="lazy" decoding="async" fetchPriority="low" draggable="false" onContextMenu={e => e.preventDefault()} onDragStart={e => e.preventDefault()} />
+            {!hideName && <h3 className="rune-name">{rune.name}</h3>}
           </>
         ) : (
           <div className="rune-locked">?</div>

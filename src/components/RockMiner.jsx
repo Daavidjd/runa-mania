@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { getRandomRune } from '../data/runes';
 import { addRuneToCollection } from '../services/firestore';
@@ -28,10 +29,12 @@ const ROCK_IMAGES = {
   epic: [RocaLila1, RocaLila2, RocaLila3]
 };
 
-const SAVE_TIMEOUT_MS = 5000;
-
-const RockMiner = ({ onClose, rockType = 'normal' }) => {
+const RockMiner = ({ onClose, rockType = 'normal', pickaxeType = null }) => {
+  const isPickaxeRun = Boolean(pickaxeType);
+  const [pickaxeRocks, setPickaxeRocks] = useState(() => Array.from({length:3}, (_,id) => ({ id, hits:0, rune:null, saving:false, saved:false, saveError:false, awardId:`pick-${Date.now()}-${id}-${Math.random().toString(36).slice(2)}` })));
+  const [activePickRock, setActivePickRock] = useState(null);
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [hits, setHits] = useState(0);
   const [revealedRune, setRevealedRune] = useState(null);
   const [mining, setMining] = useState(false);
@@ -39,6 +42,16 @@ const RockMiner = ({ onClose, rockType = 'normal' }) => {
   const [saveError, setSaveError] = useState(false);
 
   const isProcessingRef = useRef(false);
+  const hitCountRef = useRef(0);
+  const awardIdRef = useRef(null);
+  const savedRef = useRef(false);
+
+  useEffect(() => {
+    Object.values(ROCK_IMAGES).flat().forEach(src => {
+      const image = new Image();
+      image.src = src;
+    });
+  }, []);
 
   useEffect(() => {
     const handleBack = (e) => {
@@ -63,34 +76,62 @@ const RockMiner = ({ onClose, rockType = 'normal' }) => {
     };
   }, []);
 
-  const handleHit = async () => {
-    if (mining || hits >= 3 || revealedRune || isProcessingRef.current) return;
-    isProcessingRef.current = true;
+  const handlePickaxeHit = async (rockId) => {
+    const current=pickaxeRocks.find(rock=>rock.id===rockId);
+    if(!current||current.rune||isProcessingRef.current) return;
+    isProcessingRef.current=true; setActivePickRock(rockId); setMining(true);
+    const nextHits=current.hits+1;
+    setPickaxeRocks(prev=>prev.map(rock=>rock.id===rockId?{...rock,hits:nextHits}:rock));
+    await new Promise(resolve=>setTimeout(resolve,480)); setMining(false);
+    if(nextHits===3){
+      const rune=getRandomRune(rockType);
+      setPickaxeRocks(prev=>prev.map(rock=>rock.id===rockId?{...rock,rune,saving:Boolean(user)}:rock));
+      if(user){ try { await addRuneToCollection(user.uid,rune,current.awardId); setPickaxeRocks(prev=>prev.map(rock=>rock.id===rockId?{...rock,saving:false,saved:true}:rock)); }
+        catch(error){ console.error('Error guardando runa del pico:',error); setPickaxeRocks(prev=>prev.map(rock=>rock.id===rockId?{...rock,saving:false,saveError:true}:rock)); }
+      }
+    }
+    isProcessingRef.current=false;
+  };
 
+  const handlePickaxeRetry = async (rockId) => {
+    const rock=pickaxeRocks.find(item=>item.id===rockId);
+    if(!user||!rock?.rune||!rock.saveError||isProcessingRef.current) return;
+    isProcessingRef.current=true; setPickaxeRocks(prev=>prev.map(item=>item.id===rockId?{...item,saving:true,saveError:false}:item));
+    try { await addRuneToCollection(user.uid,rock.rune,rock.awardId); setPickaxeRocks(prev=>prev.map(item=>item.id===rockId?{...item,saving:false,saved:true}:item)); }
+    catch(error){ setPickaxeRocks(prev=>prev.map(item=>item.id===rockId?{...item,saving:false,saveError:true}:item)); }
+    finally { isProcessingRef.current=false; }
+  };
+
+  const handleHit = async () => {
+    // Ignora cualquier toque adicional mientras la fase actual está activa.
+    // No se encolan golpes: cada animación debe terminar antes del siguiente.
+    if (revealedRune || isProcessingRef.current || hitCountRef.current >= 3) return;
+
+    isProcessingRef.current = true;
     try {
-      const newHits = hits + 1;
+      const newHits = hitCountRef.current + 1;
+      hitCountRef.current = newHits;
       setHits(newHits);
       setMining(true);
 
-      setTimeout(() => setMining(false), 300);
+      // La animación de golpe dura 300 ms; dejamos una pequeña pausa extra
+      // para que cada estado de la roca se vea antes de aceptar otro toque.
+      await new Promise(resolve => setTimeout(resolve, 480));
+      setMining(false);
 
       if (newHits === 3) {
         const rune = getRandomRune(rockType);
         setRevealedRune(rune);
+        awardIdRef.current = awardIdRef.current || `mine-${user?.uid || 'guest'}-${Date.now()}-${Math.random().toString(36).slice(2)}`;
 
         if (user) {
           setSaving(true);
           setSaveError(false);
-
-          const savePromise = addRuneToCollection(user.uid, rune);
-          const timeoutPromise = new Promise((_, reject) =>
-            setTimeout(() => reject(new Error('Timeout')), SAVE_TIMEOUT_MS)
-          );
-
           try {
-            await Promise.race([savePromise, timeoutPromise]);
+            await addRuneToCollection(user.uid, rune, awardIdRef.current);
+            savedRef.current = true;
           } catch (err) {
-            console.error('Error guardando runa (no bloqueante):', err);
+            console.error('Error guardando runa:', err);
             setSaveError(true);
           } finally {
             setSaving(false);
@@ -98,11 +139,44 @@ const RockMiner = ({ onClose, rockType = 'normal' }) => {
         }
       }
     } finally {
-      setTimeout(() => {
-        isProcessingRef.current = false;
-      }, 100);
+      setMining(false);
+      isProcessingRef.current = false;
     }
   };
+
+  const handleRetrySave = async () => {
+    if (!user || !revealedRune || savedRef.current || saving || !awardIdRef.current) return;
+    isProcessingRef.current = true;
+    setSaving(true);
+    setSaveError(false);
+    try {
+      await addRuneToCollection(user.uid, revealedRune, awardIdRef.current);
+      savedRef.current = true;
+    } catch (err) {
+      console.error('Error reintentando guardar runa:', err);
+      setSaveError(true);
+    } finally {
+      setSaving(false);
+      isProcessingRef.current = false;
+    }
+  };
+
+  if(isPickaxeRun){
+    const complete=pickaxeRocks.every(rock=>rock.rune&&(!user||rock.saved));
+    return <div className="rock-miner-overlay pickaxe-miner-overlay"><div className="pickaxe-miner-content">
+      <h1 className="miner-huge-title">{complete ? "RUNAS OBTENIDAS" : "PICA"}</h1>
+      <div className="pickaxe-rocks-grid">{pickaxeRocks.map(rock=>{
+        const images=ROCK_IMAGES[rockType]||ROCK_IMAGES.normal;
+        return <div key={rock.id} className={'pickaxe-rock-card '+(rock.rune?'completed':'')} onClick={()=>!rock.rune&&handlePickaxeHit(rock.id)}>
+          {rock.rune?<><div className="reveal-rune-box"><RuneCard rune={rock.rune} owned={true} battleMode={true}/></div>
+            {rock.saving&&<span className="pickaxe-hit-label">Guardando...</span>}
+            {rock.saveError&&<button className="pickaxe-retry" onClick={event=>{event.stopPropagation();handlePickaxeRetry(rock.id);}}>Reintentar guardado</button>}
+          </>:<><img className={'rock-standalone-img '+(mining&&activePickRock===rock.id?'shaking':'')} src={images[Math.min(rock.hits,2)]} alt={'Roca '+(rock.id+1)} draggable="false"/></>}
+        </div>;
+      })}</div>
+      <button className="collect-minimal-btn" onClick={onClose} disabled={!complete}>Continuar</button>
+    </div></div>;
+  }
 
   // Si el tipo es 'daily', usa las marrones. Si no, usa las correspondientes.
   const rockImages = ROCK_IMAGES[rockType] || ROCK_IMAGES.normal;
@@ -115,7 +189,7 @@ const RockMiner = ({ onClose, rockType = 'normal' }) => {
           <h1 className="miner-huge-title">PICA</h1>
 
           <div className={`rock-center ${mining ? 'shaking' : ''}`}>
-            <img src={rockImage} alt="Roca" className="rock-standalone-img" />
+            <img key={rockImage} src={rockImage} alt="Roca" className="rock-standalone-img" draggable="false" />
           </div>
           
           {/* ✅ Eliminados los puntos de progreso (miner-hits-indicator) */}
@@ -126,7 +200,7 @@ const RockMiner = ({ onClose, rockType = 'normal' }) => {
 
           {saveError && (
             <div className="save-error-banner">
-              ️ Error al guardar. La runa se mostrará pero puede no quedar en tu colección.
+              No se pudo confirmar el guardado. Tu runa sigue aquí; vuelve a intentarlo.
             </div>
           )}
 
@@ -136,10 +210,10 @@ const RockMiner = ({ onClose, rockType = 'normal' }) => {
 
           <button
             className={`collect-minimal-btn ${saveError ? 'btn-warning' : ''}`}
-            onClick={onClose}
-            disabled={saving}
+            onClick={saveError ? handleRetrySave : onClose}
+            disabled={saving || saveError || (!savedRef.current && !!user)}
           >
-            {saving ? '⏳ Guardando...' : saveError ? '⚠️ Continuar (sin guardar)' : 'Continuar'}
+            {saving ? '⏳ Guardando...' : saveError ? 'Reintentar guardado' : 'Continuar'}
           </button>
         </div>
       )}

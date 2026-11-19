@@ -68,7 +68,7 @@ const Auth = () => {
             avatarId: 'arquero',
             playerCode: playerCode,
             userId: playerCode,
-            coins: 10000,
+            coins: 1000,
             level: 1,
             xp: 0,
             isGuest: false,

@@ -145,6 +145,16 @@
 
 .bo-leave { width: 100%; }
 
+.bo-leave.bo-cancel-search {
+  background: linear-gradient(180deg, #f05252 0%, #c62828 100%);
+  border: 3px solid #05070c;
+  color: #fff;
+  box-shadow: 0 5px 0 #05070c, inset 0 1px 0 rgba(255,255,255,.22);
+  text-shadow: 0 1px 2px rgba(0,0,0,.35);
+}
+.bo-leave.bo-cancel-search:hover { filter: brightness(1.08); }
+.bo-leave.bo-cancel-search:active { transform: translateY(4px); box-shadow: 0 1px 0 #05070c; }
+
 /* Cartas boca abajo del rival */
 .bo-card-back {
   width: 100%;
@@ -198,9 +208,14 @@
 
 /* ============ 🎲 VOLTEO DE MONEDA 50/50 (rojo vs azul) ============ */
 .bo-coin {
-  font-size: 64px;
-  margin: 10px auto;
-  animation: bo-coin-flip 1s ease-in-out infinite;
+  position: relative;
+  width: 132px;
+  height: 132px;
+  margin: 18px auto;
+  border-radius: 50%;
+  transform-style: preserve-3d;
+  perspective: 700px;
+  filter: drop-shadow(0 12px 16px rgba(0,0,0,.55));
 }
 
 @keyframes bo-coin-flip {
@@ -226,4 +241,356 @@
 @keyframes bo-pop {
   0% { transform: scale(0.6); opacity: 0; }
   100% { transform: scale(1); opacity: 1; }
+}
+
+/* Carrusel de avatares para dar vida a la búsqueda de rival */
+.bo-search-avatar-reel {
+  width: 76px;
+  height: 76px;
+  border-radius: 50%;
+  border: 3px solid #f5c451;
+  overflow: hidden;
+  position: relative;
+  background: #101a30;
+  box-shadow: 0 0 22px rgba(245, 196, 81, .35);
+}
+.bo-search-avatar-reel img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0;
+  animation: bo-avatar-roll 4s linear infinite;
+}
+.bo-search-avatar-reel img:nth-child(1) { animation-delay: 0s; }
+.bo-search-avatar-reel img:nth-child(2) { animation-delay: 1s; }
+.bo-search-avatar-reel img:nth-child(3) { animation-delay: 2s; }
+.bo-search-avatar-reel img:nth-child(4) { animation-delay: 3s; }
+@keyframes bo-avatar-roll {
+  0%, 22% { opacity: 1; transform: scale(1) rotate(0); }
+  25%, 100% { opacity: 0; transform: scale(.72) rotate(-12deg); }
+}
+
+
+/* Avatares iguales y moneda de dos caras: cada jugador ve su elemento asignado. */
+.bo-lobby-player .bo-match-avatar {
+  width: 88px;
+  height: 88px;
+  min-width: 88px;
+  border-radius: 50%;
+  border-width: 3px;
+  object-fit: cover;
+  box-shadow: 0 0 20px rgba(80, 160, 255, .2);
+}
+.bo-lobby-player .bo-match-name {
+  display: block;
+  width: 100%;
+  max-width: 150px;
+  text-align: center;
+  font-size: 13px;
+  margin-top: 2px;
+}
+.bo-coin {
+  position: relative;
+  width: 132px;
+  height: 132px;
+  margin: 18px auto;
+  border-radius: 50%;
+  transform-style: preserve-3d;
+  perspective: 700px;
+  filter: drop-shadow(0 12px 16px rgba(0,0,0,.55));
+}
+.bo-coin-face {
+  position: absolute;
+  inset: 0;
+  border: 6px solid #f4d889;
+  border-radius: 50%;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  text-shadow: 0 3px 7px rgba(0,0,0,.65);
+  box-shadow:
+    inset 0 0 0 3px rgba(255,255,255,.34),
+    inset 0 0 0 8px rgba(8,18,35,.22),
+    inset 0 0 24px rgba(0,0,0,.3),
+    0 0 0 2px rgba(91,61,20,.7);
+}
+.bo-coin-face::before {
+  content: '';
+  position: absolute;
+  inset: 9px;
+  border: 2px solid rgba(255,255,255,.34);
+  border-radius: 50%;
+  box-shadow: 0 0 12px rgba(255,255,255,.18), inset 0 0 12px rgba(255,255,255,.12);
+  pointer-events: none;
+}
+.bo-coin-face span {
+  position: relative;
+  z-index: 1;
+  display: block;
+  font-family: system-ui, sans-serif;
+  font-size: 66px;
+  line-height: 1;
+  filter: drop-shadow(0 4px 3px rgba(0,0,0,.48));
+  transform: translateY(-1px);
+}
+.bo-coin-blue {
+  background: radial-gradient(circle at 30% 22%, #b4f3ff 0%, #36c1ff 28%, #087ed5 62%, #052e70 100%);
+  border-color: #9beaff;
+  transform: rotateY(0deg) translateZ(1px);
+}
+.bo-coin-red {
+  background: radial-gradient(circle at 30% 22%, #ffe0a3 0%, #ff805c 28%, #e52e3d 62%, #710d27 100%);
+  border-color: #ffc0a0;
+  transform: rotateY(180deg) translateZ(1px);
+}
+.bo-coin-show-blue { animation: bo-coin-land-blue 1.35s cubic-bezier(.18,.72,.25,1) both; }
+.bo-coin-show-red { animation: bo-coin-land-red 1.35s cubic-bezier(.18,.72,.25,1) both; }
+@keyframes bo-coin-land-blue {
+  0% { transform: rotateY(-720deg) scale(.72); }
+  75% { transform: rotateY(35deg) scale(1.08); }
+  100% { transform: rotateY(0deg) scale(1); }
+}
+@keyframes bo-coin-land-red {
+  0% { transform: rotateY(-720deg) scale(.72); }
+  75% { transform: rotateY(215deg) scale(1.08); }
+  100% { transform: rotateY(180deg) scale(1); }
+}
+@media (max-width: 360px) {
+  .bo-lobby-player .bo-match-avatar { width: 76px; height: 76px; min-width: 76px; }
+}
+
+
+/* HUD online: reloj radial de 30 segundos junto al marcador. */
+.bo-score-cluster { display: flex; align-items: center; gap: 9px; }
+.bo-turn-timer {
+  --timer-progress: 100%;
+  width: 42px; height: 42px; flex: 0 0 42px; border-radius: 50%;
+  display: grid; place-items: center; position: relative;
+  background: conic-gradient(#ffd54a var(--timer-progress), rgba(255,255,255,.14) 0);
+  box-shadow: 0 0 12px rgba(255,213,74,.18);
+}
+.bo-turn-timer::before { content: ''; position: absolute; inset: 4px; border-radius: 50%; background: #101a2d; }
+.bo-turn-timer span { position: relative; z-index: 1; color: #fff; font-size: 15px; font-weight: 1000; font-variant-numeric: tabular-nums; }
+/* El progreso del reloj nunca se sustituye por un círculo rojo completo. */
+.bo-match-leave { border: 1px solid rgba(255,110,110,.45); border-radius: 9px; padding: 6px 10px; color: #ffaaaa; background: rgba(130,25,35,.25); font-size: 10px; font-weight: 900; cursor: pointer; }
+.bo-match-leave:hover { background: rgba(180,35,45,.45); }
+
+/* El color de cada perfil y su marco reflejan el bando asignado. */
+.bp-player-strip.bp-color-red { border-color: rgba(244,67,54,.72); box-shadow: 0 0 18px rgba(244,67,54,.14); }
+.bp-player-strip.bp-color-red .bp-avatar-frame { border-color: #f44336 !important; box-shadow: 0 0 12px rgba(244,67,54,.4); }
+.bp-player-strip.bp-color-blue { border-color: rgba(33,150,243,.72); }
+.bp-player-strip.bp-color-blue .bp-avatar-frame { border-color: #2196f3 !important; box-shadow: 0 0 12px rgba(33,150,243,.35); }
+
+/* Perspectiva explícita para que la cara roja sea la cara posterior real. */
+.bo-coin { perspective: 700px; }
+.bo-coin-face { transform-origin: center; }
+.bo-coin-red { transform: rotateY(180deg) translateZ(2px); }
+.bo-coin-show-red { animation: bo-coin-land-red 1.35s cubic-bezier(.18,.72,.25,1) both !important; }
+.bo-coin-show-blue { animation: bo-coin-land-blue 1.35s cubic-bezier(.18,.72,.25,1) both !important; }
+@media (max-width: 420px) {
+  .bo-score-cluster { gap: 5px; }
+  .bo-turn-timer { width: 36px; height: 36px; flex-basis: 36px; }
+  .bo-turn-timer span { font-size: 13px; }
+  .bo-match-leave { padding: 5px 7px; }
+}
+
+
+/* La selección y los perfiles online respetan el color real de cada bando. */
+.bp-slot-player.bp-selected-red {
+  box-shadow: 0 8px 20px rgba(244, 67, 54, .62), 0 0 0 3px rgba(244, 67, 54, .9) !important;
+  filter: drop-shadow(0 0 8px rgba(244, 67, 54, .5));
+}
+.bo-avatar-red {
+  border-color: #f44336 !important;
+  box-shadow: 0 0 12px rgba(244, 67, 54, .4) !important;
+}
+.bo-avatar-blue {
+  border-color: #2196f3 !important;
+  box-shadow: 0 0 12px rgba(33, 150, 243, .35) !important;
+}
+
+/* En la vista roja, el fuego queda en la cara frontal de la moneda. */
+.bo-coin-red-first .bo-coin-blue {
+  transform: rotateY(180deg) translateZ(2px);
+}
+.bo-coin-red-first .bo-coin-red {
+  transform: rotateY(0deg) translateZ(2px);
+}
+.bo-coin-red-first.bo-coin-show-red {
+  animation: bo-coin-land-red-first 1.35s cubic-bezier(.18,.72,.25,1) both !important;
+}
+@keyframes bo-coin-land-red-first {
+  0% { transform: rotateY(-720deg) scale(.72); }
+  75% { transform: rotateY(-35deg) scale(1.08); }
+  100% { transform: rotateY(0deg) scale(1); }
+}
+
+
+/* ==========================================================
+   ARENA RESPONSIVE: horizontal en móvil y distribución PC.
+   La composición vertical original se mantiene intacta.
+   ========================================================== */
+@media (orientation: landscape) and (max-height: 600px) {
+  .bp {
+    width: 100%;
+    max-width: none;
+    height: 100dvh;
+    min-height: 0;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(112px, .78fr);
+    grid-template-rows: auto minmax(0, 1fr) auto;
+    grid-template-areas:
+      "enemy enemy enemy"
+      "arena arena hand"
+      "self self self";
+    align-items: center;
+    justify-items: stretch;
+    justify-content: stretch;
+    gap: clamp(3px, 1vh, 7px);
+    padding: clamp(4px, 1vh, 8px) clamp(6px, 1.5vw, 14px);
+  }
+
+  .bp > .bp-enemy-strip { grid-area: enemy; }
+  .bp > .bp-self-strip { grid-area: self; }
+  .bp > .bp-arena-center {
+    grid-area: arena;
+    width: 100%;
+    min-width: 0;
+    min-height: 0;
+    gap: 3px;
+  }
+  .bp > .bp-hand-area {
+    grid-area: hand;
+    width: 100%;
+    min-width: 0;
+    min-height: 0;
+    height: 100%;
+    padding: 0;
+  }
+
+  .bp-player-strip {
+    width: 100%;
+    min-width: 0;
+    padding: 3px 8px;
+    border-radius: 9px;
+  }
+  .bp-avatar-frame { width: clamp(25px, 7vh, 34px); height: clamp(25px, 7vh, 34px); }
+  .bp-user-title { font-size: clamp(.68rem, 2.2vh, .84rem); }
+  .bp-user-tag, .bp-score-badge-label { font-size: clamp(.52rem, 1.7vh, .65rem); }
+  .bp-score-badge-value { font-size: clamp(1rem, 3.4vh, 1.25rem); }
+  .bp-score-badge-box { padding: 2px 7px; gap: 4px; }
+
+  .bp-turn-indicator { padding: 2px 9px; gap: 4px; }
+  .bp-turn-icon { font-size: clamp(.65rem, 2.2vh, .88rem); }
+  .bp-turn-txt { font-size: clamp(.58rem, 1.9vh, .74rem); }
+
+  .bp-board-container {
+    width: min(100%, calc(100dvh - 105px));
+    max-width: calc(100dvh - 105px);
+    max-height: calc(100dvh - 105px);
+    aspect-ratio: 1 / 1;
+    padding: clamp(4px, 1vh, 8px);
+    border-width: 3px;
+    border-radius: 13px;
+  }
+  .bp-grid-4x4 { gap: clamp(2px, .7vh, 5px); }
+  .bp-cell { border-radius: 7px; }
+  .bp-grid-4x4 .bp-cell-slot-dot { font-size: clamp(.75rem, 3vh, 1.15rem); }
+
+  .bp-hand-track {
+    width: 100%;
+    height: 100%;
+    max-width: none;
+    min-height: 0;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-rows: repeat(4, minmax(0, 1fr));
+    gap: clamp(2px, .7vh, 5px);
+    padding: 1px;
+  }
+  .bp-slot,
+  .bp-hand-player-area .bp-slot-player {
+    width: min(100%, 15vh, 12vw);
+    max-width: 100%;
+    min-width: 0;
+    max-height: 100%;
+  }
+  .bp-slot-player.bp-selected { transform: translateY(-3px) scale(1.04); }
+  .bp-hand-player-area .bp-slot-player.bp-selected { transform: translateY(-3px) scale(1.04); }
+
+  .bp-modal-overlay { padding: 8px; }
+  .bp-modal { max-height: calc(100dvh - 16px); overflow-y: auto; padding: 12px 16px; }
+  .bp-modal-banner { margin-bottom: 7px; }
+  .bp-modal-icon { font-size: clamp(1.6rem, 5vh, 2.5rem); }
+  .bp-modal-title { font-size: clamp(1.1rem, 4vh, 1.6rem); }
+  .bp-modal-scoreboard { margin-bottom: 8px; padding: 6px 10px; }
+  .bp-modal-reward { margin-bottom: 10px; padding: 5px 10px; }
+  .bp-modal-actions { gap: 7px; }
+  .bp-btn { padding: 8px; font-size: clamp(.8rem, 2.5vh, 1rem); }
+}
+
+@media (min-width: 900px) and (min-height: 550px) and (orientation: landscape) {
+  .bp {
+    width: 100%;
+    max-width: none;
+    height: 100dvh;
+    min-height: 0;
+    display: grid;
+    grid-template-columns: minmax(180px, .8fr) minmax(400px, min(64vh, 680px)) minmax(260px, 1fr);
+    grid-template-rows: minmax(0, 1fr) minmax(0, 1fr);
+    grid-template-areas:
+      "enemy arena hand"
+      "self arena hand";
+    align-items: center;
+    justify-items: stretch;
+    justify-content: stretch;
+    gap: clamp(10px, 1.5vw, 24px);
+    padding: clamp(12px, 2vh, 24px) clamp(14px, 2vw, 32px);
+  }
+
+  .bp > .bp-enemy-strip { grid-area: enemy; }
+  .bp > .bp-self-strip { grid-area: self; }
+  .bp > .bp-arena-center {
+    grid-area: arena;
+    width: 100%;
+    min-width: 0;
+    min-height: 0;
+    gap: clamp(6px, 1vh, 12px);
+  }
+  .bp > .bp-hand-area {
+    grid-area: hand;
+    width: 100%;
+    min-width: 0;
+    min-height: 0;
+    height: 100%;
+    align-self: center;
+  }
+
+  .bp-player-strip { width: 100%; padding: 8px 10px; }
+  .bp-board-container {
+    width: min(100%, 64vh, 680px);
+    max-width: min(100%, 64vh, 680px);
+    max-height: 64vh;
+    padding: clamp(7px, 1.2vh, 12px);
+  }
+  .bp-hand-track {
+    width: 100%;
+    max-width: 560px;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-rows: repeat(4, minmax(0, 1fr));
+    gap: clamp(8px, 1.4vh, 14px);
+    padding: 4px;
+  }
+  .bp-slot,
+  .bp-hand-player-area .bp-slot-player {
+    width: min(100%, 13vh, 112px);
+    max-width: 112px;
+  }
+  .bp-slot-player.bp-selected,
+  .bp-hand-player-area .bp-slot-player.bp-selected { transform: translateY(-5px) scale(1.06); }
+  .bp-modal { max-width: 380px; }
 }

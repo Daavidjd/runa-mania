@@ -1,33 +1,36 @@
 // Importamos las imágenes de las runas originales y nuevas
-import tibudrac from '../assets/runes/tibudrac.png';
-import rocko from '../assets/runes/rocko.png';
-import aligato from '../assets/runes/aligato.png';
-import catcrank from '../assets/runes/catcrank.png';
-import cucakarcha from '../assets/runes/cucakarcha.png';
-import elfo from '../assets/runes/elfo.png';
-import golcan from '../assets/runes/golcan.png';
-import perry from '../assets/runes/perry.png';
+import tibudrac from '../assets/runes/Tibudrac.png';
+import rocko from '../assets/runes/Rocko.png';
+import aligato from '../assets/runes/Aligato.png';
+import catcrank from '../assets/runes/Catcrank.png';
+import cucakarcha from '../assets/runes/Cucakarcha.png';
+import elfo from '../assets/runes/Elfo.png';
+import golcan from '../assets/runes/Golcan.png';
+import perry from '../assets/runes/Perry.png';
 import tigreoso from '../assets/runes/tigreoso.png';
-import trompi from '../assets/runes/trompi.png';
+import trompi from '../assets/runes/Trompi.png';
 import escorpedo from '../assets/runes/escorpedo.png';
-import infernalSpider from '../assets/runes/infernalSpider.png';
-import lagartoFuego from '../assets/runes/lagartoFuego.png';
-import mantatiburon from '../assets/runes/mantatiburon.png';
-import orcaVoladora from '../assets/runes/orcaVoladora.png';
-import pezInfernal from '../assets/runes/pezInfernal.png';
-import rataroke from '../assets/runes/rataroke.png';
+import infernalSpider from '../assets/runes/InfernalSpider.png';
+import lagartoFuego from '../assets/runes/LagartoFuego.png';
+import mantatiburon from '../assets/runes/Mantatiburon.png';
+import orcaVoladora from '../assets/runes/OrcaVoladora.png';
+import pezInfernal from '../assets/runes/PezInfernal.png';
+import rataroke from '../assets/runes/Rataroke.png';
 import scorpi from '../assets/runes/scorpi.png';
-import superrayo from '../assets/runes/superrayo.png';
+import superrayo from '../assets/runes/Superrayo.png';
 // NUEVAS RUNAS
-import extrarmi from '../assets/runes/extrarmi.png';
-import gallilien from '../assets/runes/gallilien.png';
-import gatuela from '../assets/runes/gatuela.png';
-import hiereleon from '../assets/runes/hiereleon.png';
-import piriposa from '../assets/runes/piriposa.png';
-import scorpano from '../assets/runes/scorpano.png';
+import extrarmi from '../assets/runes/Extrarmi.png';
+import gallilien from '../assets/runes/Gallilien.png';
+import gatuela from '../assets/runes/Gatuela.png';
+import hiereleon from '../assets/runes/Hiereleon.png';
+import piriposa from '../assets/runes/Piriposa.png';
+import scorpano from '../assets/runes/Scorpano.png';
 import sikifis from '../assets/runes/sikifis.png';
 import skarpi from '../assets/runes/skarpi.png';
-import treerex from '../assets/runes/treerex.png';
+import treerex from '../assets/runes/Treerex.png';
+import busanGel from '../assets/runes/BusanGel.png';
+import nocMare from '../assets/runes/NocMare.png';
+import triceladro from '../assets/runes/Triceladro.png';
 
 export const RUNES_DB = [
   // ==========================================
@@ -43,6 +46,7 @@ export const RUNES_DB = [
   { id: 'rune_008', name: 'Perry', image: perry, tier: 'comun', arrows: { top: 0, right: 0, bottom: 1, left: 1 } }, // Total: 2
   { id: 'rune_009', name: 'Trompi', image: trompi, tier: 'comun', arrows: { top: 0, right: 1, bottom: 1, left: 0 } }, // Total: 2
   { id: 'rune_020', name: 'Extrarmi', image: extrarmi, tier: 'comun', arrows: { top: 1, right: 0, bottom: 0, left: 1 } }, // Total: 2
+  { id: 'rune_029', name: 'BusanGel', image: busanGel, tier: 'comun', arrows: { top: 1, right: 1, bottom: 1, left: 1 } }, // Total: 4
 
   // ==========================================
   // RARAS (5 a 7 flechas en total)
@@ -57,6 +61,7 @@ export const RUNES_DB = [
   { id: 'rune_021', name: 'Gallilien', image: gallilien, tier: 'rara', arrows: { top: 2, right: 1, bottom: 2, left: 1 } }, // Total: 6
   { id: 'rune_022', name: 'Gatuela', image: gatuela, tier: 'rara', arrows: { top: 3, right: 2, bottom: 0, left: 1 } }, // Total: 6
   { id: 'rune_023', name: 'Piriposa', image: piriposa, tier: 'rara', arrows: { top: 1, right: 1, bottom: 2, left: 2 } }, // Total: 6
+  { id: 'rune_030', name: 'NocMare', image: nocMare, tier: 'rara', arrows: { top: 2, right: 1, bottom: 2, left: 1 } }, // Total: 6
 
   // ==========================================
   // ÉPICAS (8 a 12 flechas en total)
@@ -68,7 +73,8 @@ export const RUNES_DB = [
   { id: 'rune_025', name: 'Scorpano', image: scorpano, tier: 'epica', arrows: { top: 4, right: 3, bottom: 1, left: 2 } }, // Total: 10
   { id: 'rune_026', name: 'Sikifis', image: sikifis, tier: 'epica', arrows: { top: 2, right: 4, bottom: 2, left: 2 } }, // Total: 10
   { id: 'rune_027', name: 'Skarpi', image: skarpi, tier: 'epica', arrows: { top: 3, right: 3, bottom: 3, left: 1 } }, // Total: 10
-  { id: 'rune_028', name: 'Tree-rex', image: treerex, tier: 'epica', arrows: { top: 4, right: 2, bottom: 4, left: 2 } }  // Total: 12 (La más poderosa)
+  { id: 'rune_028', name: 'Tree-rex', image: treerex, tier: 'epica', arrows: { top: 4, right: 2, bottom: 4, left: 2 } }, // Total: 12 (La más poderosa)
+  { id: 'rune_031', name: 'Triceladro', image: triceladro, tier: 'epica', arrows: { top: 3, right: 2, bottom: 3, left: 2 } } // Total: 10
 ];
 
 // 3 niveles de rocas con sus multiplicadores de probabilidad

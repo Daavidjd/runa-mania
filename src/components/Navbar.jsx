@@ -19,7 +19,7 @@ const Navbar = () => {
   const navigate = useNavigate();
 
   const currentPath = location.pathname.toLowerCase();
-  if (currentPath === '/' || currentPath === '/battle') {
+  if (currentPath === '/' || currentPath === '/battle' || currentPath === '/battle-online') {
     return null;
   }
 
