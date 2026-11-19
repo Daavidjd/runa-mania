@@ -563,11 +563,23 @@ const BattleOnline = () => {
         const card = botHand[Math.floor(Math.random() * botHand.length)];
         const index = empty[Math.floor(Math.random() * empty.length)];
         const result = await playOnlineMove(roomIdRef.current, battleData.opponentUid, card, index, `larrykaberga-${Date.now()}`);
-        if (!result.committed || cancelled) return;
-        if (result.room) setRoom(result.room);
+        if (!result.committed || cancelled) {
+          // Si el movimiento del bot falla, no dejamos bloqueado el turno humano.
+          if (!cancelled) setTurnReady(true);
+          return;
+        }
+        if (result.room) {
+          setRoom(result.room);
+          // Desbloqueo explícito del jugador rojo cuando termina la ventana de animación.
+          const unlockIn = Math.max(0, Number(result.room.turnStartsAt || 0) - Date.now());
+          setTimeout(() => {
+            if (!cancelled) setTurnReady(true);
+          }, unlockIn);
+        }
         setBotHand(prev => prev.filter(r => r.id !== card.id));
       } catch (error) {
         console.error('LarryKaberga no pudo realizar su jugada:', error);
+        if (!cancelled) setTurnReady(true);
       } finally {
         autoMovePendingRef.current = false;
         if (!cancelled) setMovePending(false);
