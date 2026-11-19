@@ -94,6 +94,7 @@ const BattleOnline = () => {
 
   const [board, setBoard] = useState(Array(16).fill(null));
   const [myHand, setMyHand] = useState([]);
+  const [botHand, setBotHand] = useState([]);
   const [oppHandCount, setOppHandCount] = useState(8);
   const [selectedCard, setSelectedCard] = useState(null);
   const [movePending, setMovePending] = useState(false);
@@ -131,9 +132,11 @@ const BattleOnline = () => {
     let unsubscribe = null;
     let heartbeat = null;
     let accepted = false;
+    let botTimeout = null;
     const acceptMatch = (entry) => {
       if (cancelled || accepted || !entry?.roomId || !entry?.opponentUid) return;
       accepted = true;
+      if (botTimeout) clearTimeout(botTimeout);
       if (heartbeat) clearInterval(heartbeat);
       unsubscribe?.();
       const next = {
@@ -165,6 +168,29 @@ const BattleOnline = () => {
         unsubscribe = watchMatchmakingEntry(user.uid, acceptMatch, () => { if (!cancelled) setPhase('error'); });
         // Reintentar la búsqueda periódicamente: cubre el caso de dos altas
         // en el mismo milisegundo donde el jugador con prioridad aún no vio al otro.
+        // Si no aparece ningún jugador real en 20 segundos, LarryKaberga entra como rival.
+        botTimeout = setTimeout(async () => {
+          if (cancelled || accepted) return;
+          try {
+            accepted = true;
+            if (heartbeat) clearInterval(heartbeat);
+            unsubscribe?.();
+            const botUid = 'bot-larrykaberga';
+            const roomId = `larrykaberga-${user.uid}-${Date.now()}`;
+            await joinOnlineRoom(roomId, botUid, 'LarryKaberga', [botUid, user.uid]);
+            const next = {
+              role: 'random', roomId, opponentUid: botUid,
+              opponentName: 'LarryKaberga', opponentAvatarId: 'mago',
+              matchOrder: [botUid, user.uid], searching: false, isBotMatch: true
+            };
+            localStorage.setItem('onlineBattle', JSON.stringify(next));
+            setBattleData(next);
+          } catch (error) {
+            console.error('No se pudo iniciar la partida contra LarryKaberga:', error);
+            accepted = false;
+            if (!cancelled) setPhase('error');
+          }
+        }, 20000);
         heartbeat = setInterval(async () => {
           try {
             const retry = await findRandomMatch(user.uid, displayName, profile?.avatarId || 'mago');
@@ -183,6 +209,7 @@ const BattleOnline = () => {
       cancelled = true;
       unsubscribe?.();
       if (heartbeat) clearInterval(heartbeat);
+      if (botTimeout) clearTimeout(botTimeout);
       // No borrar la cola desde el cleanup del efecto: en React StrictMode
       // el efecto puede desmontarse/remontarse mientras findRandomMatch crea
       // el documento. Esa carrera provoca 409 (verify exists:false).
@@ -255,11 +282,12 @@ const BattleOnline = () => {
       if (!user || !battleData || battleData.searching || !battleData.opponentUid) return;
 
       try {
+        const isBotMatch = !!battleData.isBotMatch;
         const [me, opp, myDeckIds, oppDeckIds] = await Promise.all([
           getUserProfile(user.uid),
-          getUserProfile(battleData.opponentUid),
+          isBotMatch ? Promise.resolve({ uid: battleData.opponentUid, username: 'LarryKaberga', avatarId: 'mago' }) : getUserProfile(battleData.opponentUid),
           getUserActiveDeck(user.uid),
-          getUserActiveDeck(battleData.opponentUid)
+          isBotMatch ? Promise.resolve([]) : getUserActiveDeck(battleData.opponentUid)
         ]);
         if (cancelled) return;
         setMyProfile(me);
@@ -268,6 +296,7 @@ const BattleOnline = () => {
         const hand = buildHandFromIds(myDeckIds, 'me');
         setMyHand(hand.map(h => ({ ...h, owner: user.uid })));
         const oppHand = buildHandFromIds(oppDeckIds, 'opp');
+        setBotHand(isBotMatch ? oppHand.map(r => ({ ...r, owner: battleData.opponentUid })) : []);
 
         const roomId = battleData.roomId || battleData.challengeId;
         roomIdRef.current = roomId;
@@ -496,6 +525,36 @@ const BattleOnline = () => {
         setMovePending(false);
       });
   }, [phase, gameOver, myTurn, movePending, timerRemaining, myUid, myHand]);
+
+  // LarryKaberga juega desde el cliente del jugador, pero sus movimientos se
+  // validan y sincronizan mediante la misma transacción de Realtime Database.
+  useEffect(() => {
+    if (!battleData?.isBotMatch || phase !== 'playing' || gameOver || myTurn ||
+        movePending || !turnReady || !roomIdRef.current || !botHand.length) return undefined;
+    let cancelled = false;
+    const delay = setTimeout(async () => {
+      if (cancelled || autoMovePendingRef.current) return;
+      autoMovePendingRef.current = true;
+      setMovePending(true);
+      setTurnReady(false);
+      try {
+        const empty = boardRef.current.map((cell, index) => cell ? -1 : index).filter(index => index >= 0);
+        if (!empty.length) return;
+        const card = botHand[Math.floor(Math.random() * botHand.length)];
+        const index = empty[Math.floor(Math.random() * empty.length)];
+        const result = await playOnlineMove(roomIdRef.current, battleData.opponentUid, card, index, `larrykaberga-${Date.now()}`);
+        if (!result.committed || cancelled) return;
+        if (result.room) setRoom(result.room);
+        setBotHand(prev => prev.filter(r => r.id !== card.id));
+      } catch (error) {
+        console.error('LarryKaberga no pudo realizar su jugada:', error);
+      } finally {
+        autoMovePendingRef.current = false;
+        if (!cancelled) setMovePending(false);
+      }
+    }, 1800 + Math.random() * 1200);
+    return () => { cancelled = true; clearTimeout(delay); };
+  }, [battleData?.isBotMatch, battleData?.opponentUid, phase, gameOver, myTurn, movePending, turnReady, botHand, room.lastMove?.moveId]);
 
 
   const handleCellClick = useCallback(async (index) => {
