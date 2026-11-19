@@ -175,6 +175,7 @@ const BattleOnline = () => {
             accepted = true;
             if (heartbeat) clearInterval(heartbeat);
             unsubscribe?.();
+            await leaveMatchmakingQueue(user.uid);
             const botUid = 'bot-larrykaberga';
             const roomId = `larrykaberga-${user.uid}-${Date.now()}`;
             await joinOnlineRoom(roomId, botUid, 'LarryKaberga', [botUid, user.uid]);
