@@ -300,7 +300,12 @@ const BattleOnline = () => {
 
         const hand = buildHandFromIds(myDeckIds, 'me');
         setMyHand(hand.map(h => ({ ...h, owner: user.uid })));
-        const oppHand = buildHandFromIds(oppDeckIds, 'opp');
+        // LarryKaberga necesita una mano real de 8 runas: no tiene perfil ni mazo en Firestore.
+        // Construimos su mazo desde RUNES_DB para que pueda ejecutar el primer turno.
+        const botRuneIds = isBotMatch
+          ? [...RUNES_DB].sort(() => Math.random() - 0.5).slice(0, 8).map(rune => rune.id)
+          : oppDeckIds;
+        const oppHand = buildHandFromIds(botRuneIds, 'opp');
         setBotHand(isBotMatch ? oppHand.map(r => ({ ...r, owner: battleData.opponentUid })) : []);
 
         const roomId = battleData.roomId || battleData.challengeId;
