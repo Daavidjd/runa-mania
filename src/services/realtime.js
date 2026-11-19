@@ -76,10 +76,9 @@ export const playOnlineMove = async (roomId, uid, card, index, moveId) => {
       rejectionReason = 'La animación de captura todavía está en curso';
       return;
     }
-    if (room.turnDeadlineAt && Date.now() >= Number(room.turnDeadlineAt)) {
-      rejectionReason = 'Se agotó el tiempo para realizar la jugada';
-      return;
-    }
+    // El reloj dispara una jugada automática en el cliente activo, pero no
+    // bloqueamos la colocación manual si esa transacción automática falla.
+    // La transacción sigue protegiendo el turno y la casilla contra duplicados.
     const isBlue = room.blueUid === uid;
     const isRed = room.redUid === uid;
     if (!isBlue && !isRed) { rejectionReason = 'No tienes un color asignado en esta sala'; return; }
