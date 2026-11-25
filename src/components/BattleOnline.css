@@ -594,3 +594,81 @@
   .bp-hand-player-area .bp-slot-player.bp-selected { transform: translateY(-5px) scale(1.06); }
   .bp-modal { max-width: 380px; }
 }
+
+
+/* Búsqueda centrada con el sorteo flotando por encima del panel */
+.bo-lobby-title {
+  width: 100%;
+  text-align: center;
+  align-self: center;
+  margin: 0;
+}
+
+.bo-coinflip-screen {
+  padding: 24px 16px;
+}
+
+.bo-search-stack {
+  width: 100%;
+  max-width: 420px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
+}
+
+.bo-search-lobby {
+  width: 100%;
+  box-sizing: border-box;
+  padding-top: 34px;
+  gap: 14px;
+}
+
+.bo-search-stack .bo-coin {
+  z-index: 3;
+  width: 126px;
+  height: 126px;
+  margin: 0 auto -22px;
+  flex: 0 0 auto;
+  filter: drop-shadow(0 8px 18px rgba(0, 0, 0, .65))
+    drop-shadow(0 0 18px rgba(0, 212, 255, .22));
+}
+
+.bo-search-stack .bo-coin-face {
+  overflow: hidden;
+  padding: 0;
+}
+
+.bo-search-stack .bo-coin-face img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  position: relative;
+  z-index: 1;
+  border-radius: 50%;
+}
+
+.bo-search-stack .bo-coin-face::before {
+  z-index: 2;
+}
+
+.bo-search-lobby .bo-coinflip-names {
+  margin-top: 2px;
+  align-items: center;
+}
+
+.bo-search-lobby .bo-coinflip-countdown {
+  margin: -5px 0 0;
+}
+
+@media (max-width: 420px) {
+  .bo-coinflip-screen { padding: 18px 14px; }
+  .bo-search-stack .bo-coin { width: 112px; height: 112px; margin-bottom: -18px; }
+  .bo-search-lobby { padding: 30px 14px 18px; gap: 12px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bo-search-stack .bo-coin { animation: none !important; }
+}
