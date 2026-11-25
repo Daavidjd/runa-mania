@@ -804,9 +804,6 @@ const BattleOnline = () => {
           />
           <div className="bp-user-names">
             <span className="bp-user-title">{battleData?.opponentName || oppProfile?.username || 'Rival'}</span>
-            <span className="bp-user-tag" style={{ color: oppColor === 'red' ? '#ff8a80' : '#4fc3f7' }}>
-              {oppColor === 'red' ? '🔴 ROJO' : '🔵 AZUL'} · En línea
-            </span>
           </div>
         </div>
         <div className="bo-score-cluster">
@@ -890,9 +887,6 @@ const BattleOnline = () => {
           />
           <div className="bp-user-names">
             <span className="bp-user-title">{myProfile?.username || 'Invocador'}</span>
-            <span className="bp-user-tag" style={{ color: myColor === 'red' ? '#ff8a80' : '#4fc3f7' }}>
-              {myColor === 'red' ? '🔴 ROJO' : '🔵 AZUL'} · Empieza: {starterIsMe ? 'Tú' : 'Rival'}
-            </span>
           </div>
         </div>
         <div className="bo-score-cluster">
