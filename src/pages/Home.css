@@ -1079,3 +1079,74 @@
   min-height: 0;
   padding: 16px;
 }
+
+
+/* Refinamiento final del perfil CPU y animación del selector */
+.unified-battle-card .selected-opponent-card {
+  background: transparent;
+  border-color: transparent;
+  box-shadow: none;
+}
+
+.unified-battle-card .selected-opponent-card:hover {
+  background: transparent;
+  border-color: transparent;
+  box-shadow: none;
+}
+
+.unified-battle-card .opponent-avatar-box {
+  background: transparent;
+  border: 3px solid #00d4ff;
+  border-radius: 50%;
+  overflow: hidden;
+  isolation: isolate;
+}
+
+.unified-battle-card .opponent-avatar {
+  border-radius: 50%;
+  background: transparent;
+}
+
+.battle-mode-switch {
+  position: relative;
+  isolation: isolate;
+}
+
+.battle-mode-option {
+  position: relative;
+  z-index: 1;
+  transform: translateY(0) scale(1);
+  transition:
+    background 260ms cubic-bezier(0.2, 0.8, 0.2, 1),
+    color 260ms ease,
+    border-color 260ms ease,
+    box-shadow 260ms ease,
+    transform 220ms cubic-bezier(0.2, 0.8, 0.2, 1),
+    filter 220ms ease;
+}
+
+.battle-mode-option:hover:not(:disabled) {
+  filter: brightness(1.12);
+}
+
+.battle-mode-option:active:not(:disabled) {
+  transform: translateY(2px) scale(0.97);
+}
+
+.battle-mode-option.active {
+  animation: mode-select-pop 280ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+@keyframes mode-select-pop {
+  0% { transform: scale(0.94); filter: brightness(0.9); }
+  65% { transform: scale(1.035); filter: brightness(1.16); }
+  100% { transform: scale(1); filter: brightness(1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .battle-mode-option,
+  .battle-mode-option.active {
+    animation: none;
+    transition: none;
+  }
+}
