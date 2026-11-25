@@ -1028,3 +1028,54 @@
     padding: 15px 12px 19px;
   }
 }
+
+
+/* Ajustes del selector CPU: estado activo cyan y avatar circular */
+.battle-mode-option.active {
+  color: #00151c;
+  background: #00d4ff;
+  border-color: #8ceeff;
+  box-shadow: 0 3px 0 #006b80;
+}
+
+.is-online .battle-mode-option.active {
+  color: #00151c;
+  background: #00d4ff;
+  border-color: #8ceeff;
+  box-shadow: 0 3px 0 #006b80;
+}
+
+.unified-battle-card .opponent-avatar-box {
+  width: 112px;
+  height: 112px;
+  border-radius: 50%;
+  border: 3px solid #00d4ff;
+  overflow: hidden;
+  background: #090d18;
+  box-shadow: 0 4px 0 #006b80, 0 0 18px rgba(0, 212, 255, 0.28);
+}
+
+.unified-battle-card .opponent-avatar {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.unified-battle-card .opponent-info-box {
+  gap: 5px;
+}
+
+.opponent-selected-difficulty {
+  font-size: 11px;
+  font-weight: 950;
+  letter-spacing: 1.4px;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.65);
+}
+
+.unified-battle-card .selected-opponent-card {
+  gap: 10px;
+  min-height: 0;
+  padding: 16px;
+}
