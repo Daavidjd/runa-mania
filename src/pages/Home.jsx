@@ -197,7 +197,6 @@ const Home = () => {
             <>
               <span className="battle-mode-label online-label">BATALLA ONLINE</span>
               <div className="online-mode-icon" aria-hidden="true">?</div>
-              <span className="online-mode-description">Encuentra un invocador y demuestra tu poder</span>
             </>
           )}
 
