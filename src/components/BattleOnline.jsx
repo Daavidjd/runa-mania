@@ -109,7 +109,7 @@ const BattleOnline = () => {
   const [lastPlaced, setLastPlaced] = useState(null);
   const [attackDirs, setAttackDirs] = useState({});
   const [shakeHand, setShakeHand] = useState(false);
-  const [countdown, setCountdown] = useState(3); // ⏳ cuenta regresiva del volteo de moneda
+  const [countdown, setCountdown] = useState(5); // duración del sorteo visual
   const [turnReady, setTurnReady] = useState(true);
   const [timerRemaining, setTimerRemaining] = useState(30);
   const autoMovePendingRef = useRef(false);
@@ -265,7 +265,7 @@ const BattleOnline = () => {
     setCaptureOwnerOverrides({});
     setLastPlaced(null);
     setAttackDirs({});
-    setCountdown(3);
+    setCountdown(5);
     const searchState = { role: 'random', searching: true };
     localStorage.setItem('onlineBattle', JSON.stringify(searchState));
     setBattleData(searchState);
@@ -660,7 +660,7 @@ const BattleOnline = () => {
   // ---------- ⏳ CUENTA REGRESIVA DEL VOLTEO → INICIO AUTOMÁTICO ----------
   useEffect(() => {
     if (phase !== 'coinflip') return undefined;
-    let remaining = 3;
+    let remaining = 5;
     const id = setInterval(async () => {
       remaining -= 1;
       setCountdown(remaining);
@@ -766,7 +766,7 @@ const BattleOnline = () => {
             </div>
           </div>
           <div className="bo-lobby bo-search-lobby">
-            <h2 className="bo-lobby-title">BUSCANDO RIVAL...</h2>
+            <h2 className="bo-lobby-title">BUSCANDO RIVAL</h2>
             <div className="bo-vs-row bo-coinflip-names">
               <div className="bo-lobby-player bo-me">
                 <img src={avatarSrcOf(myProfile)} alt="yo" className={`bp-avatar-frame bo-match-avatar bo-avatar-${myColor || "blue"}`} />
@@ -783,7 +783,6 @@ const BattleOnline = () => {
             <div className="bo-lobby-info bo-coinflip-result">
               {starterIsMe ? '¡Empiezas tú!' : 'Empieza el rival'}
             </div>
-            <p className="bo-coinflip-countdown">La batalla comienza en {countdown}...</p>
           </div>
         </div>
       </div>
