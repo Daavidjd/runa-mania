@@ -49,6 +49,7 @@ const Home = () => {
   const [profile, setProfile] = useState(null);
   const [battleDeck, setBattleDeck] = useState([]); // mazo compartido de 8 runas para NPC y online
   const [showOpponentModal, setShowOpponentModal] = useState(false);
+  const [battleMode, setBattleMode] = useState('cpu');
 
   // 🎮 Estado del matchmaking aleatorio (batalla online con cualquiera)
   const [searching, setSearching] = useState(() => localStorage.getItem('randomMatchPending') === '1');
@@ -135,78 +136,95 @@ const Home = () => {
         </div>
       </header>
 
-      {/* ARENA CENTRAL */}
+      {/* ARENA CENTRAL: panel único CPU / ONLINE */}
       <main className="home-arena-stage">
-        <div className="runic-arena-altar">
-          {/* Badge NPC clickeable */}
-          <button 
-            className="arena-npc-badge"
-            onClick={() => setShowOpponentModal(true)}
-          >
-            <span className="npc-badge-title">NPC</span>
-          </button>
-
-          {/* Tarjeta del rival seleccionado (solo avatar + nombre) */}
-          <div className="selected-opponent-card" onClick={() => setShowOpponentModal(true)}>
-            <div className="opponent-avatar-box">
-              <img 
-                src={selectedOpponent.avatar} 
-                alt={selectedOpponent.name}
-                className="opponent-avatar"
-              />
-            </div>
-            <div className="opponent-info-box">
-              <span className="opponent-name">{selectedOpponent.name}</span>
-            </div>
-          </div>
-
-          {/* BOTÓN DE BATALLA */}
-          <button
-            className={`huge-battle-cta ${battleDeck.length < 8 ? 'cta-disabled' : ''}`}
-            onClick={() => battleDeck.length >= 8 && navigate('/battle')}
-            disabled={battleDeck.length < 8}
-            title={battleDeck.length < 8 ? `Necesitas 8 runas en el mazo de batalla (${battleDeck.length}/8)` : 'Iniciar batalla'}
-          >
-            <div className="cta-glare"></div>
-            <div className="cta-main-content">
-              <span className="cta-swords">{battleDeck.length < 8 ? '' : '⚔️'}</span>
-              <span className="cta-txt">
-                {battleDeck.length < 8 ? 'MAZO INCOMPLETO' : '¡A LUCHAR!'}
-              </span>
-            </div>
-            {battleDeck.length < 8 && (
-              <span className="cta-sub">Equipas {battleDeck.length}/8 runas en el mazo compartido</span>
-            )}
-          </button>
-
-        </div>
-
-        {/* BATALLA ONLINE: fuera de la tarjeta NPC */}
-        {/* 🎮 BOTÓN DE BATALLA ONLINE ALEATORIA */}
-        {searching ? (
-          <div className="online-search-box">
-            <div className="online-search-row">
-              <span className="online-search-orb"></span>
-              <div className="online-search-text">
-                <span className="online-search-title">BUSCANDO RIVAL...</span>
-                <span className="online-search-sub">🔵🔴 Cualquier invocador · 50/50</span>
-              </div>
-            </div>
-            <button className="online-cancel-btn" onClick={stopSearching}>✕ Cancelar búsqueda</button>
-          </div>
-        ) : (
-          <section className="online-mode-card" aria-label="Modo de batalla online">
-            <span className="online-mode-badge">online</span>
-            <div className="online-mode-icon" aria-hidden="true">?</div>
+        <section className={`unified-battle-card ${battleMode === 'online' ? 'is-online' : 'is-cpu'}`} aria-label="Panel de batalla">
+          <div className="battle-mode-switch" role="group" aria-label="Modo de batalla">
             <button
-              className={`online-battle-btn ${battleDeck.length < 8 ? 'online-disabled' : ''}`}
-              onClick={handleRandomBattle}
-              title={battleDeck.length < 8 ? 'Necesitas 8 runas en el mazo compartido para el modo online' : 'Batalla online contra un rival aleatorio'}
+              type="button"
+              className={`battle-mode-option ${battleMode === 'cpu' ? 'active' : ''}`}
+              onClick={() => setBattleMode('cpu')}
+              disabled={searching}
+              aria-pressed={battleMode === 'cpu'}
             >
-              <span className="online-btn-txt">¡LUCHAR!</span>
+              CPU
             </button>
-          </section>
-        )}
+            <button
+              type="button"
+              className={`battle-mode-option ${battleMode === 'online' ? 'active' : ''}`}
+              onClick={() => setBattleMode('online')}
+              disabled={searching}
+              aria-pressed={battleMode === 'online'}
+            >
+              ONLINE
+            </button>
+          </div>
+
+          {searching ? (
+            <div className="online-search-box">
+              <div className="online-search-row">
+                <span className="online-search-orb"></span>
+                <div className="online-search-text">
+                  <span className="online-search-title">BUSCANDO RIVAL...</span>
+                  <span className="online-search-sub">🔵🔴 Cualquier invocador · 50/50</span>
+                </div>
+              </div>
+              <button className="online-cancel-btn" onClick={stopSearching}>✕ Cancelar búsqueda</button>
+            </div>
+          ) : battleMode === 'cpu' ? (
+            <>
+              <span className="battle-mode-label cpu-label">BATALLA CONTRA CPU</span>
+              <button
+                type="button"
+                className="selected-opponent-card"
+                onClick={() => setShowOpponentModal(true)}
+                aria-label={`Cambiar oponente. Actual: ${selectedOpponent.name}`}
+              >
+                <div className="opponent-avatar-box">
+                  <img
+                    src={selectedOpponent.avatar}
+                    alt={selectedOpponent.name}
+                    className="opponent-avatar"
+                  />
+                </div>
+                <div className="opponent-info-box">
+                  <span className="opponent-name">{selectedOpponent.name}</span>
+                  <span className="opponent-change-hint">PULSA PARA CAMBIAR DE RIVAL</span>
+                </div>
+              </button>
+            </>
+          ) : (
+            <>
+              <span className="battle-mode-label online-label">BATALLA ONLINE</span>
+              <div className="online-mode-icon" aria-hidden="true">?</div>
+              <span className="online-mode-description">Encuentra un invocador y demuestra tu poder</span>
+            </>
+          )}
+
+          {!searching && (
+            <button
+              className={`huge-battle-cta ${battleDeck.length < 8 ? 'cta-disabled' : ''}`}
+              onClick={() => {
+                if (battleDeck.length < 8) return;
+                if (battleMode === 'online') handleRandomBattle();
+                else navigate('/battle');
+              }}
+              disabled={battleDeck.length < 8}
+              title={battleDeck.length < 8 ? `Necesitas 8 runas en el mazo de batalla (${battleDeck.length}/8)` : 'Iniciar batalla'}
+            >
+              <div className="cta-glare"></div>
+              <div className="cta-main-content">
+                <span className="cta-swords">{battleDeck.length < 8 ? '' : '⚔️'}</span>
+                <span className="cta-txt">
+                  {battleDeck.length < 8 ? 'MAZO INCOMPLETO' : '¡LUCHAR!'}
+                </span>
+              </div>
+              {battleDeck.length < 8 && (
+                <span className="cta-sub">Equipas {battleDeck.length}/8 runas en el mazo compartido</span>
+              )}
+            </button>
+          )}
+        </section>
 
         {matchError && <div className="online-match-error">{matchError}</div>}
 
