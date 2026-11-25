@@ -15,6 +15,8 @@ import { joinOnlineRoom, watchRoom, leaveOnlineRoom, updateOnlineRoom, playOnlin
 
 import { RUNES_DB } from '../data/runes';
 import { AVATAR_OPTIONS } from '../data/avatars';
+import coinRed from '../assets/coins/MonedaRoja.png';
+import coinBlue from '../assets/coins/MonedaAzul.png';
 import RuneCard from './RuneCard';
 import './Battle.css';
 import './BattleOnline.css';
@@ -714,7 +716,7 @@ const BattleOnline = () => {
       <div className="bp bo-screen">
         <div className="bp-stars"></div>
         <div className="bo-lobby">
-          <h2 className="bo-lobby-title">{battleData?.searching ? '⚔️ Buscando rival' : '⚔️ Arena en Línea'}</h2>
+          <h2 className="bo-lobby-title">{battleData?.searching ? 'BUSCANDO RIVAL...' : 'ARENA EN LÍNEA'}</h2>
 
           <div className="bo-vs-row">
             <div className="bo-lobby-player bo-me">
@@ -739,54 +741,50 @@ const BattleOnline = () => {
             </div>
           </div>
 
-          {oppJoined && (
-            <div className="bo-lobby-info">
-              🎲 Volteo de moneda 50/50 en curso...
-            </div>
-          )}
-
           <button className={`bp-btn bp-btn-exit bo-leave ${battleData?.searching ? 'bo-cancel-search' : ''}`} onClick={battleData?.searching ? cancelMatchmaking : () => navigate('/home')}>{battleData?.searching ? 'Cancelar' : '🚪 Salir'}</button>
         </div>
       </div>
     );
   }
 
-  // 🎲 PANTALLA DE VOLTEO DE MONEDA 50/50 (rojo vs azul) — Clash Royale style
+  // Sorteo visual: la moneda flota por encima del panel de búsqueda.
   if (phase === 'coinflip') {
     return (
-      <div className="bp bo-screen">
+      <div className="bp bo-screen bo-coinflip-screen">
         <div className="bp-stars"></div>
-        <div className="bo-lobby">
-          <h2 className="bo-lobby-title">🎲 Volteo de moneda</h2>
+        <div className="bo-search-stack">
           <div
             className={`bo-coin ${myColor === "blue" ? "bo-coin-show-blue" : "bo-coin-show-red bo-coin-red-first"}`}
             role="img"
-            aria-label="Moneda azul con ola y roja con fuego"
+            aria-label="Medallón azul de agua y medallón rojo de fuego"
           >
             <div className="bo-coin-face bo-coin-blue">
-              <span aria-hidden="true">🌊</span>
+              <img src={coinBlue} alt="" />
             </div>
             <div className="bo-coin-face bo-coin-red">
-              <span aria-hidden="true">🔥</span>
+              <img src={coinRed} alt="" />
             </div>
           </div>
-          <div className="bo-vs-row bo-coinflip-names">
-            <div className="bo-lobby-player bo-me">
-              <img src={avatarSrcOf(myProfile)} alt="yo" className={`bp-avatar-frame bo-match-avatar bo-avatar-${myColor || "blue"}`} />
-              <span className="bo-lobby-name bo-match-name">{myProfile?.username || 'Tú'}</span>
-              <span className="bo-lobby-tag" style={{ color: myColor === 'red' ? '#ff8a80' : '#4fc3f7' }}>{myColor === 'red' ? '🔴 Rojo' : '🔵 Azul'}</span>
+          <div className="bo-lobby bo-search-lobby">
+            <h2 className="bo-lobby-title">BUSCANDO RIVAL...</h2>
+            <div className="bo-vs-row bo-coinflip-names">
+              <div className="bo-lobby-player bo-me">
+                <img src={avatarSrcOf(myProfile)} alt="yo" className={`bp-avatar-frame bo-match-avatar bo-avatar-${myColor || "blue"}`} />
+                <span className="bo-lobby-name bo-match-name">{myProfile?.username || 'Tú'}</span>
+                <span className="bo-lobby-tag" style={{ color: myColor === 'red' ? '#ff8a80' : '#4fc3f7' }}>{myColor === 'red' ? '🔴 Rojo' : '🔵 Azul'}</span>
+              </div>
+              <span className="bo-vs-bolt">VS</span>
+              <div className="bo-lobby-player bo-them">
+                <img src={avatarSrcOf(oppProfile)} alt="rival" className={`bp-avatar-frame bo-match-avatar bo-avatar-${oppColor || "blue"}`} />
+                <span className="bo-lobby-name bo-match-name">{battleData?.opponentName || oppProfile?.username || 'Rival'}</span>
+                <span className="bo-lobby-tag" style={{ color: oppColor === 'red' ? '#ff8a80' : '#4fc3f7' }}>{oppColor === 'red' ? '🔴 Rojo' : '🔵 Azul'}</span>
+              </div>
             </div>
-            <span className="bo-vs-bolt">VS</span>
-            <div className="bo-lobby-player bo-them">
-              <img src={avatarSrcOf(oppProfile)} alt="rival" className={`bp-avatar-frame bo-match-avatar bo-avatar-${oppColor || "blue"}`} />
-              <span className="bo-lobby-name bo-match-name">{battleData?.opponentName || oppProfile?.username || 'Rival'}</span>
-              <span className="bo-lobby-tag" style={{ color: oppColor === 'red' ? '#ff8a80' : '#4fc3f7' }}>{oppColor === 'red' ? '🔴 Rojo' : '🔵 Azul'}</span>
+            <div className="bo-lobby-info bo-coinflip-result">
+              {starterIsMe ? '¡Empiezas tú!' : 'Empieza el rival'}
             </div>
+            <p className="bo-coinflip-countdown">La batalla comienza en {countdown}...</p>
           </div>
-          <div className="bo-lobby-info bo-coinflip-result">
-            {starterIsMe ? '¡Empiezas tú!' : 'Empieza el rival'}
-          </div>
-          <p className="bo-coinflip-countdown">La batalla comienza en {countdown}...</p>
         </div>
       </div>
     );
