@@ -173,7 +173,6 @@ const Home = () => {
             </div>
           ) : battleMode === 'cpu' ? (
             <>
-              <span className="battle-mode-label cpu-label">BATALLA CONTRA CPU</span>
               <button
                 type="button"
                 className="selected-opponent-card"
@@ -189,7 +188,9 @@ const Home = () => {
                 </div>
                 <div className="opponent-info-box">
                   <span className="opponent-name">{selectedOpponent.name}</span>
-                  <span className="opponent-change-hint">PULSA PARA CAMBIAR DE RIVAL</span>
+                  <span className="opponent-selected-difficulty" style={{ color: selectedOpponent.difficultyColor }}>
+                    {selectedOpponent.difficulty}
+                  </span>
                 </div>
               </button>
             </>
