@@ -188,15 +188,24 @@ export const addRuneToCollection = async (userId, rune, awardId = null) => {
 
     const snapshot = await transaction.get(collectionRef);
     if (snapshot.exists()) {
-      const currentQuantity = Number(snapshot.data().quantity) || 0;
+      const data = snapshot.data();
+      const currentQuantity = Number(data.quantity) || 1;
+      // Compatibilidad: en colecciones antiguas las repes se deducen de quantity.
+      const currentRepes = Number.isFinite(Number(data.repes))
+        ? Number(data.repes)
+        : Math.max(0, currentQuantity - 1);
       transaction.update(collectionRef, {
         quantity: currentQuantity + 1,
+        repes: currentRepes + 1,
+        level: Math.max(1, Number(data.level) || 1),
         lastObtained: obtainedAt
       });
     } else {
       transaction.set(collectionRef, {
         ...rune,
         quantity: 1,
+        level: 1,
+        repes: 0,
         obtainedAt
       });
     }
@@ -205,6 +214,56 @@ export const addRuneToCollection = async (userId, rune, awardId = null) => {
       transaction.set(receiptRef, { runeId: rune.id, createdAt: obtainedAt });
     }
   });
+};
+
+// Mejora atómica: consume repes de esta runa y avanza exactamente un nivel.
+export const upgradeRune = async (userId, runeId, evolutionPath) => {
+  if (!userId || !runeId || !Array.isArray(evolutionPath) || evolutionPath.length === 0) {
+    return { success: false, message: 'No se ha podido identificar la evolución de esta runa.' };
+  }
+
+  const runeRef = doc(db, `users/${userId}/collection`, runeId);
+  try {
+    return await runTransaction(db, async transaction => {
+      const snapshot = await transaction.get(runeRef);
+      if (!snapshot.exists()) {
+        return { success: false, message: 'No tienes esta runa en tu colección.' };
+      }
+
+      const data = snapshot.data();
+      const level = Math.max(1, Number(data.level) || 1);
+      const quantity = Math.max(1, Number(data.quantity) || 1);
+      const repes = Number.isFinite(Number(data.repes))
+        ? Math.max(0, Number(data.repes))
+        : Math.max(0, quantity - 1);
+      const maxLevel = evolutionPath.length;
+
+      if (level >= maxLevel) {
+        return { success: false, message: 'Esta runa ya ha alcanzado su nivel máximo.' };
+      }
+
+      const cost = 3 * level;
+      if (repes < cost) {
+        return {
+          success: false,
+          message: `Necesitas ${cost} repes para mejorarla. Te faltan ${cost - repes}.`
+        };
+      }
+
+      const nextLevel = level + 1;
+      const nextRepes = repes - cost;
+      transaction.update(runeRef, {
+        level: nextLevel,
+        repes: nextRepes,
+        quantity
+      });
+
+      return { success: true, level: nextLevel, repes: nextRepes, cost };
+    });
+  } catch (error) {
+    console.error('Error mejorando runa:', error);
+    return { success: false, message: 'No se ha podido mejorar la runa. Inténtalo de nuevo.' };
+  }
 };
 
 export const getUserDecks = async (userId) => {
