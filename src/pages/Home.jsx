@@ -126,7 +126,7 @@ const Home = () => {
             <span className="hud-name">
               {profile?.username || user?.displayName || user?.email?.split('@')[0] || 'Invocador'}
             </span>
-            <span className="hud-id">Nv. {profile?.level || 1} • ID: {profile?.playerCode || profile?.userId || '------'}</span>
+            <span className="hud-id">NIVEL {profile?.level || 1}</span>
           </div>
         </button>
 
@@ -227,6 +227,25 @@ const Home = () => {
         </section>
 
         {matchError && <div className="online-match-error">{matchError}</div>}
+
+        <section className="home-shortcuts" aria-label="Accesos rápidos">
+          <button type="button" className="home-shortcut-btn mining-shortcut" onClick={() => navigate('/shop')}>
+            <span className="shortcut-icon" aria-hidden="true">⛏</span>
+            <span className="shortcut-copy">
+              <strong>MINERÍA</strong>
+              <small>Consigue nuevas runas</small>
+            </span>
+            <span className="shortcut-arrow" aria-hidden="true">›</span>
+          </button>
+          <button type="button" className="home-shortcut-btn collection-shortcut" onClick={() => navigate('/collection')}>
+            <span className="shortcut-icon collection-icon" aria-hidden="true">ᛟ</span>
+            <span className="shortcut-copy">
+              <strong>COLECCIÓN</strong>
+              <small>Gestiona tus runas y mazos</small>
+            </span>
+            <span className="shortcut-arrow" aria-hidden="true">›</span>
+          </button>
+        </section>
 
         <div className="home-coming-soon">
           <span className="coming-soon-rune">ᛟ</span>
