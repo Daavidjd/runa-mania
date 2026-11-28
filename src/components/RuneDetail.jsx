@@ -78,23 +78,18 @@ const RuneDetail = ({
 
           {owned && (
             <section className="rd-evolution">
-              <div className="rd-evolution-heading">
-                <span>EVOLUCIÓN</span>
-                <strong>NIVEL {currentLevel} / {maxLevel}</strong>
-              </div>
               <div
                 className="rd-progress-track"
                 role="progressbar"
-                aria-label="Progreso de repes para la siguiente mejora"
+                aria-label="Progreso de copias para la siguiente mejora"
                 aria-valuemin={0}
                 aria-valuemax={upgradeCost}
                 aria-valuenow={isMaxLevel ? upgradeCost : Math.min(repes, upgradeCost)}
               >
                 <div className="rd-progress-fill" style={{ width: `${progress}%` }} />
-              </div>
-              <div className="rd-repe-row">
-                <span>🪨 {repes} REPES</span>
-                <span>{isMaxLevel ? 'NIVEL MÁXIMO' : `${Math.min(repes, upgradeCost)} / ${upgradeCost} REPES`}</span>
+                <span className="rd-progress-label">
+                  {isMaxLevel ? 'NIVEL MÁXIMO' : `COPIAS ${Math.min(repes, upgradeCost)}/${upgradeCost}`}
+                </span>
               </div>
               <button
                 type="button"
