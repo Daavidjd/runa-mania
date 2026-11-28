@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import {
   getUserProfile,
   getUserActiveDeck,
+  getUserCollection,
   watchChallenge,
   recordOnlineBattleResult,
   findRandomMatch,
@@ -59,18 +60,30 @@ const normalizeOnlineBoard = (value) => {
   return board;
 };
 
-const buildHandFromIds = (runeIds, owner) => {
-  const runes = (runeIds || [])
-    .map(id => RUNES_DB.find(r => r.id === id))
-    .filter(Boolean)
-    .map(r => ({ ...r, owner }));
+const buildHandFromIds = (runeIds, owner, collectionData = []) => {
+  const ownedById = Object.fromEntries(collectionData.map(item => [item.runeId || item.id, item]));
+  const buildRune = id => {
+    const baseRune = RUNES_DB.find(r => r.id === id);
+    if (!baseRune) return null;
+    const owned = ownedById[id];
+    const level = Math.max(1, Math.min(baseRune.evolutionPath?.length || 1, Number(owned?.level) || 1));
+    const arrows = { top: 0, right: 0, bottom: 0, left: 0 };
+    (baseRune.evolutionPath || []).slice(0, level).forEach(direction => {
+      if (Object.prototype.hasOwnProperty.call(arrows, direction)) arrows[direction] += 1;
+    });
+    const quantity = Math.max(1, Number(owned?.quantity) || 1);
+    return {
+      ...baseRune, arrows, level, quantity,
+      repes: Number.isFinite(Number(owned?.repes)) ? Math.max(0, Number(owned.repes)) : Math.max(0, quantity - 1),
+      owner
+    };
+  };
+  const runes = (runeIds || []).map(buildRune).filter(Boolean);
   // Completar mazos antiguos o incompletos hasta ocho runas sin duplicados.
   const existingIds = new Set(runes.map(r => r.id));
-  const missingRunes = [...RUNES_DB]
-    .filter(r => !existingIds.has(r.id))
-    .sort(() => 0.5 - Math.random())
-    .slice(0, 8 - runes.length)
-    .map(r => ({ ...r, owner }));
+  const missingRunes = [...RUNES_DB].filter(r => !existingIds.has(r.id))
+    .sort(() => 0.5 - Math.random()).slice(0, 8 - runes.length)
+    .map(r => buildRune(r.id)).filter(Boolean);
   return [...runes, ...missingRunes].slice(0, 8);
 };
 
@@ -292,24 +305,26 @@ const BattleOnline = () => {
 
       try {
         const isBotMatch = !!battleData.isBotMatch;
-        const [me, opp, myDeckIds, oppDeckIds] = await Promise.all([
+        const [me, opp, myDeckIds, oppDeckIds, myCollection, oppCollection] = await Promise.all([
           getUserProfile(user.uid),
           isBotMatch ? Promise.resolve({ uid: battleData.opponentUid, username: 'LarryKaberga', avatarId: 'mago' }) : getUserProfile(battleData.opponentUid),
           getUserActiveDeck(user.uid),
-          isBotMatch ? Promise.resolve([]) : getUserActiveDeck(battleData.opponentUid)
+          isBotMatch ? Promise.resolve([]) : getUserActiveDeck(battleData.opponentUid),
+          getUserCollection(user.uid),
+          isBotMatch ? Promise.resolve([]) : getUserCollection(battleData.opponentUid)
         ]);
         if (cancelled) return;
         setMyProfile(me);
         setOppProfile(opp);
 
-        const hand = buildHandFromIds(myDeckIds, 'me');
+        const hand = buildHandFromIds(myDeckIds, 'me', myCollection);
         setMyHand(hand.map(h => ({ ...h, owner: user.uid })));
         // LarryKaberga necesita una mano real de 8 runas: no tiene perfil ni mazo en Firestore.
         // Construimos su mazo desde RUNES_DB para que pueda ejecutar el primer turno.
         const botRuneIds = isBotMatch
           ? [...RUNES_DB].sort(() => Math.random() - 0.5).slice(0, 8).map(rune => rune.id)
           : oppDeckIds;
-        const oppHand = buildHandFromIds(botRuneIds, 'opp');
+        const oppHand = buildHandFromIds(botRuneIds, 'opp', oppCollection);
         setBotHand(isBotMatch ? oppHand.map(r => ({ ...r, owner: battleData.opponentUid })) : []);
 
         const roomId = battleData.roomId || battleData.challengeId;
