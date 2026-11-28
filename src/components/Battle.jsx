@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { getUserNpcDeck, getUserProfile, updateUserProfile } from '../services/firestore';
+import { getUserNpcDeck, getUserCollection, getUserProfile, updateUserProfile } from '../services/firestore';
 import { RUNES_DB } from '../data/runes';
 import RuneCard from './RuneCard';
 
@@ -137,12 +137,25 @@ const Battle = () => {
 
       let playerRunes = [];
       if (user) {
-        const npcDeckIds = await getUserNpcDeck(user.uid); // mazo compartido de 8 runas
+        const [npcDeckIds, collectionData] = await Promise.all([
+          getUserNpcDeck(user.uid),
+          getUserCollection(user.uid)
+        ]);
+        const ownedById = Object.fromEntries(collectionData.map(item => [item.runeId || item.id, item]));
         playerRunes = npcDeckIds
-          .map(id => RUNES_DB.find(r => r.id === id))
+          .map(id => {
+            const baseRune = RUNES_DB.find(r => r.id === id);
+            if (!baseRune) return null;
+            const owned = ownedById[id];
+            const level = Math.max(1, Math.min(baseRune.evolutionPath?.length || 1, Number(owned?.level) || 1));
+            const arrows = { top: 0, right: 0, bottom: 0, left: 0 };
+            (baseRune.evolutionPath || []).slice(0, level).forEach(direction => {
+              if (Object.prototype.hasOwnProperty.call(arrows, direction)) arrows[direction] += 1;
+            });
+            return { ...baseRune, arrows, level, owner: 'player' };
+          })
           .filter(Boolean)
-          .slice(0, 8)
-          .map(r => ({ ...r, owner: 'player' }));
+          .slice(0, 8);
       }
       if (playerRunes.length < 8) {
         const existingIds = new Set(playerRunes.map(r => r.id));
