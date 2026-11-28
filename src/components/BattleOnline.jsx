@@ -172,7 +172,7 @@ const BattleOnline = () => {
         unsubscribe = watchMatchmakingEntry(user.uid, acceptMatch, () => { if (!cancelled) setPhase('error'); });
         // Reintentar la búsqueda periódicamente: cubre el caso de dos altas
         // en el mismo milisegundo donde el jugador con prioridad aún no vio al otro.
-        // Si no aparece ningún jugador real en 20 segundos, LarryKaberga entra como rival.
+        // Si no aparece ningún jugador real en 15 segundos, LarryKaberga entra como rival.
         botTimeout = setTimeout(async () => {
           if (cancelled || accepted) return;
           try {
@@ -199,7 +199,7 @@ const BattleOnline = () => {
             accepted = false;
             if (!cancelled) setPhase('error');
           }
-        }, 20000);
+        }, 15000);
         heartbeat = setInterval(async () => {
           try {
             const retry = await findRandomMatch(user.uid, displayName, profile?.avatarId || 'mago');
