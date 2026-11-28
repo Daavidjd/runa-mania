@@ -60,7 +60,7 @@ const RuneDuplicateProgress = ({ rune }) => {
   return (
     <div className="miner-duplicate-progress" role="progressbar" aria-label="Progreso para mejorar la runa" aria-valuemin={0} aria-valuemax={cost} aria-valuenow={Math.min(repes, cost)}>
       <div className="miner-duplicate-progress-heading">
-        <span>PROGRESO DE MEJORA</span>
+        <span>REPES</span>
         <strong>{repes} / {cost}</strong>
       </div>
       <div className="miner-duplicate-progress-track">
@@ -204,13 +204,14 @@ const RockMiner = ({ onClose, rockType = 'normal', pickaxeType = null }) => {
   };
 
   if(isPickaxeRun){
+    const allRunesRevealed = pickaxeRocks.every(rock => Boolean(rock.rune));
     const complete=pickaxeRocks.every(rock=>rock.rune&&(!user||rock.saved));
     return <div className="rock-miner-overlay pickaxe-miner-overlay"><div className="pickaxe-miner-content">
       <h1 className="miner-huge-title">{complete ? "RUNAS OBTENIDAS" : "PICA"}</h1>
       <div className="pickaxe-rocks-grid">{pickaxeRocks.map(rock=>{
         const images=ROCK_IMAGES[rockType]||ROCK_IMAGES.normal;
         return <div key={rock.id} className={'pickaxe-rock-card '+(rock.rune?'completed':'')} onClick={()=>!rock.rune&&handlePickaxeHit(rock.id)}>
-          {rock.rune?<><div className="reveal-rune-stack"><div className="reveal-rune-box"><RuneCard rune={rock.rune} owned={true} battleMode={true}/></div><RuneDuplicateProgress rune={rock.rune}/></div>
+          {rock.rune?<><div className="reveal-rune-stack"><div className="reveal-rune-box"><RuneCard rune={rock.rune} owned={true} battleMode={true}/></div>{allRunesRevealed&&<RuneDuplicateProgress rune={rock.rune}/>}</div>
             {rock.saving&&<span className="pickaxe-hit-label">Guardando...</span>}
             {rock.saveError&&<button className="pickaxe-retry" onClick={event=>{event.stopPropagation();handlePickaxeRetry(rock.id);}}>Reintentar guardado</button>}
           </>:<><img className={'rock-standalone-img '+(mining&&activePickRock===rock.id?'shaking':'')} src={images[Math.min(rock.hits,2)]} alt={'Roca '+(rock.id+1)} draggable="false"/></>}
