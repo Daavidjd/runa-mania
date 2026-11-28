@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { getRandomRune } from '../data/runes';
-import { addRuneToCollection } from '../services/firestore';
+import { addRuneToCollection, getUserCollection } from '../services/firestore';
 import RuneCard from './RuneCard';
 
 // Importar las 12 imágenes de rocas
@@ -29,6 +29,28 @@ const ROCK_IMAGES = {
   epic: [RocaLila1, RocaLila2, RocaLila3]
 };
 
+const getCurrentRuneDisplay = async (userId, rune) => {
+  if (!userId) return { ...rune, arrows: { ...(rune.startingArrows || rune.arrows) }, level: 1, repes: 0 };
+  const collection = await getUserCollection(userId);
+  const ownedRune = collection.find(item => item.id === rune.id);
+  if (!ownedRune) return { ...rune, arrows: { ...(rune.startingArrows || rune.arrows) }, level: 1, repes: 0 };
+  const level = Math.max(1, Number(ownedRune.level) || 1);
+  const arrows = { top: 0, right: 0, bottom: 0, left: 0 };
+  ['top', 'right', 'bottom', 'left'].forEach(direction => { arrows[direction] = Number(ownedRune.startingArrows?.[direction]) || 0; });
+  (ownedRune.evolutionPath || []).slice(0, level - 1).forEach(direction => { if (Object.prototype.hasOwnProperty.call(arrows, direction)) arrows[direction] += 1; });
+  return { ...rune, ...ownedRune, arrows, level, repes: Math.max(0, Number(ownedRune.repes) || 0) };
+};
+
+const RuneDuplicateProgress = ({ rune }) => {
+  if (!rune || !(Number(rune.repes) > 0)) return null;
+  const cost = 3 * Math.max(1, Number(rune.level) || 1);
+  const repes = Math.max(0, Number(rune.repes) || 0);
+  const progress = Math.min(100, (repes / cost) * 100);
+  return <div className="miner-duplicate-progress" aria-label={'Progreso de repes: ' + Math.min(repes, cost) + ' de ' + cost}>
+    <div className="miner-duplicate-progress-fill" style={{ width: progress + '%' }} />
+    <span>{Math.min(repes, cost)}/{cost}</span>
+  </div>;
+};
 const RockMiner = ({ onClose, rockType = 'normal', pickaxeType = null }) => {
   const isPickaxeRun = Boolean(pickaxeType);
   const [pickaxeRocks, setPickaxeRocks] = useState(() => Array.from({length:3}, (_,id) => ({ id, hits:0, rune:null, saving:false, saved:false, saveError:false, awardId:`pick-${Date.now()}-${id}-${Math.random().toString(36).slice(2)}` })));
@@ -86,7 +108,7 @@ const RockMiner = ({ onClose, rockType = 'normal', pickaxeType = null }) => {
     if(nextHits===3){
       const rune=getRandomRune(rockType);
       setPickaxeRocks(prev=>prev.map(rock=>rock.id===rockId?{...rock,rune,saving:Boolean(user)}:rock));
-      if(user){ try { await addRuneToCollection(user.uid,rune,current.awardId); setPickaxeRocks(prev=>prev.map(rock=>rock.id===rockId?{...rock,saving:false,saved:true}:rock)); }
+      if(user){ try { await addRuneToCollection(user.uid,rune,current.awardId); const displayRune=await getCurrentRuneDisplay(user.uid,rune); setPickaxeRocks(prev=>prev.map(rock=>rock.id===rockId?{...rock,rune:displayRune,saving:false,saved:true}:rock)); }
         catch(error){ console.error('Error guardando runa del pico:',error); setPickaxeRocks(prev=>prev.map(rock=>rock.id===rockId?{...rock,saving:false,saveError:true}:rock)); }
       }
     }
@@ -97,7 +119,7 @@ const RockMiner = ({ onClose, rockType = 'normal', pickaxeType = null }) => {
     const rock=pickaxeRocks.find(item=>item.id===rockId);
     if(!user||!rock?.rune||!rock.saveError||isProcessingRef.current) return;
     isProcessingRef.current=true; setPickaxeRocks(prev=>prev.map(item=>item.id===rockId?{...item,saving:true,saveError:false}:item));
-    try { await addRuneToCollection(user.uid,rock.rune,rock.awardId); setPickaxeRocks(prev=>prev.map(item=>item.id===rockId?{...item,saving:false,saved:true}:item)); }
+    try { await addRuneToCollection(user.uid,rock.rune,rock.awardId); const displayRune=await getCurrentRuneDisplay(user.uid,rock.rune); setPickaxeRocks(prev=>prev.map(item=>item.id===rockId?{...item,rune:displayRune,saving:false,saved:true}:item)); }
     catch(error){ setPickaxeRocks(prev=>prev.map(item=>item.id===rockId?{...item,saving:false,saveError:true}:item)); }
     finally { isProcessingRef.current=false; }
   };
@@ -129,6 +151,7 @@ const RockMiner = ({ onClose, rockType = 'normal', pickaxeType = null }) => {
           setSaveError(false);
           try {
             await addRuneToCollection(user.uid, rune, awardIdRef.current);
+            setRevealedRune(await getCurrentRuneDisplay(user.uid, rune));
             savedRef.current = true;
           } catch (err) {
             console.error('Error guardando runa:', err);
@@ -151,6 +174,7 @@ const RockMiner = ({ onClose, rockType = 'normal', pickaxeType = null }) => {
     setSaveError(false);
     try {
       await addRuneToCollection(user.uid, revealedRune, awardIdRef.current);
+      setRevealedRune(await getCurrentRuneDisplay(user.uid, revealedRune));
       savedRef.current = true;
     } catch (err) {
       console.error('Error reintentando guardar runa:', err);
@@ -168,7 +192,7 @@ const RockMiner = ({ onClose, rockType = 'normal', pickaxeType = null }) => {
       <div className="pickaxe-rocks-grid">{pickaxeRocks.map(rock=>{
         const images=ROCK_IMAGES[rockType]||ROCK_IMAGES.normal;
         return <div key={rock.id} className={'pickaxe-rock-card '+(rock.rune?'completed':'')} onClick={()=>!rock.rune&&handlePickaxeHit(rock.id)}>
-          {rock.rune?<><div className="reveal-rune-box"><RuneCard rune={rock.rune} owned={true} battleMode={true}/></div>
+          {rock.rune?<><div className="reveal-rune-stack"><div className="reveal-rune-box"><RuneCard rune={rock.rune} owned={true} battleMode={true}/></div><RuneDuplicateProgress rune={rock.rune}/></div>
             {rock.saving&&<span className="pickaxe-hit-label">Guardando...</span>}
             {rock.saveError&&<button className="pickaxe-retry" onClick={event=>{event.stopPropagation();handlePickaxeRetry(rock.id);}}>Reintentar guardado</button>}
           </>:<><img className={'rock-standalone-img '+(mining&&activePickRock===rock.id?'shaking':'')} src={images[Math.min(rock.hits,2)]} alt={'Roca '+(rock.id+1)} draggable="false"/></>}
@@ -204,8 +228,9 @@ const RockMiner = ({ onClose, rockType = 'normal', pickaxeType = null }) => {
             </div>
           )}
 
-          <div className="reveal-rune-box">
-            <RuneCard rune={revealedRune} owned={true} battleMode={true} />
+          <div className="reveal-rune-stack">
+            <div className="reveal-rune-box"><RuneCard rune={revealedRune} owned={true} battleMode={true} /></div>
+            <RuneDuplicateProgress rune={revealedRune} />
           </div>
 
           <button
