@@ -816,7 +816,7 @@ const BattleOnline = () => {
 
       {/* ZONA CENTRAL */}
       <main className="bp-arena-center">
-        <div className={`bp-turn-indicator ${myTurn ? 'is-turn-player' : 'is-turn-ai'}`}>
+        <div className={`bp-turn-indicator ${myTurn ? 'is-turn-player' : 'is-turn-ai'} bp-turn-color-${myTurn ? (myColor || 'blue') : (oppColor || 'red')}`}>
           <span className="bp-turn-icon">{myTurn ? '⚔️' : '⏳'}</span>
           {!gameOver && phase === 'playing' && (
             <div className="bo-turn-timer" style={{ '--timer-progress': `${Math.max(0, Math.min(30, timerRemaining)) / 30 * 100}%` }}>
