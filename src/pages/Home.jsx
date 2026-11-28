@@ -228,25 +228,6 @@ const Home = () => {
 
         {matchError && <div className="online-match-error">{matchError}</div>}
 
-        <section className="home-shortcuts" aria-label="Accesos rápidos">
-          <button type="button" className="home-shortcut-btn mining-shortcut" onClick={() => navigate('/shop')}>
-            <span className="shortcut-icon" aria-hidden="true">⛏</span>
-            <span className="shortcut-copy">
-              <strong>MINERÍA</strong>
-              <small>Consigue nuevas runas</small>
-            </span>
-            <span className="shortcut-arrow" aria-hidden="true">›</span>
-          </button>
-          <button type="button" className="home-shortcut-btn collection-shortcut" onClick={() => navigate('/collection')}>
-            <span className="shortcut-icon collection-icon" aria-hidden="true">ᛟ</span>
-            <span className="shortcut-copy">
-              <strong>COLECCIÓN</strong>
-              <small>Gestiona tus runas y mazos</small>
-            </span>
-            <span className="shortcut-arrow" aria-hidden="true">›</span>
-          </button>
-        </section>
-
         <div className="home-coming-soon">
           <span className="coming-soon-rune">ᛟ</span>
           <span className="coming-soon-text">Matchmaking por rango próximamente</span>
