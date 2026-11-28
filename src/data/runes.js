@@ -39,45 +39,45 @@ export const RUNES_DB = [
   // ==========================================
   // COMUNES (máximo nivel 6)
   // ==========================================
-  { id: 'rune_001', name: 'Tibudrac', image: tibudrac, tier: 'comun', arrows: { top: 1, right: 1, bottom: 2, left: 0}, evolutionPath: ['bottom', 'right', 'top', 'left', 'bottom', 'right'], }, // Total: 4
-  { id: 'rune_002', name: 'Rocko', image: rocko, tier: 'comun', arrows: { top: 1, right: 1, bottom: 1, left: 1}, evolutionPath: ['top', 'bottom', 'left', 'right', 'top', 'bottom'], }, // Total: 4
-  { id: 'rune_003', name: 'Aligato', image: aligato, tier: 'comun', arrows: { top: 0, right: 2, bottom: 1, left: 0}, evolutionPath: ['right', 'top', 'right', 'bottom', 'left', 'right'], }, // Total: 4
-  { id: 'rune_004', name: 'Catcrank', image: catcrank, tier: 'comun', arrows: { top: 0, right: 0, bottom: 0, left: 2}, evolutionPath: ['left', 'top', 'left', 'bottom', 'right', 'left'], }, // Total: 4
-  { id: 'rune_005', name: 'Cucakarcha', image: cucakarcha, tier: 'comun', arrows: { top: 2, right: 0, bottom: 1, left: 0}, evolutionPath: ['top', 'right', 'top', 'left', 'bottom', 'top'], }, // Total: 3
-  { id: 'rune_006', name: 'Elfo', image: elfo, tier: 'comun', arrows: { top: 1, right: 1, bottom: 1, left: 0}, evolutionPath: ['left', 'top', 'right', 'top', 'bottom', 'left'], }, // Total: 3
-  { id: 'rune_007', name: 'Golcan', image: golcan, tier: 'comun', arrows: { top: 1, right: 1, bottom: 0, left: 0}, evolutionPath: ['right', 'top', 'bottom', 'right', 'top', 'left'], }, // Total: 2
-  { id: 'rune_008', name: 'Perry', image: perry, tier: 'comun', arrows: { top: 0, right: 0, bottom: 1, left: 1}, evolutionPath: ['bottom', 'left', 'bottom', 'right', 'top', 'bottom'], }, // Total: 2
-  { id: 'rune_009', name: 'Trompi', image: trompi, tier: 'comun', arrows: { top: 0, right: 1, bottom: 1, left: 0}, evolutionPath: ['right', 'bottom', 'right', 'top', 'left', 'right'], }, // Total: 2
-  { id: 'rune_020', name: 'Extrarmi', image: extrarmi, tier: 'comun', arrows: { top: 1, right: 0, bottom: 0, left: 1}, evolutionPath: ['left', 'top', 'left', 'bottom', 'right', 'left'], }, // Total: 2
-  { id: 'rune_029', name: 'BusanGel', image: busanGel, tier: 'comun', arrows: { top: 1, right: 1, bottom: 1, left: 1}, evolutionPath: ['top', 'right', 'bottom', 'left', 'top', 'right'], }, // Total: 4
+  { id: 'rune_001', name: 'Tibudrac', image: tibudrac, tier: 'comun', arrows: { top: 1, right: 1, bottom: 2, left: 0}, startingArrows: { top: 0, right: 0, bottom: 1, left: 0 }, evolutionPath: ['bottom', 'right', 'top', 'left', 'bottom', 'right'], }, // Total: 4
+  { id: 'rune_002', name: 'Rocko', image: rocko, tier: 'comun', arrows: { top: 1, right: 1, bottom: 1, left: 1}, startingArrows: { top: 1, right: 0, bottom: 0, left: 0 }, evolutionPath: ['top', 'bottom', 'left', 'right', 'top', 'bottom'], }, // Total: 4
+  { id: 'rune_003', name: 'Aligato', image: aligato, tier: 'comun', arrows: { top: 0, right: 2, bottom: 1, left: 0}, startingArrows: { top: 0, right: 1, bottom: 0, left: 0 }, evolutionPath: ['right', 'top', 'right', 'bottom', 'left', 'right'], }, // Total: 4
+  { id: 'rune_004', name: 'Catcrank', image: catcrank, tier: 'comun', arrows: { top: 0, right: 0, bottom: 0, left: 2}, startingArrows: { top: 0, right: 0, bottom: 0, left: 1 }, evolutionPath: ['left', 'top', 'left', 'bottom', 'right', 'left'], }, // Total: 4
+  { id: 'rune_005', name: 'Cucakarcha', image: cucakarcha, tier: 'comun', arrows: { top: 2, right: 0, bottom: 1, left: 0}, startingArrows: { top: 1, right: 0, bottom: 0, left: 0 }, evolutionPath: ['top', 'right', 'top', 'left', 'bottom', 'top'], }, // Total: 3
+  { id: 'rune_006', name: 'Elfo', image: elfo, tier: 'comun', arrows: { top: 1, right: 1, bottom: 1, left: 0}, startingArrows: { top: 0, right: 0, bottom: 0, left: 1 }, evolutionPath: ['left', 'top', 'right', 'top', 'bottom', 'left'], }, // Total: 3
+  { id: 'rune_007', name: 'Golcan', image: golcan, tier: 'comun', arrows: { top: 1, right: 1, bottom: 0, left: 0}, startingArrows: { top: 0, right: 1, bottom: 0, left: 0 }, evolutionPath: ['right', 'top', 'bottom', 'right', 'top', 'left'], }, // Total: 2
+  { id: 'rune_008', name: 'Perry', image: perry, tier: 'comun', arrows: { top: 0, right: 0, bottom: 1, left: 1}, startingArrows: { top: 0, right: 0, bottom: 1, left: 0 }, evolutionPath: ['bottom', 'left', 'bottom', 'right', 'top', 'bottom'], }, // Total: 2
+  { id: 'rune_009', name: 'Trompi', image: trompi, tier: 'comun', arrows: { top: 0, right: 1, bottom: 1, left: 0}, startingArrows: { top: 0, right: 1, bottom: 0, left: 0 }, evolutionPath: ['right', 'bottom', 'right', 'top', 'left', 'right'], }, // Total: 2
+  { id: 'rune_020', name: 'Extrarmi', image: extrarmi, tier: 'comun', arrows: { top: 1, right: 0, bottom: 0, left: 1}, startingArrows: { top: 0, right: 0, bottom: 0, left: 1 }, evolutionPath: ['left', 'top', 'left', 'bottom', 'right', 'left'], }, // Total: 2
+  { id: 'rune_029', name: 'BusanGel', image: busanGel, tier: 'comun', arrows: { top: 1, right: 1, bottom: 1, left: 1}, startingArrows: { top: 1, right: 0, bottom: 0, left: 0 }, evolutionPath: ['top', 'right', 'bottom', 'left', 'top', 'right'], }, // Total: 4
 
   // ==========================================
   // RARAS (máximo nivel 4)
   // ==========================================
-  { id: 'rune_010', name: 'Tigreoso', image: tigreoso, tier: 'rara', arrows: { top: 2, right: 2, bottom: 1, left: 1}, evolutionPath: ['top', 'right', 'bottom', 'left'], }, // Total: 6
-  { id: 'rune_011', name: 'Escorpedo', image: escorpedo, tier: 'rara', arrows: { top: 1, right: 2, bottom: 2, left: 1}, evolutionPath: ['right', 'bottom', 'left', 'top'], }, // Total: 6
-  { id: 'rune_012', name: 'InfernalSpider', image: infernalSpider, tier: 'rara', arrows: { top: 0, right: 1, bottom: 2, left: 1}, evolutionPath: ['bottom', 'left', 'bottom', 'right'], }, // Total: 6
-  { id: 'rune_013', name: 'LagartoFuego', image: lagartoFuego, tier: 'rara', arrows: { top: 2, right: 2, bottom: 1, left: 0}, evolutionPath: ['top', 'right', 'top', 'bottom'], }, // Total: 5
-  { id: 'rune_014', name: 'Mantatiburon', image: mantatiburon, tier: 'rara', arrows: { top: 1, right: 2, bottom: 1, left: 2}, evolutionPath: ['left', 'right', 'top', 'bottom'], }, // Total: 6
-  { id: 'rune_017', name: 'Rataroke', image: rataroke, tier: 'rara', arrows: { top: 1, right: 3, bottom: 0, left: 2}, evolutionPath: ['right', 'right', 'top', 'left'], }, // Total: 6
-  { id: 'rune_018', name: 'Scorpi', image: scorpi, tier: 'rara', arrows: { top: 2, right: 2, bottom: 1, left: 1}, evolutionPath: ['bottom', 'top', 'right', 'left'], }, // Total: 6
-  { id: 'rune_021', name: 'Gallilien', image: gallilien, tier: 'rara', arrows: { top: 2, right: 1, bottom: 2, left: 1}, evolutionPath: ['top', 'left', 'bottom', 'right'], }, // Total: 6
-  { id: 'rune_022', name: 'Gatuela', image: gatuela, tier: 'rara', arrows: { top: 3, right: 2, bottom: 0, left: 1}, evolutionPath: ['top', 'top', 'right', 'left'], }, // Total: 6
-  { id: 'rune_023', name: 'Piriposa', image: piriposa, tier: 'rara', arrows: { top: 1, right: 1, bottom: 2, left: 2}, evolutionPath: ['left', 'bottom', 'right', 'top'], }, // Total: 6
-  { id: 'rune_030', name: 'NocMare', image: nocMare, tier: 'rara', arrows: { top: 2, right: 1, bottom: 2, left: 1}, evolutionPath: ['bottom', 'top', 'left', 'right'], }, // Total: 6
+  { id: 'rune_010', name: 'Tigreoso', image: tigreoso, tier: 'rara', arrows: { top: 2, right: 2, bottom: 1, left: 1}, startingArrows: { top: 1, right: 1, bottom: 0, left: 0 }, evolutionPath: ['top', 'right', 'bottom', 'left'], }, // Total: 6
+  { id: 'rune_011', name: 'Escorpedo', image: escorpedo, tier: 'rara', arrows: { top: 1, right: 2, bottom: 2, left: 1}, startingArrows: { top: 1, right: 1, bottom: 1, left: 0 }, evolutionPath: ['right', 'bottom', 'left', 'top'], }, // Total: 6
+  { id: 'rune_012', name: 'InfernalSpider', image: infernalSpider, tier: 'rara', arrows: { top: 0, right: 1, bottom: 2, left: 1}, startingArrows: { top: 0, right: 1, bottom: 1, left: 0 }, evolutionPath: ['bottom', 'left', 'bottom', 'right'], }, // Total: 6
+  { id: 'rune_013', name: 'LagartoFuego', image: lagartoFuego, tier: 'rara', arrows: { top: 2, right: 2, bottom: 1, left: 0}, startingArrows: { top: 1, right: 1, bottom: 1, left: 0 }, evolutionPath: ['top', 'right', 'top', 'bottom'], }, // Total: 5
+  { id: 'rune_014', name: 'Mantatiburon', image: mantatiburon, tier: 'rara', arrows: { top: 1, right: 2, bottom: 1, left: 2}, startingArrows: { top: 0, right: 1, bottom: 0, left: 1 }, evolutionPath: ['left', 'right', 'top', 'bottom'], }, // Total: 6
+  { id: 'rune_017', name: 'Rataroke', image: rataroke, tier: 'rara', arrows: { top: 1, right: 3, bottom: 0, left: 2}, startingArrows: { top: 1, right: 1, bottom: 0, left: 1 }, evolutionPath: ['right', 'right', 'top', 'left'], }, // Total: 6
+  { id: 'rune_018', name: 'Scorpi', image: scorpi, tier: 'rara', arrows: { top: 2, right: 2, bottom: 1, left: 1}, startingArrows: { top: 1, right: 1, bottom: 0, left: 0 }, evolutionPath: ['bottom', 'top', 'right', 'left'], }, // Total: 6
+  { id: 'rune_021', name: 'Gallilien', image: gallilien, tier: 'rara', arrows: { top: 2, right: 1, bottom: 2, left: 1}, startingArrows: { top: 1, right: 1, bottom: 1, left: 0 }, evolutionPath: ['top', 'left', 'bottom', 'right'], }, // Total: 6
+  { id: 'rune_022', name: 'Gatuela', image: gatuela, tier: 'rara', arrows: { top: 3, right: 2, bottom: 0, left: 1}, startingArrows: { top: 1, right: 1, bottom: 0, left: 0 }, evolutionPath: ['top', 'top', 'right', 'left'], }, // Total: 6
+  { id: 'rune_023', name: 'Piriposa', image: piriposa, tier: 'rara', arrows: { top: 1, right: 1, bottom: 2, left: 2}, startingArrows: { top: 1, right: 0, bottom: 1, left: 1 }, evolutionPath: ['left', 'bottom', 'right', 'top'], }, // Total: 6
+  { id: 'rune_030', name: 'NocMare', image: nocMare, tier: 'rara', arrows: { top: 2, right: 1, bottom: 2, left: 1}, startingArrows: { top: 1, right: 0, bottom: 1, left: 0 }, evolutionPath: ['bottom', 'top', 'left', 'right'], }, // Total: 6
 
   // ==========================================
   // ÉPICAS (máximo nivel 3)
   // ==========================================
-  { id: 'rune_015', name: 'OrcaVoladora', image: orcaVoladora, tier: 'epica', arrows: { top: 3, right: 3, bottom: 2, left: 2}, evolutionPath: ['top', 'right', 'bottom'], }, // Total: 10
-  { id: 'rune_016', name: 'PezInfernal', image: pezInfernal, tier: 'epica', arrows: { top: 3, right: 3, bottom: 0, left: 3}, evolutionPath: ['left', 'top', 'right'], }, // Total: 9
-  { id: 'rune_019', name: 'Superrayo', image: superrayo, tier: 'epica', arrows: { top: 2, right: 3, bottom: 2, left: 3}, evolutionPath: ['right', 'bottom', 'top'], }, // Total: 10
-  { id: 'rune_024', name: 'Hiereleon', image: hiereleon, tier: 'epica', arrows: { top: 3, right: 2, bottom: 3, left: 2}, evolutionPath: ['bottom', 'left', 'top'], }, // Total: 10
-  { id: 'rune_025', name: 'Scorpano', image: scorpano, tier: 'epica', arrows: { top: 4, right: 3, bottom: 1, left: 2}, evolutionPath: ['top', 'top', 'right'], }, // Total: 10
-  { id: 'rune_026', name: 'Sikifis', image: sikifis, tier: 'epica', arrows: { top: 2, right: 4, bottom: 2, left: 2}, evolutionPath: ['right', 'right', 'bottom'], }, // Total: 10
-  { id: 'rune_027', name: 'Skarpi', image: skarpi, tier: 'epica', arrows: { top: 3, right: 3, bottom: 3, left: 1}, evolutionPath: ['left', 'top', 'bottom'], }, // Total: 10
-  { id: 'rune_028', name: 'Tree-rex', image: treerex, tier: 'epica', arrows: { top: 4, right: 2, bottom: 4, left: 2}, evolutionPath: ['bottom', 'bottom', 'top'], }, // Total: 12 (La más poderosa)
-  { id: 'rune_031', name: 'Triceladro', image: triceladro, tier: 'epica', arrows: { top: 3, right: 2, bottom: 3, left: 2}, evolutionPath: ['top', 'left', 'bottom'], } // Total: 10
+  { id: 'rune_015', name: 'OrcaVoladora', image: orcaVoladora, tier: 'epica', arrows: { top: 3, right: 3, bottom: 2, left: 2}, startingArrows: { top: 2, right: 1, bottom: 1, left: 1 }, evolutionPath: ['top', 'right', 'bottom'], }, // Total: 10
+  { id: 'rune_016', name: 'PezInfernal', image: pezInfernal, tier: 'epica', arrows: { top: 3, right: 3, bottom: 0, left: 3}, startingArrows: { top: 2, right: 2, bottom: 0, left: 1 }, evolutionPath: ['left', 'top', 'right'], }, // Total: 9
+  { id: 'rune_019', name: 'Superrayo', image: superrayo, tier: 'epica', arrows: { top: 2, right: 3, bottom: 2, left: 3}, startingArrows: { top: 1, right: 2, bottom: 1, left: 1 }, evolutionPath: ['right', 'bottom', 'top'], }, // Total: 10
+  { id: 'rune_024', name: 'Hiereleon', image: hiereleon, tier: 'epica', arrows: { top: 3, right: 2, bottom: 3, left: 2}, startingArrows: { top: 2, right: 1, bottom: 1, left: 1 }, evolutionPath: ['bottom', 'left', 'top'], }, // Total: 10
+  { id: 'rune_025', name: 'Scorpano', image: scorpano, tier: 'epica', arrows: { top: 4, right: 3, bottom: 1, left: 2}, startingArrows: { top: 2, right: 2, bottom: 0, left: 1 }, evolutionPath: ['top', 'top', 'right'], }, // Total: 10
+  { id: 'rune_026', name: 'Sikifis', image: sikifis, tier: 'epica', arrows: { top: 2, right: 4, bottom: 2, left: 2}, startingArrows: { top: 1, right: 2, bottom: 1, left: 1 }, evolutionPath: ['right', 'right', 'bottom'], }, // Total: 10
+  { id: 'rune_027', name: 'Skarpi', image: skarpi, tier: 'epica', arrows: { top: 3, right: 3, bottom: 3, left: 1}, startingArrows: { top: 2, right: 2, bottom: 1, left: 0 }, evolutionPath: ['left', 'top', 'bottom'], }, // Total: 10
+  { id: 'rune_028', name: 'Tree-rex', image: treerex, tier: 'epica', arrows: { top: 4, right: 2, bottom: 4, left: 2}, startingArrows: { top: 2, right: 1, bottom: 1, left: 1 }, evolutionPath: ['bottom', 'bottom', 'top'], }, // Total: 12 (La más poderosa)
+  { id: 'rune_031', name: 'Triceladro', image: triceladro, tier: 'epica', arrows: { top: 3, right: 2, bottom: 3, left: 2}, startingArrows: { top: 2, right: 1, bottom: 1, left: 1 }, evolutionPath: ['top', 'left', 'bottom'], } // Total: 10
 ];
 
 // 3 niveles de rocas con sus multiplicadores de probabilidad
