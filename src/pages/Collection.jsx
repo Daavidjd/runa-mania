@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { RUNES_DB } from '../data/runes';
-import { getUserCollection, getPlayerDecks, saveDeck } from '../services/firestore';
+import { getUserCollection, getPlayerDecks, saveDeck, upgradeRune } from '../services/firestore';
 import RuneCard from '../components/RuneCard';
 import RuneDetail from '../components/RuneDetail';
 import './Collection.css';
@@ -73,6 +73,17 @@ const Collection = () => {
     }
     await persistDeck([...deck, rune]);
     setSelectedRune(null);
+  };
+
+  const handleUpgradeRune = async (rune) => {
+    const result = await upgradeRune(user.uid, rune.id, rune.evolutionPath);
+    if (result.success) {
+      setOwnedRunes(previous => ({
+        ...previous,
+        [rune.id]: { ...previous[rune.id], level: result.level, repes: result.repes }
+      }));
+    }
+    return result;
   };
 
   const handleRemoveFromDeck = async (rune, e) => {
@@ -236,6 +247,11 @@ const Collection = () => {
           rune={selectedRune}
           owned={!!ownedRunes[selectedRune.id]}
           quantity={ownedRunes[selectedRune.id]?.quantity || 0}
+          level={ownedRunes[selectedRune.id]?.level || 1}
+          repes={Number.isFinite(Number(ownedRunes[selectedRune.id]?.repes))
+            ? Number(ownedRunes[selectedRune.id].repes)
+            : Math.max(0, (ownedRunes[selectedRune.id]?.quantity || 1) - 1)}
+          onUpgradeRune={handleUpgradeRune}
           onClose={() => setSelectedRune(null)}
           onAddToDeck={handleAddToDeck}
           isInDeck={isInDeck(selectedRune)}
