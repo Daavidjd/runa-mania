@@ -149,7 +149,10 @@ const Battle = () => {
             const owned = ownedById[id];
             const level = Math.max(1, Math.min(baseRune.evolutionPath?.length || 1, Number(owned?.level) || 1));
             const arrows = { top: 0, right: 0, bottom: 0, left: 0 };
-            (baseRune.evolutionPath || []).slice(0, level).forEach(direction => {
+            ['top', 'right', 'bottom', 'left'].forEach(direction => {
+              arrows[direction] = Math.max(0, Number(baseRune.startingArrows?.[direction]) || 0);
+            });
+            (baseRune.evolutionPath || []).slice(0, Math.max(0, level - 1)).forEach(direction => {
               if (Object.prototype.hasOwnProperty.call(arrows, direction)) arrows[direction] += 1;
             });
             return { ...baseRune, arrows, level, owner: 'player' };
