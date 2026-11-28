@@ -39,7 +39,18 @@ const getCurrentRuneDisplay = async (userId, rune) => {
   const baseArrows = rune.startingArrows || ownedRune.startingArrows || ownedRune.arrows || rune.arrows || {};
   ['top', 'right', 'bottom', 'left'].forEach(direction => { arrows[direction] = Number(baseArrows[direction]) || 0; });
   (ownedRune.evolutionPath || []).slice(0, level - 1).forEach(direction => { if (Object.prototype.hasOwnProperty.call(arrows, direction)) arrows[direction] += 1; });
-  return { ...rune, ...ownedRune, arrows, level, repes: Math.max(0, Number(ownedRune.repes) || 0) };
+  const evolutionPath = rune.evolutionPath || ownedRune.evolutionPath || [];
+  evolutionPath.slice(0, level - 1).forEach(direction => {
+    if (Object.prototype.hasOwnProperty.call(arrows, direction)) arrows[direction] += 1;
+  });
+  return {
+    ...ownedRune,
+    ...rune,
+    image: rune.image || ownedRune.image,
+    arrows,
+    level,
+    repes: Math.max(0, Number(ownedRune.repes) || 0)
+  };
 };
 
 const RuneDuplicateProgress = ({ rune }) => {
@@ -47,10 +58,17 @@ const RuneDuplicateProgress = ({ rune }) => {
   const cost = 3 * Math.max(1, Number(rune.level) || 1);
   const repes = Math.max(0, Number(rune.repes) || 0);
   const progress = Math.min(100, (repes / cost) * 100);
-  return <div className="miner-duplicate-progress" aria-label={'Progreso de repes: ' + Math.min(repes, cost) + ' de ' + cost}>
-    <div className="miner-duplicate-progress-fill" style={{ width: progress + '%' }} />
-    <span>{Math.min(repes, cost)}/{cost}</span>
-  </div>;
+  return (
+    <div className="miner-duplicate-progress" role="progressbar" aria-label="Progreso para mejorar la runa" aria-valuemin={0} aria-valuemax={cost} aria-valuenow={Math.min(repes, cost)}>
+      <div className="miner-duplicate-progress-heading">
+        <span>PROGRESO DE MEJORA</span>
+        <strong>{repes} / {cost}</strong>
+      </div>
+      <div className="miner-duplicate-progress-track">
+        <div className="miner-duplicate-progress-fill" style={{ width: progress + '%' }} />
+      </div>
+    </div>
+  );
 };
 const RockMiner = ({ onClose, rockType = 'normal', pickaxeType = null }) => {
   const isPickaxeRun = Boolean(pickaxeType);
