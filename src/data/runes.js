@@ -147,5 +147,13 @@ export const getRandomRune = (rockType = 'normal') => {
                : selectedTier === 'rara' ? raraRunes 
                : epicaRunes;
                
-  return pool[Math.floor(Math.random() * pool.length)];
+  const selectedRune = pool[Math.floor(Math.random() * pool.length)];
+  return {
+    ...selectedRune,
+    // La runa recién obtenida muestra sus flechas iniciales según la rareza.
+    arrows: { ...(selectedRune.startingArrows || selectedRune.arrows) },
+    level: 1,
+    quantity: 1,
+    repes: 0
+  };
 };
