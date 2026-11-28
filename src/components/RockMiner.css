@@ -226,3 +226,10 @@ button.reveal-rune-box {
  .pickaxe-rock-card:first-child { width:58%; }
  .pickaxe-rock-card .reveal-rune-box { width:85px; height:85px; }
 }
+
+/* Progreso de copias repetidas bajo la runa obtenida */
+.reveal-rune-stack{display:flex;flex-direction:column;align-items:center;gap:9px}
+.miner-duplicate-progress{position:relative;width:140px;height:9px;overflow:hidden;border-radius:999px;background:#1e293b;border:1px solid #475569;box-sizing:border-box;box-shadow:inset 0 1px 3px rgba(0,0,0,.7)}
+.miner-duplicate-progress-fill{height:100%;border-radius:inherit;background:linear-gradient(90deg,#0891b2,#38bdf8,#7dd3fc);transition:width .35s ease}
+.miner-duplicate-progress span{position:absolute;inset:-2px 0 0;display:flex;justify-content:center;align-items:center;color:#fff;font-size:7px;line-height:1;font-weight:900;text-shadow:0 1px 2px #020617}
+@media(max-width:520px){.pickaxe-rock-card .miner-duplicate-progress{width:85px}}
