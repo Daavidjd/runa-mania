@@ -719,3 +719,18 @@
   82% { transform: rotateY(-35deg) scale(1.08); }
   100% { transform: rotateY(0deg) scale(1); }
 }
+
+
+/* El aviso de turno usa el color del jugador al que corresponde la acción.
+   Funciona igual en partidas online y contra LarryKaberga. */
+.bp-turn-indicator.bp-turn-color-red {
+  border-color: rgba(244, 67, 54, .9) !important;
+  background: linear-gradient(135deg, rgba(105, 25, 30, .96), rgba(48, 13, 23, .96)) !important;
+  box-shadow: 0 0 16px rgba(244, 67, 54, .24), inset 0 0 12px rgba(244, 67, 54, .08) !important;
+}
+
+.bp-turn-indicator.bp-turn-color-blue {
+  border-color: rgba(33, 150, 243, .95) !important;
+  background: linear-gradient(135deg, rgba(17, 61, 112, .96), rgba(10, 28, 57, .96)) !important;
+  box-shadow: 0 0 16px rgba(33, 150, 243, .24), inset 0 0 12px rgba(33, 150, 243, .08) !important;
+}
