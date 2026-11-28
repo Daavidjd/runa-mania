@@ -56,7 +56,10 @@
 }
 
 .shop-header-icon {
-  font-size: 24px;
+  width: 34px;
+  height: 34px;
+  object-fit: contain;
+  flex-shrink: 0;
 }
 
 .shop-title {
@@ -398,3 +401,8 @@
   font-size: 12px;
   font-weight: 900;
 }
+
+.rock-buy-btn:disabled {
+  opacity: 0.75;
+}
+

@@ -1,792 +1,425 @@
-/* ==========================================================================
-   HOME.CSS - CENTRO DE MANDO Y ARENA RÚNICA
-   ========================================================================== */
-
+/* RUNA-MANIA — HOME / FANTASÍA RÚNICA
+   Rediseño visual completo. Mantiene intactos los elementos y flujos existentes. */
 .home-screen {
-  min-height: 100vh;
-  background: #0b0f19;
-  display: flex;
-  flex-direction: column;
-  padding-bottom: 84px;
-  box-sizing: border-box;
-  user-select: none;
-  max-width: 480px;
-  margin: 0 auto;
-}
-
-/* --------------------------------------------------------------------------
-   1. HUD SUPERIOR (ANCLADO ARRIBA CON STICKY)
-   -------------------------------------------------------------------------- */
-.home-hud {
-  position: sticky;
-  top: 0;
-  z-index: 50;
-  background: #141a29;
-  border-bottom: 4px solid #070a12;
-  padding: 12px 14px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.45);
-}
-
-.hud-profile-pill {
-  background: #090d18;
-  border: 2px solid #1c273e;
-  border-radius: 20px;
-  padding: 4px 12px 4px 6px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  cursor: pointer;
-  transition: transform 0.12s ease;
-}
-
-.hud-profile-pill:hover {
-  transform: translateY(-2px);
-  border-color: #2b3e63;
-}
-
-.hud-avatar-img {
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  border: 2px solid #00d4ff;
-  object-fit: cover;
-  box-shadow: 0 2px 0 #0088a3;
-  flex-shrink: 0;
-}
-
-.hud-player-meta {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  text-align: left;
-}
-
-.hud-name {
-  color: #ffffff;
-  font-size: 13px;
-  font-weight: 900;
-  line-height: 1.1;
-  text-shadow: 0 1px 2px #000;
-}
-
-.hud-id {
-  color: #7284a3;
-  font-size: 10px;
-  font-weight: 800;
-  letter-spacing: 0.3px;
-}
-
-.hud-coins-pill {
-  background: #090d18;
-  border: 2px solid #ffd000;
-  border-radius: 14px;
-  padding: 6px 12px;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  cursor: default;
-  box-shadow: 0 3px 0 #8c5e00;
-}
-
-.coin-icon {
-  font-size: 14px;
-}
-
-.coin-amount {
-  color: #ffffff;
-  font-size: 14px;
-  font-weight: 900;
-}
-
-/* --------------------------------------------------------------------------
-   2. ARENA CENTRAL Y BOTÓN DE BATALLA
-   -------------------------------------------------------------------------- */
-.home-arena-stage {
-  padding: 14px;
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-}
-
-.runic-arena-altar {
-  background: #121828;
-  border: 4px solid #1c273e;
-  border-radius: 24px;
-  padding: 16px 14px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  box-shadow: 
-    0 8px 0 #080c14,
-    0 14px 20px rgba(0, 0, 0, 0.5),
-    inset 0 2px 4px rgba(255, 255, 255, 0.08);
-}
-
-/* Badge NPC clickeable */
-.arena-npc-badge {
-  background: #090d18;
-  border: 2px solid #00d4ff;
-  border-radius: 12px;
-  padding: 4px 20px;
-  cursor: pointer;
-  box-shadow: 0 3px 0 #006b80;
-  transition: all 0.2s ease;
-  margin-bottom: 12px;
-}
-
-.arena-npc-badge:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 5px 0 #006b80, 0 0 15px rgba(0, 212, 255, 0.4);
-}
-
-.arena-npc-badge:active {
-  transform: translateY(1px);
-  box-shadow: 0 2px 0 #006b80;
-}
-
-.npc-badge-title {
-  color: #00d4ff;
-  font-size: 12px;
-  font-weight: 900;
-  letter-spacing: 1.5px;
-}
-
-/* ==========================================================================
-   TARJETA DEL RIVAL (Layout vertical centrado)
-   ========================================================================== */
-.selected-opponent-card {
-  width: 100%;
-  max-width: 320px;
-  background: transparent;
-  border: none;
-  border-radius: 16px;
-  padding: 10px 16px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 10px;
-  cursor: pointer;
-  margin: 0 auto 14px auto;
-  box-shadow: none;
-}
-
-/* Avatar grande cuadrado con borde cyan */
-.opponent-avatar-box {
-  width: 80px;
-  height: 80px;
-  border-radius: 14px;
-  border: 3px solid #00d4ff;
-  overflow: hidden;
-  flex-shrink: 0;
-  background: #090d18;
-  box-shadow: 0 4px 0 #006b80, 0 0 16px rgba(0, 212, 255, 0.3);
-}
-
-.opponent-avatar {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-/* Info box: nombre y recompensa centrados debajo del avatar */
-.opponent-info-box {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  align-items: center;
-  justify-content: center;
-}
-
-/* Nombre en cyan, grande y bold */
-.opponent-name {
-  color: #00d4ff;
-  font-size: 20px;
-  font-weight: 900;
-  line-height: 1.1;
-  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.6);
-  letter-spacing: 0.3px;
-  text-align: center;
-}
-
-/* Píldora de recompensa: fondo amarillo, texto NEGRO */
-.opponent-reward {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  background: #ffd000;
-  border: none;
-  border-radius: 10px;
-  padding: 6px 14px;
-  width: fit-content;
-  box-shadow: none;
-}
-
-.opponent-reward .reward-coin-icon {
-  font-size: 14px;
-}
-
-.opponent-reward .reward-amount {
-  color: #000000 !important;
-  font-size: 14px;
-  font-weight: 900;
-  text-shadow: none;
-}
-
-/* Ocultar la dificultad */
-.opponent-difficulty {
-  display: none;
-}
-
-.opponent-stats {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-/* --------------------------------------------------------------------------
-   BOTÓN DE BATALLA
-   -------------------------------------------------------------------------- */
-.huge-battle-cta {
-  width: 100%;
-  max-width: 320px;
-  background: #ffd000;
-  border: 4px solid #fff275;
-  border-radius: 18px;
-  padding: 12px 14px;
-  cursor: pointer;
-  box-shadow: 
-    0 8px 0 #9e6400,
-    0 12px 18px rgba(0, 0, 0, 0.5),
-    inset 0 3px 4px rgba(255, 255, 255, 0.6);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
+  --rune-night: #090d1c;
+  --rune-deep: #10152a;
+  --rune-panel: #171d36;
+  --rune-panel-hi: #202744;
+  --rune-cyan: #62e5ee;
+  --rune-violet: #9c7bff;
+  --rune-gold: #e9c477;
   position: relative;
+  isolation: isolate;
+  min-height: 100vh;
+  padding-bottom: 104px;
   overflow: hidden;
-  transition: transform 0.08s ease, box-shadow 0.08s ease;
+  color: #f5f0ff;
+  background:
+    radial-gradient(ellipse at 50% 34%, rgba(116,84,220,.19), transparent 42%),
+    radial-gradient(ellipse at 12% 72%, rgba(40,159,190,.10), transparent 34%),
+    radial-gradient(ellipse at 88% 18%, rgba(218,169,94,.08), transparent 30%),
+    linear-gradient(180deg, #0b1020 0%, #11152b 48%, #090e1d 100%);
 }
-
-.huge-battle-cta:hover {
-  transform: translateY(-2px);
-  background: #ffdb1a;
-}
-
-.huge-battle-cta:active {
-  transform: translateY(6px);
-  box-shadow: 0 2px 0 #9e6400;
-}
-
-/* Estado deshabilitado */
-.huge-battle-cta.cta-disabled {
-  background: #2a3441;
-  border-color: #4a5568;
-  cursor: not-allowed;
-  box-shadow: 
-    0 8px 0 #1a202c,
-    0 12px 18px rgba(0, 0, 0, 0.5),
-    inset 0 3px 4px rgba(255, 255, 255, 0.05);
-  opacity: 0.7;
-}
-
-.huge-battle-cta.cta-disabled:hover {
-  transform: none;
-  background: #2a3441;
-}
-
-.huge-battle-cta.cta-disabled:active {
-  transform: none;
-  box-shadow: 
-    0 8px 0 #1a202c,
-    0 12px 18px rgba(0, 0, 0, 0.5),
-    inset 0 3px 4px rgba(255, 255, 255, 0.05);
-}
-
-.huge-battle-cta.cta-disabled .cta-txt {
-  color: #a0aec0;
-  text-shadow: none;
-  letter-spacing: 1px;
-}
-
-.huge-battle-cta.cta-disabled .cta-sub {
-  color: #718096;
-}
-
-.huge-battle-cta.cta-disabled .cta-swords {
-  filter: grayscale(100%) opacity(0.6);
-}
-
-.huge-battle-cta.cta-disabled .cta-glare {
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.08) 0%, transparent 100%);
-}
-
-.cta-glare {
+.home-screen::before,
+.home-screen::after {
+  content: "";
   position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 45%;
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.4) 0%, transparent 100%);
+  z-index: -1;
   pointer-events: none;
 }
-
-.cta-main-content {
-  display: flex;
-  align-items: center;
-  gap: 8px;
+.home-screen::before {
+  inset: 0;
+  opacity: .20;
+  background-image:
+    radial-gradient(circle at center, rgba(174,157,255,.55) 1px, transparent 1.5px),
+    radial-gradient(circle at center, rgba(99,226,239,.35) 1px, transparent 1.5px);
+  background-size: 73px 73px, 113px 113px;
+  background-position: 8px 17px, 42px 61px;
+  mask-image: linear-gradient(to bottom, #000 0%, transparent 85%);
 }
-
-.cta-swords {
-  font-size: 24px;
-  filter: drop-shadow(0 2px 2px rgba(0, 0, 0, 0.4));
+.home-screen::after {
+  width: min(78vw, 700px);
+  aspect-ratio: 1;
+  left: 50%;
+  top: 48%;
+  transform: translate(-50%, -50%);
+  opacity: .11;
+  border: 1px solid rgba(164,139,255,.55);
+  border-radius: 50%;
+  box-shadow: 0 0 0 18px rgba(164,139,255,.035), 0 0 0 54px rgba(164,139,255,.025), inset 0 0 75px rgba(93,65,191,.16);
 }
-
-.cta-txt {
-  font-size: 22px;
-  font-weight: 900;
-  color: #2b1700;
-  letter-spacing: 1.5px;
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.6);
-}
-
-.cta-sub {
-  font-size: 9px;
-  font-weight: 900;
-  color: #5c3800;
-  letter-spacing: 1px;
-}
-
-/* --------------------------------------------------------------------------
-   3. VISTA PREVIA DEL MAZO (1 sola línea horizontal)
-   -------------------------------------------------------------------------- */
-.home-deck-preview {
-  background: #121828;
-  border: 3px solid #1c273e;
-  border-radius: 20px;
-  padding: 14px;
-  box-shadow: 0 6px 0 #080c14, 0 10px 16px rgba(0, 0, 0, 0.4);
-}
-
-.deck-preview-header {
+.home-hud {
+  position: relative;
+  z-index: 1;
+  width: min(100%, 1120px);
+  margin: 0 auto;
+  padding: 17px clamp(16px, 4vw, 40px);
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 12px;
-  padding: 0 4px;
+  box-sizing: border-box;
+  border-bottom: 1px solid rgba(177,158,240,.18);
+  background: linear-gradient(90deg, rgba(11,15,32,.88), rgba(24,25,51,.76), rgba(11,15,32,.88));
+  box-shadow: 0 8px 30px rgba(0,0,0,.18);
+  backdrop-filter: blur(14px);
 }
-
-.deck-preview-title {
-  color: #9cb1d6;
-  font-size: 12px;
-  font-weight: 900;
-  letter-spacing: 1px;
-  text-transform: uppercase;
-}
-
-.deck-preview-count {
-  background: #090d18;
-  color: #00d4ff;
-  border: 1.5px solid #1c273e;
-  border-radius: 8px;
-  font-size: 12px;
-  font-weight: 900;
-  padding: 3px 12px;
-}
-
-.deck-preview-track {
-  display: grid;
-  grid-template-columns: repeat(8, 1fr);
-  justify-items: center;
-  align-items: center;
-  gap: 6px;
-  width: 100%;
-}
-
-.deck-preview-slot {
-  width: 100%;
-  max-width: 56px;
-  aspect-ratio: 1;
-  flex-shrink: 0;
-}
-
-.deck-preview-empty {
-  width: 100%;
-  height: 100%;
-  border-radius: 14px;
-  border: 2px dashed #243350;
-  background: rgba(16, 23, 38, 0.45);
+.hud-profile-pill {
   display: flex;
   align-items: center;
-  justify-content: center;
-}
-
-.deck-preview-empty .empty-plus {
-  color: #4a638f;
-  font-size: 20px;
-  font-weight: 900;
-}
-
-.deck-preview-slot .rune-battle {
-  padding: 4px !important;
-  border-width: 2px !important;
-}
-
-.deck-preview-slot .rune-battle .battle-inner {
-  width: 85% !important;
-  height: 85% !important;
-}
-
-.deck-preview-slot .rune-battle .battle-image {
-  height: 85% !important;
-}
-
-.deck-preview-slot .rune-battle .battle-arrow {
-  font-size: 8px !important;
-}
-
-/* --------------------------------------------------------------------------
-   4. PRÓXIMAMENTE (PvP)
-   -------------------------------------------------------------------------- */
-.home-coming-soon {
-  margin-top: 20px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  opacity: 0.6;
-}
-
-.coming-soon-rune {
-  color: #4a638f;
-  font-size: 14px;
-}
-
-.coming-soon-text {
-  color: #4a638f;
-  font-size: 10px;
-  font-weight: 800;
-  letter-spacing: 0.5px;
-  text-transform: uppercase;
-}
-
-/* ==========================================================================
-   MODAL DE SELECCIÓN DE RIVALES
-   ========================================================================== */
-.opponent-modal-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(4, 7, 15, 0.9);
-  backdrop-filter: blur(6px);
-  z-index: 9999;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 20px;
-  animation: fadeIn 0.2s ease;
-}
-
-@keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
-
-.opponent-modal {
-  background: #0f172a;
-  border: 3px solid #1e293b;
-  border-radius: 24px;
-  padding: 24px;
-  width: 100%;
-  max-width: 360px;
-  position: relative;
-  box-shadow: 0 10px 0 #020617, 0 20px 40px rgba(0, 0, 0, 0.8);
-  animation: modalPop 0.3s cubic-bezier(0.18, 0.89, 0.32, 1.28);
-}
-
-@keyframes modalPop {
-  from {
-    transform: scale(0.85);
-    opacity: 0;
-  }
-  to {
-    transform: scale(1);
-    opacity: 1;
-  }
-}
-
-.opponent-modal-close {
-  position: absolute;
-  top: -12px;
-  right: -12px;
-  width: 34px;
-  height: 34px;
-  border-radius: 50%;
-  background: #ef4444;
-  border: 3px solid #0f172a;
-  color: #ffffff;
-  font-size: 18px;
-  font-weight: 900;
+  gap: 11px;
+  padding: 5px 16px 5px 5px;
+  border: 1px solid rgba(163,143,235,.35);
+  border-radius: 999px;
+  background: linear-gradient(135deg, rgba(42,43,76,.94), rgba(17,24,46,.96));
   cursor: pointer;
-  box-shadow: 0 3px 0 #991b1b;
-  transition: transform 0.1s ease;
-  z-index: 10;
+  transition: border-color .25s ease, transform .25s ease, box-shadow .25s ease;
 }
-
-.opponent-modal-close:hover {
-  transform: scale(1.1);
-}
-
-.opponent-modal-close:active {
-  transform: scale(0.95);
-}
-
-.opponent-modal-title {
-  margin: 0 0 20px 0;
-  color: #ffffff;
-  font-size: 16px;
-  font-weight: 900;
-  text-align: center;
-  letter-spacing: 1.5px;
-  text-transform: uppercase;
-}
-
-.opponent-modal-list {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.opponent-modal-btn {
-  background: #121828;
-  border: 2px solid #1e293b;
-  border-radius: 14px;
-  padding: 10px 12px;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  width: 100%;
-}
-
-.opponent-modal-btn:hover {
-  background: #1a2438;
-  transform: translateY(-2px);
-}
-
-.opponent-modal-btn.is-selected {
-  background: #0d1527;
-  box-shadow: 0 0 0 2px currentColor;
-}
-
-.opp-modal-avatar-box {
+.hud-profile-pill:hover { transform: translateY(-2px); border-color: var(--rune-cyan); box-shadow: 0 0 20px rgba(98,229,238,.13); }
+.hud-avatar-img {
   width: 44px;
   height: 44px;
-  border-radius: 10px;
-  border: 2px solid #334155;
-  overflow: hidden;
-  flex-shrink: 0;
-}
-
-.opp-modal-avatar {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.opp-modal-info {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  flex: 1;
-  text-align: left;
-}
-
-.opp-modal-name {
-  color: #ffffff;
-  font-size: 14px;
-  font-weight: 900;
-  line-height: 1.1;
-}
-
-.opp-modal-difficulty {
-  font-size: 10px;
-  font-weight: 800;
-  letter-spacing: 0.5px;
-}
-
-.opp-modal-reward {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  background: #060a14;
-  border: 1px solid #1e293b;
-  border-radius: 8px;
-  padding: 4px 10px;
-}
-
-.reward-coin {
-  font-size: 12px;
-}
-
-.reward-amount {
-  color: #ffd000;
-  font-size: 12px;
-  font-weight: 900;
-}
-/* ============================================================
-   🌐 BOTÓN DE BATALLA ONLINE (matchmaking aleatorio)
-   ============================================================ */
-.online-battle-btn {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 2px;
-  width: min(320px, 90%);
-  margin-top: 14px;
-  padding: 12px 18px;
-  border: none;
-  border-radius: 14px;
-  cursor: pointer;
-  background: linear-gradient(180deg, #7c3aed 0%, #4c1d95 100%);
-  box-shadow: 0 4px 0 #2e1065, 0 6px 18px rgba(124, 58, 237, 0.45);
-  color: #fff;
-  transition: transform 0.15s ease, box-shadow 0.15s ease, filter 0.15s ease;
-}
-
-.online-battle-btn:hover:not(.online-disabled) {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 0 #2e1065, 0 10px 26px rgba(124, 58, 237, 0.6);
-  filter: brightness(1.08);
-}
-
-.online-battle-btn:active:not(.online-disabled) {
-  transform: translateY(2px);
-  box-shadow: 0 2px 0 #2e1065, 0 4px 12px rgba(124, 58, 237, 0.4);
-}
-
-.online-btn-icon {
-  font-size: 1.3rem;
-  line-height: 1;
-}
-
-.online-btn-txt {
-  font-weight: 800;
-  font-size: 1rem;
-  letter-spacing: 1.5px;
-}
-
-.online-btn-sub {
-  font-size: 0.7rem;
-  opacity: 0.85;
-  letter-spacing: 0.5px;
-}
-
-.online-battle-btn.online-disabled {
-  background: linear-gradient(180deg, #4b5563 0%, #374151 100%);
-  box-shadow: 0 4px 0 #1f2937;
-  opacity: 0.75;
-  cursor: not-allowed;
-}
-
-/* ---- Estado buscando rival ---- */
-.online-search-box {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 10px;
-  width: min(320px, 90%);
-  margin-top: 14px;
-  padding: 14px 18px;
-  border-radius: 14px;
-  background: rgba(76, 29, 149, 0.25);
-  border: 1px solid rgba(139, 92, 246, 0.5);
-  animation: online-pulse-border 1.6s ease-in-out infinite;
-}
-
-@keyframes online-pulse-border {
-  0%, 100% { border-color: rgba(139, 92, 246, 0.35); box-shadow: 0 0 0 rgba(139, 92, 246, 0); }
-  50% { border-color: rgba(139, 92, 246, 0.9); box-shadow: 0 0 18px rgba(139, 92, 246, 0.35); }
-}
-
-.online-search-row {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.online-search-orb {
-  width: 26px;
-  height: 26px;
+  border: 2px solid var(--rune-gold);
   border-radius: 50%;
-  border: 3px solid rgba(255, 255, 255, 0.15);
-  border-top-color: #a78bfa;
-  border-right-color: #60a5fa;
-  animation: online-spin 0.9s linear infinite;
+  object-fit: cover;
+  box-shadow: 0 0 0 3px rgba(233,196,119,.12), 0 0 18px rgba(233,196,119,.22);
 }
-
-@keyframes online-spin {
-  to { transform: rotate(360deg); }
+.hud-player-meta { display: flex; flex-direction: column; align-items: flex-start; gap: 3px; }
+.hud-name { color: #fff8e9; font-size: 13px; font-weight: 850; letter-spacing: .3px; }
+.hud-id { color: #a99fc9; font-size: 9px; font-weight: 850; letter-spacing: 1.5px; }
+.hud-coins-pill {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 16px;
+  border: 1px solid rgba(233,196,119,.48);
+  border-radius: 999px;
+  background: linear-gradient(135deg, rgba(62,48,42,.86), rgba(27,25,42,.94));
+  box-shadow: inset 0 1px rgba(255,255,255,.08), 0 5px 18px rgba(0,0,0,.18);
 }
-
-.online-search-text {
+.coin-icon { font-size: 16px; filter: drop-shadow(0 0 5px rgba(233,196,119,.45)); }
+.coin-amount { color: #f4d99b; font-size: 14px; font-weight: 900; font-variant-numeric: tabular-nums; }
+.home-arena-stage {
+  position: relative;
+  z-index: 1;
+  width: min(100% - 32px, 760px);
+  margin: 0 auto;
+  padding: clamp(42px, 9vh, 86px) 0 30px;
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
+  align-items: center;
+  gap: 22px;
 }
-
-.online-search-title {
-  color: #e9d5ff;
-  font-weight: 800;
-  font-size: 0.85rem;
-  letter-spacing: 1.5px;
+.unified-battle-card {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  width: min(100%, 540px);
+  box-sizing: border-box;
+  padding: clamp(24px, 4vw, 36px) clamp(18px, 4vw, 40px) 32px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 24px;
+  border: 1px solid rgba(174,151,241,.48);
+  border-radius: 25px;
+  background:
+    radial-gradient(ellipse at 50% 0%, rgba(126,97,217,.23), transparent 52%),
+    linear-gradient(145deg, rgba(35,38,72,.98), rgba(15,21,43,.99) 72%);
+  box-shadow: 0 30px 75px rgba(0,0,0,.48), 0 0 42px rgba(109,83,205,.12), inset 0 1px rgba(255,255,255,.12);
 }
-
-.online-search-sub {
-  color: #c4b5fd;
-  font-size: 0.7rem;
-  letter-spacing: 0.5px;
+.unified-battle-card::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  top: 0;
+  left: 10%;
+  width: 80%;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--rune-gold), #b49aff, var(--rune-cyan), transparent);
+  box-shadow: 0 0 16px rgba(180,154,255,.55);
 }
-
-.online-cancel-btn {
-  border: 1px solid rgba(248, 113, 113, 0.6);
-  background: rgba(239, 68, 68, 0.15);
-  color: #fca5a5;
-  font-size: 0.75rem;
-  font-weight: 700;
-  padding: 6px 14px;
+.unified-battle-card::after {
+  content: "ᚱ";
+  position: absolute;
+  z-index: -1;
+  right: -14px;
+  bottom: -65px;
+  color: rgba(182,164,255,.045);
+  font-family: serif;
+  font-size: 220px;
+  line-height: 1;
+  transform: rotate(-12deg);
+  pointer-events: none;
+}
+.unified-battle-card.is-online { border-color: rgba(98,229,238,.52); }
+.battle-mode-switch {
+  width: min(100%, 330px);
+  padding: 4px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 5px;
+  border: 1px solid rgba(170,153,230,.28);
+  border-radius: 14px;
+  background: rgba(7,11,26,.76);
+  box-shadow: inset 0 2px 9px rgba(0,0,0,.42), 0 5px 16px rgba(0,0,0,.18);
+}
+.battle-mode-option {
+  min-height: 44px;
+  border: 1px solid transparent;
   border-radius: 10px;
+  color: #aaa5c5;
+  background: transparent;
+  font-size: 12px;
+  font-weight: 950;
+  letter-spacing: 1.8px;
   cursor: pointer;
-  transition: background 0.15s ease;
+  transition: color .2s ease, background .2s ease, box-shadow .2s ease, transform .2s ease;
 }
-
-.online-cancel-btn:hover {
-  background: rgba(239, 68, 68, 0.35);
+.battle-mode-option:hover:not(:disabled) { color: #fff; }
+.battle-mode-option:active:not(:disabled) { transform: scale(.98); }
+.battle-mode-option.active {
+  color: #17152b;
+  border-color: #e8d39e;
+  background: linear-gradient(180deg, #f1d99e, #c99d58);
+  box-shadow: 0 2px 0 #80603b, 0 0 19px rgba(233,196,119,.20), inset 0 1px rgba(255,255,255,.7);
 }
-
-/* ---- Error transitorio (mazo incompleto / sin conexión) ---- */
+.battle-mode-option:disabled { opacity: .5; cursor: not-allowed; }
+.unified-battle-card .selected-opponent-card {
+  width: min(100%, 320px);
+  margin: 0;
+  padding: 5px 12px 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  border: 1px solid transparent;
+  border-radius: 17px;
+  background: transparent;
+  box-shadow: none;
+  cursor: pointer;
+  transition: transform .25s ease, filter .25s ease;
+}
+.unified-battle-card .selected-opponent-card:hover { transform: translateY(-3px); filter: brightness(1.08); }
+.unified-battle-card .opponent-avatar-box {
+  position: relative;
+  width: clamp(122px, 23vw, 154px);
+  height: clamp(122px, 23vw, 154px);
+  flex: none;
+  overflow: hidden;
+  border: 2px solid #d5bd85;
+  border-radius: 50%;
+  background: #11152b;
+  box-shadow: 0 0 0 5px rgba(233,196,119,.10), 0 0 0 10px rgba(156,123,255,.08), 0 0 38px rgba(156,123,255,.25), 0 15px 28px rgba(0,0,0,.4);
+}
+.unified-battle-card .opponent-avatar { display: block; width: 100%; height: 100%; border-radius: 50%; object-fit: cover; }
+.unified-battle-card .opponent-info-box { display: flex; flex-direction: column; align-items: center; gap: 7px; }
+.unified-battle-card .opponent-name { color: #fff7e8; font-family: Georgia, 'Times New Roman', serif; font-size: clamp(25px, 4vw, 30px); font-weight: 700; letter-spacing: .4px; line-height: 1.1; text-shadow: 0 2px 12px rgba(0,0,0,.55); }
+.opponent-selected-difficulty { font-size: 10px; font-weight: 950; letter-spacing: 2.2px; }
+.battle-mode-label {
+  margin-top: 5px;
+  padding: 8px 16px;
+  border: 1px solid rgba(98,229,238,.42);
+  border-radius: 999px;
+  color: #a4f6f7;
+  background: rgba(36,157,174,.10);
+  box-shadow: 0 0 18px rgba(98,229,238,.08);
+  font-size: 9px;
+  font-weight: 900;
+  letter-spacing: 1.7px;
+}
+.online-mode-icon {
+  width: 132px;
+  height: 132px;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(98,229,238,.7);
+  border-radius: 50%;
+  color: #b7fbff;
+  font-family: Georgia, serif;
+  font-size: 62px;
+  font-weight: 300;
+  background: radial-gradient(circle, rgba(98,229,238,.19), rgba(42,37,83,.42) 67%, rgba(8,15,32,.8));
+  box-shadow: 0 0 0 7px rgba(98,229,238,.06), 0 0 42px rgba(98,229,238,.18), inset 0 0 28px rgba(156,123,255,.18);
+}
+.unified-battle-card .huge-battle-cta {
+  position: relative;
+  overflow: hidden;
+  width: 100%;
+  max-width: 380px;
+  min-height: 64px;
+  margin-top: 0;
+  padding: 14px 18px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #f6dfa7;
+  border-radius: 13px;
+  color: #281d14;
+  background: linear-gradient(180deg, #f3d99d 0%, #d7ad69 54%, #b88648 100%);
+  box-shadow: 0 4px 0 #76502f, 0 12px 26px rgba(0,0,0,.35), inset 0 1px rgba(255,255,255,.72), inset 0 -2px rgba(104,67,35,.18);
+  cursor: pointer;
+  transition: transform .18s ease, filter .18s ease, box-shadow .18s ease;
+}
+.unified-battle-card .huge-battle-cta:hover:not(:disabled) { transform: translateY(-3px); filter: brightness(1.08); box-shadow: 0 5px 0 #76502f, 0 16px 30px rgba(0,0,0,.4), 0 0 24px rgba(233,196,119,.18); }
+.unified-battle-card .huge-battle-cta:active:not(:disabled) { transform: translateY(2px); box-shadow: 0 2px 0 #76502f; }
+.cta-glare { position: absolute; inset: 0 0 auto; height: 48%; pointer-events: none; background: linear-gradient(rgba(255,255,255,.35), transparent); }
+.cta-main-content { display: flex; align-items: center; justify-content: center; gap: 10px; }
+.cta-swords { font-size: 21px; }
+.unified-battle-card .cta-txt { color: #2b2014; font-family: Georgia, 'Times New Roman', serif; font-size: 21px; font-weight: 900; letter-spacing: 2.2px; text-shadow: 0 1px rgba(255,255,255,.25); }
+.cta-sub { margin-top: 4px; color: #5b4025; font-size: 9px; font-weight: 850; letter-spacing: .4px; }
+.unified-battle-card .huge-battle-cta.cta-disabled {
+  border-color: #667087;
+  color: #b4c1ce;
+  background: linear-gradient(180deg, #4a5066, #30364d);
+  box-shadow: 0 4px 0 #1b2034, 0 10px 20px rgba(0,0,0,.2);
+  cursor: not-allowed;
+  opacity: .84;
+}
+.unified-battle-card .huge-battle-cta.cta-disabled .cta-txt { color: #d1d5e1; }
+.unified-battle-card .huge-battle-cta.cta-disabled .cta-sub { color: #b1b5c5; }
+.online-search-box {
+  width: min(100%, 350px);
+  box-sizing: border-box;
+  padding: 21px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  border: 1px solid rgba(98,229,238,.42);
+  border-radius: 17px;
+  background: linear-gradient(145deg, rgba(11,26,43,.92), rgba(25,26,55,.94));
+  box-shadow: inset 0 1px rgba(255,255,255,.07), 0 12px 28px rgba(0,0,0,.24);
+}
+.online-search-row { display: flex; align-items: center; gap: 14px; }
+.online-search-orb {
+  width: 28px;
+  height: 28px;
+  flex: none;
+  border: 3px solid rgba(98,229,238,.2);
+  border-top-color: #62e5ee;
+  border-right-color: #b39aff;
+  border-radius: 50%;
+  animation: home-spin .9s linear infinite;
+  box-shadow: 0 0 15px rgba(98,229,238,.22);
+}
+@keyframes home-spin { to { transform: rotate(360deg); } }
+.online-search-text { display: flex; flex-direction: column; gap: 5px; }
+.online-search-title { color: #c9fbff; font-size: 12px; font-weight: 900; letter-spacing: 1.5px; }
+.online-search-sub { color: #aaa6c7; font-size: 10px; }
+.online-cancel-btn {
+  padding: 8px 15px;
+  border: 1px solid rgba(227,105,126,.48);
+  border-radius: 9px;
+  color: #ffabb7;
+  background: rgba(126,36,65,.18);
+  font-size: 11px;
+  font-weight: 800;
+  cursor: pointer;
+}
+.online-cancel-btn:hover { background: rgba(126,36,65,.32); }
 .online-match-error {
-  margin-top: 10px;
-  padding: 8px 14px;
+  max-width: min(100%, 420px);
+  padding: 11px 15px;
+  border: 1px solid rgba(227,105,126,.55);
   border-radius: 10px;
-  background: rgba(239, 68, 68, 0.18);
-  border: 1px solid rgba(248, 113, 113, 0.55);
-  color: #fecaca;
-  font-size: 0.78rem;
-  font-weight: 600;
-  max-width: min(320px, 90%);
+  color: #ffc0cb;
+  background: rgba(83,22,47,.65);
+  font-size: 12px;
   text-align: center;
-  animation: online-fade-in 0.25s ease;
 }
-
-@keyframes online-fade-in {
-  from { opacity: 0; transform: translateY(-4px); }
-  to { opacity: 1; transform: translateY(0); }
+.home-coming-soon {
+  width: min(100%, 540px);
+  box-sizing: border-box;
+  padding: 12px 18px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 11px;
+  border: 1px solid rgba(173,153,230,.22);
+  border-radius: 12px;
+  color: #a49bbd;
+  background: linear-gradient(90deg, rgba(18,23,46,.72), rgba(31,28,58,.68), rgba(18,23,46,.72));
+  box-shadow: inset 0 1px rgba(255,255,255,.04);
 }
-
-/* Contador de mazo completo en preview del home */
-.deck-count-ok {
-  color: #00e676 !important;
-  border-color: #00e676 !important;
+.coming-soon-rune { color: var(--rune-gold); font-size: 18px; text-shadow: 0 0 12px rgba(233,196,119,.35); }
+.coming-soon-text { font-size: 10px; font-weight: 800; letter-spacing: .5px; }
+.opponent-modal-overlay {
+  position: fixed;
+  z-index: 10000;
+  inset: 0;
+  padding: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(4,6,18,.86);
+  backdrop-filter: blur(11px);
+}
+.opponent-modal {
+  position: relative;
+  width: min(100%, 420px);
+  max-height: min(80vh, 620px);
+  overflow: auto;
+  padding: 28px 22px 22px;
+  border: 1px solid rgba(174,151,241,.52);
+  border-radius: 21px;
+  background:
+    radial-gradient(ellipse at 50% 0%, rgba(126,97,217,.22), transparent 58%),
+    linear-gradient(145deg, #252342, #10182d 76%);
+  box-shadow: 0 28px 90px rgba(0,0,0,.7), inset 0 1px rgba(255,255,255,.10);
+}
+.opponent-modal-close {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 32px;
+  height: 32px;
+  border: 1px solid rgba(173,153,230,.34);
+  border-radius: 50%;
+  color: #d4c9ed;
+  background: rgba(7,12,27,.7);
+  cursor: pointer;
+}
+.opponent-modal-title { margin: 0 30px 22px 0; color: #fff3dc; font-family: Georgia, serif; font-size: 18px; font-weight: 800; letter-spacing: 1.5px; }
+.opponent-modal-list { display: flex; flex-direction: column; gap: 10px; }
+.opponent-modal-btn {
+  width: 100%;
+  padding: 11px 13px;
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  border: 1px solid rgba(173,153,230,.27);
+  border-radius: 13px;
+  background: rgba(7,13,29,.68);
+  text-align: left;
+  cursor: pointer;
+  transition: background .18s ease, transform .18s ease, box-shadow .18s ease;
+}
+.opponent-modal-btn:hover { transform: translateY(-1px); background: rgba(43,42,78,.85); }
+.opponent-modal-btn.is-selected { background: rgba(112,91,190,.20); box-shadow: inset 0 0 0 1px rgba(180,154,255,.42), 0 0 18px rgba(156,123,255,.10); }
+.opp-modal-avatar-box { width: 48px; height: 48px; flex: none; overflow: hidden; border: 1px solid rgba(233,196,119,.58); border-radius: 50%; box-shadow: 0 0 12px rgba(233,196,119,.12); }
+.opp-modal-avatar { width: 100%; height: 100%; object-fit: cover; }
+.opp-modal-info { display: flex; flex: 1; flex-direction: column; gap: 4px; }
+.opp-modal-name { color: #fff5e5; font-size: 13px; font-weight: 900; }
+.opp-modal-difficulty { font-size: 9px; font-weight: 900; letter-spacing: 1.3px; }
+.opp-modal-reward { display: flex; align-items: center; gap: 5px; color: #f1d18c; font-size: 12px; font-weight: 900; }
+.opponent-modal-btn:focus-visible,
+.opponent-modal-close:focus-visible,
+.hud-profile-pill:focus-visible,
+.battle-mode-option:focus-visible,
+.selected-opponent-card:focus-visible,
+.huge-battle-cta:focus-visible,
+.online-cancel-btn:focus-visible { outline: 2px solid #8ef3f4; outline-offset: 3px; }
+@media (min-width: 900px) {
+  .home-arena-stage { padding-top: 68px; gap: 24px; }
+  .unified-battle-card { width: 540px; padding: 32px 42px 34px; gap: 25px; }
+}
+@media (max-width: 480px) {
+  .home-hud { padding: 13px 16px; }
+  .home-arena-stage { width: calc(100% - 28px); padding-top: 36px; gap: 19px; }
+  .unified-battle-card { padding: 22px 16px 24px; border-radius: 20px; gap: 20px; }
+  .home-coming-soon { padding: 11px 10px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .online-search-orb, .hud-profile-pill, .battle-mode-option, .selected-opponent-card, .huge-battle-cta { animation: none !important; transition: none !important; }
 }

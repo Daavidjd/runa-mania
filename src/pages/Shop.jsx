@@ -1,8 +1,11 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { getUserProfile, buyRock, claimDailyRock, getDailyRockStatus } from '../services/firestore';
+import { getUserProfile, buyRock, claimDailyRock, getDailyRockStatus, buyPickaxe } from '../services/firestore';
 import { ROCK_TYPES } from '../data/runes';
 import RockMiner from '../components/RockMiner';
+import PicoHierro from '../assets/pico/PicoHierro.png';
+import PicoOro from '../assets/pico/PicoOro.png';
+import PicoDiamante from '../assets/pico/PicoDiamante.png';
 import './Shop.css';
 
 // Importar las 12 imágenes de rocas
@@ -27,45 +30,61 @@ const ROCK_IMAGES = {
   epic: [RocaLila1, RocaLila2, RocaLila3]
 };
 
+const PICKAXES = [
+ { id:'iron',name:'Hierro',price:500,rockType:'normal',image:PicoHierro,rarity:'Normal',color:'#90a4ae' },
+ { id:'gold',name:'Oro',price:800,rockType:'rare',image:PicoOro,rarity:'Rara',color:'#eab308' },
+ { id:'diamond',name:'Diamante',price:1000,rockType:'epic',image:PicoDiamante,rarity:'Épica',color:'#38bdf8' }
+];
+
 const Shop = () => {
   const { user } = useAuth();
   const [profile, setProfile] = useState(null);
   const [activeRock, setActiveRock] = useState(null);
-  const [dailyStatus, setDailyStatus] = useState({ available: true });
+  const [dailyStatus, setDailyStatus] = useState({ available: false, loading: true });
   const [countdown, setCountdown] = useState('');
   const [message, setMessage] = useState('');
   const [messageType, setMessageType] = useState('');
   const [loading, setLoading] = useState(true);
+  const [purchaseBusy, setPurchaseBusy] = useState(false);
+  const [dailyBusy, setDailyBusy] = useState(false);
 
   useEffect(() => {
     if (user) {
-      loadProfile();
-      checkDailyStatus();
+      const initializeShop = async () => {
+        await loadProfile();
+        await checkDailyStatus();
+      };
+      initializeShop();
     }
   }, [user]);
 
   useEffect(() => {
-    if (dailyStatus.available === false && dailyStatus.remaining) {
-      const startTime = Date.now();
-      const initialRemaining = dailyStatus.remaining;
+    if (dailyStatus.available === false && dailyStatus.remaining > 0) {
+      const deadline = Date.now() + dailyStatus.remaining;
 
-      const interval = setInterval(() => {
-        const elapsed = Date.now() - startTime;
-        const remaining = initialRemaining - elapsed;
-
-        if (remaining <= 0) {
-          setDailyStatus({ available: true });
+      const updateCountdown = () => {
+        const remaining = Math.max(0, deadline - Date.now());
+        if (remaining === 0) {
           setCountdown('');
-          clearInterval(interval);
-        } else {
-          const hours = Math.floor(remaining / (60 * 60 * 1000));
-          const minutes = Math.floor((remaining % (60 * 60 * 1000)) / (60 * 1000));
-          const seconds = Math.floor((remaining % (60 * 1000)) / 1000);
-          setCountdown(`${hours}h ${minutes}m ${seconds}s`);
+          setDailyStatus({ available: true });
+          return;
         }
-      }, 1000);
+        const hours = Math.floor(remaining / (60 * 60 * 1000));
+        const minutes = Math.floor((remaining % (60 * 60 * 1000)) / (60 * 1000));
+        const seconds = Math.floor((remaining % (60 * 1000)) / 1000);
+        setCountdown(`${hours}h ${minutes}m ${seconds}s`);
+      };
 
-      return () => clearInterval(interval);
+      updateCountdown();
+      const interval = setInterval(updateCountdown, 1000);
+      const handleVisibility = () => {
+        if (document.visibilityState === 'visible') updateCountdown();
+      };
+      document.addEventListener('visibilitychange', handleVisibility);
+      return () => {
+        clearInterval(interval);
+        document.removeEventListener('visibilitychange', handleVisibility);
+      };
     }
   }, [dailyStatus]);
 
@@ -85,7 +104,7 @@ const Shop = () => {
           avatarId: 'arquero',
           playerCode: playerCode,
           userId: playerCode,
-          coins: 100,
+          coins: 1000,
           level: 1,
           xp: 0,
           createdAt: new Date().toISOString()
@@ -107,12 +126,16 @@ const Shop = () => {
     try {
       const status = await getDailyRockStatus(user.uid);
       setDailyStatus(status);
+      if (status.error) showMessage(status.error, 'error');
     } catch (error) {
       console.error('Error verificando roca diaria:', error);
+      setDailyStatus({ available: false, error: 'No se pudo comprobar la recompensa diaria' });
+      showMessage('No se pudo comprobar la recompensa diaria', 'error');
     }
   };
 
   const handleBuyRock = async (rockType) => {
+    if (purchaseBusy) return;
     const rock = ROCK_TYPES[rockType];
     if (!profile || profile.coins < rock.price) {
       showMessage('No tienes suficientes monedas', 'error');
@@ -120,7 +143,8 @@ const Shop = () => {
     }
 
     try {
-      const result = await buyRock(user.uid, rockType, rock.price);
+      setPurchaseBusy(true);
+      const result = await buyRock(user.uid, rockType);
       if (result.success) {
         await loadProfile();
         setActiveRock({ type: rockType, label: rock.name });
@@ -130,13 +154,26 @@ const Shop = () => {
     } catch (error) {
       console.error('Error comprando roca:', error);
       showMessage('Error al comprar la roca', 'error');
+    } finally {
+      setPurchaseBusy(false);
     }
   };
 
+  const handleBuyPickaxe = async (pickaxe) => {
+    if (purchaseBusy) return;
+    if (!profile || profile.coins < pickaxe.price) { showMessage('No tienes suficientes monedas', 'error'); return; }
+    try { setPurchaseBusy(true); const result = await buyPickaxe(user.uid, pickaxe.id);
+      if (result.success) { await loadProfile(); setActiveRock({ type:pickaxe.rockType,label:pickaxe.name,pickaxeType:pickaxe.id }); }
+      else showMessage(result.message,'error');
+    } catch(error) { console.error('Error comprando pico:',error); showMessage('Error al comprar el pico','error'); }
+    finally { setPurchaseBusy(false); }
+  };
+
   const handleClaimDaily = async () => {
-    if (!dailyStatus.available) return;
+    if (!dailyStatus.available || dailyBusy) return;
 
     try {
+      setDailyBusy(true);
       const result = await claimDailyRock(user.uid);
       if (result.success) {
         await checkDailyStatus();
@@ -147,6 +184,9 @@ const Shop = () => {
       }
     } catch (error) {
       console.error('Error reclamando roca diaria:', error);
+      showMessage('No se pudo reclamar la roca diaria', 'error');
+    } finally {
+      setDailyBusy(false);
     }
   };
 
@@ -176,10 +216,9 @@ const Shop = () => {
     <div className="shop-screen">
       <header className="shop-header">
         <div className="shop-header-title">
-          <span className="shop-header-icon">⛏️</span>
+          <img src={PicoHierro} alt="Pico de hierro" className="shop-header-icon" />
           <div>
             <h1 className="shop-title">LA MINA</h1>
-            <span className="shop-subtitle">Extrae runas de las rocas</span>
           </div>
         </div>
 
@@ -209,20 +248,20 @@ const Shop = () => {
             </div>
 
             <div className="daily-reward-details">
-              <h3 className="daily-reward-name">Roca Normal Diaria</h3>
-              <p className="daily-reward-desc">
-                {dailyStatus.available
-                  ? '¡Lista para extraer! Golpea 3 veces.'
-                  : `Disponible en ${countdown || 'espera...'}`}
-              </p>
+              <h3 className="daily-reward-name">Roca gratis</h3>
+              {!dailyStatus.available && (
+                <p className="daily-reward-desc">
+                  {dailyStatus.loading ? 'Comprobando recompensa...' : `Disponible en ${countdown || 'espera...'}`}
+                </p>
+              )}
             </div>
 
             <button
               className={`daily-claim-btn ${dailyStatus.available ? 'claimable' : 'disabled'}`}
               onClick={handleClaimDaily}
-              disabled={!dailyStatus.available}
+              disabled={!dailyStatus.available || dailyBusy}
             >
-              {dailyStatus.available ? '¡Picar!' : 'Espera'}
+              {dailyBusy ? 'Cargando...' : dailyStatus.available ? '¡Picar!' : 'Espera'}
             </button>
           </div>
         </section>
@@ -256,14 +295,25 @@ const Shop = () => {
                   <button
                     className={`rock-buy-btn ${canAfford ? 'affordable' : 'unaffordable'}`}
                     onClick={() => handleBuyRock(rock.id)}
-                    disabled={!canAfford}
+                    disabled={!canAfford || purchaseBusy}
                   >
                     <span className="buy-coin-icon">🪙</span>
-                    <span className="buy-price">{rock.price}</span>
+                    <span className="buy-price">{purchaseBusy ? '...' : rock.price}</span>
                   </button>
                 </div>
               );
             })}
+          </div>
+        </section>
+        <section className="shop-section">
+          <div className="section-title-bar"><span className="section-title-txt">PICOS ESPECIALES</span><span className="section-tag">3 ROCAS</span></div>
+          <div className="rocks-row-container">
+            {PICKAXES.map((pickaxe) => { const canAfford=(profile?.coins||0)>=pickaxe.price; return <div key={pickaxe.id} className="rock-item-card">
+              <div className="rock-rarity-ribbon" style={{background:pickaxe.color}}>{pickaxe.rarity}</div>
+              <div className="rock-visual-box"><img src={pickaxe.image} alt={pickaxe.name} className="rock-item-img" /></div>
+              <h3 className="rock-item-name">{pickaxe.name}</h3>
+              <button className={`rock-buy-btn ${canAfford?'affordable':'unaffordable'}`} onClick={()=>handleBuyPickaxe(pickaxe)} disabled={!canAfford||purchaseBusy}><span className="buy-coin-icon">🪙</span><span className="buy-price">{purchaseBusy?'...':pickaxe.price}</span></button>
+            </div>; })}
           </div>
         </section>
       </main>
@@ -273,6 +323,7 @@ const Shop = () => {
           onClose={handleRockMinerClose}
           rockType={activeRock.type}
           rockLabel={activeRock.label}
+          pickaxeType={activeRock.pickaxeType}
         />
       )}
     </div>

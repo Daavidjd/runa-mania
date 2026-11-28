@@ -181,7 +181,7 @@ const Profile = () => {
       <div className="profile-screen">
         <div className="profile-loading-box">
           <span className="profile-spin-glyph">ᛟ</span>
-          <p>Consultando anales del invocador...</p>
+          <p>Consultando perfil del invocador...</p>
         </div>
       </div>
     );
