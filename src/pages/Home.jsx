@@ -138,7 +138,17 @@ const Home = () => {
 
       {/* ARENA CENTRAL: panel único CPU / ONLINE */}
       <main className="home-arena-stage">
+        <div className="home-intro">
+          <span className="home-eyebrow"><span className="eyebrow-line" /> LA ARENA TE ESPERA <span className="eyebrow-line" /></span>
+          <h1 className="home-title">FORJA TU <span>LEYENDA</span></h1>
+          <p className="home-subtitle">Elige tu desafío. Demuestra el poder de tus runas.</p>
+        </div>
+
         <section className={`unified-battle-card ${battleMode === 'online' ? 'is-online' : 'is-cpu'}`} aria-label="Panel de batalla">
+          <div className="battle-card-heading">
+            <span className="battle-card-kicker">MODO DE JUEGO</span>
+            <span className="battle-card-index">01 <i /> 02</span>
+          </div>
           <div className="battle-mode-switch" role="group" aria-label="Modo de batalla">
             <button
               type="button"
@@ -187,17 +197,20 @@ const Home = () => {
                   />
                 </div>
                 <div className="opponent-info-box">
+                  <span className="opponent-role">OPONENTE CPU</span>
                   <span className="opponent-name">{selectedOpponent.name}</span>
                   <span className="opponent-selected-difficulty" style={{ color: selectedOpponent.difficultyColor }}>
                     {selectedOpponent.difficulty}
                   </span>
+                  <span className="opponent-change-hint">TOCA PARA CAMBIAR DE RIVAL</span>
                 </div>
               </button>
             </>
           ) : (
             <>
-              <span className="battle-mode-label online-label">BATALLA ONLINE</span>
-              <div className="online-mode-icon" aria-hidden="true">?</div>
+              <span className="battle-mode-label online-label">DESAFÍA A OTROS INVOCADORES</span>
+              <div className="online-mode-icon" aria-hidden="true">⚔</div>
+              <span className="online-mode-caption">Encuentra un rival y lucha por la victoria</span>
             </>
           )}
 
