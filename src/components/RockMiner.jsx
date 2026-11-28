@@ -38,7 +38,6 @@ const getCurrentRuneDisplay = async (userId, rune) => {
   const arrows = { top: 0, right: 0, bottom: 0, left: 0 };
   const baseArrows = rune.startingArrows || ownedRune.startingArrows || ownedRune.arrows || rune.arrows || {};
   ['top', 'right', 'bottom', 'left'].forEach(direction => { arrows[direction] = Number(baseArrows[direction]) || 0; });
-  (ownedRune.evolutionPath || []).slice(0, level - 1).forEach(direction => { if (Object.prototype.hasOwnProperty.call(arrows, direction)) arrows[direction] += 1; });
   const evolutionPath = rune.evolutionPath || ownedRune.evolutionPath || [];
   evolutionPath.slice(0, level - 1).forEach(direction => {
     if (Object.prototype.hasOwnProperty.call(arrows, direction)) arrows[direction] += 1;
