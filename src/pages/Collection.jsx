@@ -34,7 +34,10 @@ const Collection = () => {
           const level = Math.max(1, Math.min(runeData.evolutionPath?.length || 1, Number(rune.level) || 1));
           const repes = Number.isFinite(Number(rune.repes)) ? Math.max(0, Number(rune.repes)) : Math.max(0, quantity - 1);
           const arrows = { top: 0, right: 0, bottom: 0, left: 0 };
-          (runeData.evolutionPath || []).slice(0, level).forEach(direction => {
+          ['top', 'right', 'bottom', 'left'].forEach(direction => {
+            arrows[direction] = Math.max(0, Number(runeData.startingArrows?.[direction]) || 0);
+          });
+          (runeData.evolutionPath || []).slice(0, Math.max(0, level - 1)).forEach(direction => {
             if (Object.prototype.hasOwnProperty.call(arrows, direction)) arrows[direction] += 1;
           });
           ownedMap[runeData.id] = { ...runeData, quantity, level, repes, arrows };
@@ -90,7 +93,10 @@ const Collection = () => {
     if (result.success) {
       const updatedRune = { ...ownedRunes[rune.id], level: result.level, repes: result.repes };
       const arrows = { top: 0, right: 0, bottom: 0, left: 0 };
-      (updatedRune.evolutionPath || []).slice(0, result.level).forEach(direction => {
+      ['top', 'right', 'bottom', 'left'].forEach(direction => {
+        arrows[direction] = Math.max(0, Number(updatedRune.startingArrows?.[direction]) || 0);
+      });
+      (updatedRune.evolutionPath || []).slice(0, Math.max(0, result.level - 1)).forEach(direction => {
         if (Object.prototype.hasOwnProperty.call(arrows, direction)) arrows[direction] += 1;
       });
       updatedRune.arrows = arrows;
