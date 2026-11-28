@@ -29,7 +29,16 @@ const Collection = () => {
       const ownedMap = {};
       collectionData.forEach(rune => {
         const runeData = RUNES_DB.find(r => r.id === (rune.runeId || rune.id));
-        if (runeData) ownedMap[runeData.id] = { ...runeData, quantity: rune.quantity || 1 };
+        if (runeData) {
+          const quantity = Math.max(1, Number(rune.quantity) || 1);
+          const level = Math.max(1, Math.min(runeData.evolutionPath?.length || 1, Number(rune.level) || 1));
+          const repes = Number.isFinite(Number(rune.repes)) ? Math.max(0, Number(rune.repes)) : Math.max(0, quantity - 1);
+          const arrows = { top: 0, right: 0, bottom: 0, left: 0 };
+          (runeData.evolutionPath || []).slice(0, level).forEach(direction => {
+            if (Object.prototype.hasOwnProperty.call(arrows, direction)) arrows[direction] += 1;
+          });
+          ownedMap[runeData.id] = { ...runeData, quantity, level, repes, arrows };
+        }
       });
       setOwnedRunes(ownedMap);
 
@@ -65,6 +74,7 @@ const Collection = () => {
   };
 
   const handleAddToDeck = async (rune) => {
+    rune = ownedRunes[rune.id] || rune;
     if (deck.some(r => r.id === rune.id)) return;
     if (deck.length >= DECK_SIZE) {
       setPendingReplacementRune(rune);
@@ -78,10 +88,16 @@ const Collection = () => {
   const handleUpgradeRune = async (rune) => {
     const result = await upgradeRune(user.uid, rune.id, rune.evolutionPath);
     if (result.success) {
-      setOwnedRunes(previous => ({
-        ...previous,
-        [rune.id]: { ...previous[rune.id], level: result.level, repes: result.repes }
-      }));
+      setOwnedRunes(previous => {
+        const updatedRune = { ...previous[rune.id], level: result.level, repes: result.repes };
+        const arrows = { top: 0, right: 0, bottom: 0, left: 0 };
+        (updatedRune.evolutionPath || []).slice(0, result.level).forEach(direction => {
+          if (Object.prototype.hasOwnProperty.call(arrows, direction)) arrows[direction] += 1;
+        });
+        updatedRune.arrows = arrows;
+        setDeck(current => current.map(item => item.id === rune.id ? updatedRune : item));
+        return { ...previous, [rune.id]: updatedRune };
+      });
     }
     return result;
   };
@@ -181,7 +197,7 @@ const Collection = () => {
             const owned = !!ownedRunes[rune.id];
             return (
               <div key={rune.id} className="compact-item-wrapper">
-                <RuneCard rune={rune} owned={owned} hideName onClick={() => setSelectedRune(rune)} />
+                <RuneCard rune={owned ? ownedRunes[rune.id] : rune} owned={owned} hideName onClick={() => setSelectedRune(owned ? ownedRunes[rune.id] : rune)} />
 
               </div>
             );
