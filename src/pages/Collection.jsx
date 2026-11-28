@@ -88,16 +88,14 @@ const Collection = () => {
   const handleUpgradeRune = async (rune) => {
     const result = await upgradeRune(user.uid, rune.id, rune.evolutionPath);
     if (result.success) {
-      setOwnedRunes(previous => {
-        const updatedRune = { ...previous[rune.id], level: result.level, repes: result.repes };
-        const arrows = { top: 0, right: 0, bottom: 0, left: 0 };
-        (updatedRune.evolutionPath || []).slice(0, result.level).forEach(direction => {
-          if (Object.prototype.hasOwnProperty.call(arrows, direction)) arrows[direction] += 1;
-        });
-        updatedRune.arrows = arrows;
-        setDeck(current => current.map(item => item.id === rune.id ? updatedRune : item));
-        return { ...previous, [rune.id]: updatedRune };
+      const updatedRune = { ...ownedRunes[rune.id], level: result.level, repes: result.repes };
+      const arrows = { top: 0, right: 0, bottom: 0, left: 0 };
+      (updatedRune.evolutionPath || []).slice(0, result.level).forEach(direction => {
+        if (Object.prototype.hasOwnProperty.call(arrows, direction)) arrows[direction] += 1;
       });
+      updatedRune.arrows = arrows;
+      setOwnedRunes(previous => ({ ...previous, [rune.id]: updatedRune }));
+      setDeck(current => current.map(item => item.id === rune.id ? updatedRune : item));
     }
     return result;
   };
