@@ -174,7 +174,13 @@ const Battle = () => {
       const aiRunes = generateAIDeck(selectedOpponent.difficulty)
         .map(id => RUNES_DB.find(r => r.id === id))
         .filter(Boolean)
-        .map(r => ({ ...r, owner: 'ai' }));
+        .map(r => {
+          const arrows = { top: 0, right: 0, bottom: 0, left: 0 };
+          ['top', 'right', 'bottom', 'left'].forEach(direction => {
+            arrows[direction] = Math.max(0, Number(r.startingArrows?.[direction]) || 0);
+          });
+          return { ...r, arrows, level: 1, owner: 'ai' };
+        });
 
       setPlayerHand(playerRunes);
       setAiHand(aiRunes);
