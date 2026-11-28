@@ -175,11 +175,16 @@ const Battle = () => {
         .map(id => RUNES_DB.find(r => r.id === id))
         .filter(Boolean)
         .map(r => {
+          const maxLevel = r.evolutionPath?.length || 1;
+          const level = Math.floor(Math.random() * maxLevel) + 1;
           const arrows = { top: 0, right: 0, bottom: 0, left: 0 };
           ['top', 'right', 'bottom', 'left'].forEach(direction => {
             arrows[direction] = Math.max(0, Number(r.startingArrows?.[direction]) || 0);
           });
-          return { ...r, arrows, level: 1, owner: 'ai' };
+          (r.evolutionPath || []).slice(0, level - 1).forEach(direction => {
+            if (Object.prototype.hasOwnProperty.call(arrows, direction)) arrows[direction] += 1;
+          });
+          return { ...r, arrows, level, owner: 'ai' };
         });
 
       setPlayerHand(playerRunes);
