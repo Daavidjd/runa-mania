@@ -33,8 +33,8 @@ import nocMare from '../assets/runes/NocMare.png';
 import triceladro from '../assets/runes/Triceladro.png';
 
 export const RUNES_DB = [
-  // Cada evolutionPath define el camino de flechas por nivel:
-  // índice 0 = flecha inicial; cada posición siguiente añade una flecha.
+  // startingArrows define las flechas iniciales según la rareza.
+  // Cada posición de evolutionPath añade una flecha al subir de nivel.
   // Las direcciones pueden repetirse. Su longitud marca el nivel máximo.
   // ==========================================
   // COMUNES (máximo nivel 6)
