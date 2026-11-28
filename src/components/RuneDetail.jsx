@@ -6,7 +6,10 @@ const DIRECTIONS = ['top', 'right', 'bottom', 'left'];
 
 const getArrowsForLevel = (rune, level) => {
   const arrows = { top: 0, right: 0, bottom: 0, left: 0 };
-  (rune.evolutionPath || []).slice(0, level).forEach(direction => {
+  DIRECTIONS.forEach(direction => {
+    arrows[direction] = Math.max(0, Number(rune.startingArrows?.[direction]) || 0);
+  });
+  (rune.evolutionPath || []).slice(0, Math.max(0, level - 1)).forEach(direction => {
     if (DIRECTIONS.includes(direction)) arrows[direction] += 1;
   });
   return arrows;
@@ -91,14 +94,16 @@ const RuneDetail = ({
                   {isMaxLevel ? 'NIVEL MÁXIMO' : `COPIAS ${Math.min(repes, upgradeCost)}/${upgradeCost}`}
                 </span>
               </div>
-              <button
-                type="button"
-                className="rd-upgrade-btn"
-                onClick={handleUpgrade}
-                disabled={upgrading || isMaxLevel || repes < upgradeCost}
-              >
-                {upgrading ? 'MEJORANDO...' : isMaxLevel ? '✦ NIVEL MÁXIMO ✦' : `⬆ MEJORAR · ${upgradeCost} REPES`}
-              </button>
+              {!isMaxLevel && repes >= upgradeCost && (
+                <button
+                  type="button"
+                  className="rd-upgrade-btn"
+                  onClick={handleUpgrade}
+                  disabled={upgrading}
+                >
+                  {upgrading ? 'MEJORANDO...' : `⬆ MEJORAR · ${upgradeCost} REPES`}
+                </button>
+              )}
               {upgradeMessage && <p className="rd-upgrade-message" role="status">{upgradeMessage}</p>}
             </section>
           )}
